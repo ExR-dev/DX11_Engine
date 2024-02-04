@@ -19,7 +19,20 @@ bool LoadShaders(
 {
 	std::string shaderData;
 	std::ifstream reader;
-	reader.open("VertexShader.cso", std::ios::binary | std::ios::ate);
+
+	std::string shaderPath = "";
+
+#ifdef _WIN64
+	shaderPath = "x64/";
+#endif
+
+#ifdef _DEBUG
+	shaderPath += "Debug/";
+#else
+	shaderPath += "Release/";
+#endif 
+
+	reader.open(shaderPath + "VertexShader.cso", std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
 	{
 		std::cerr << "Could not open VS file!" << std::endl;
@@ -48,7 +61,7 @@ bool LoadShaders(
 	vShaderByteCode = shaderData;
 	shaderData.clear();
 	reader.close();
-	reader.open("PixelShader.cso", std::ios::binary | std::ios::ate);
+	reader.open(shaderPath + "PixelShader.cso", std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
 	{
 		std::cerr << "Could not open PS file!" << std::endl;

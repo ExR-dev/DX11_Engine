@@ -1,9 +1,11 @@
 #include <Windows.h>
 #include <iostream>
 #include <d3d11.h>
-#include <chrono>
 #include <DirectXMath.h>
 
+#include "Game.h"
+#include "Data.h"
+#include "Time.h"
 #include "WindowHelper.h"
 #include "D3D11Helper.h"
 #include "PipelineHelper.h"
@@ -61,6 +63,10 @@ int APIENTRY wWinMain(
 		return -1;
 	}
 
+	Data data = Data();
+	Time time = Time();
+	Game game = Game();
+
 	ID3D11Device *device;
 	ID3D11DeviceContext	*immediateContext;
 	IDXGISwapChain *swapChain;
@@ -100,19 +106,17 @@ int APIENTRY wWinMain(
 		{15.0f, 15.0f, 15.0f, 256.0f}, // Specular
 	};
 
-	GTime time = { };
-	const auto programStart = std::chrono::high_resolution_clock::now();
-	auto lFrameStart = programStart;
-	auto frameStart = programStart;
-
-	MSG msg = { };
+	MSG msg{ };
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
-		lFrameStart = frameStart;
-		frameStart = std::chrono::high_resolution_clock::now();
+		time.Update();
 
-		time.lifetime = (double)(std::chrono::duration_cast<std::chrono::microseconds>(frameStart - programStart).count()) * 0.000001;
-		time.deltatime = (double)(std::chrono::duration_cast<std::chrono::microseconds>(frameStart - lFrameStart).count()) * 0.000001;
+		game.Update(&data, &time);
+
+		game.Render(&data, &time);
+
+
+		// TODO: Refactor
 
 		XMVECTOR camPos = { lightingBufferData.camPos[0], lightingBufferData.camPos[1], lightingBufferData.camPos[2]};
 		XMVECTOR camDir = XMVector3Normalize(-camPos);
@@ -122,7 +126,7 @@ int APIENTRY wWinMain(
 			XMMatrixPerspectiveFovLH(45.0f * 0.0174533f, (float)WIDTH / HEIGHT, 0.1f, 10.0f);
 
 		const XMMATRIX worldMatrix = 
-			XMMatrixRotationY(-time.lifetime / 1.25f) *
+			XMMatrixRotationY(-time.time / 1.25f) *
 			XMMatrixTranslation(0, 0, 0);
 
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))

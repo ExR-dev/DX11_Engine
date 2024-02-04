@@ -63,12 +63,6 @@ struct LightingBufferData
 	}
 };
 
-struct GTime
-{
-	float lifetime;
-	float deltatime;
-};
-
 bool UpdateMatrixBuffer(
 	ID3D11DeviceContext *immediateContext,
 	ID3D11Buffer *&matrixBuffer,
