@@ -5,6 +5,8 @@
 #include <DirectXMath.h>
 
 #include "Data.h"
+#include "Scene.h"
+#include "Graphics.h"
 #include "Time.h"
 #include "D3D11Helper.h"
 #include "PipelineHelper.h"
@@ -15,31 +17,13 @@ using namespace DirectX;
 class Game
 {
 private:
+	Scene _scene = Scene();
+	Graphics _graphics = Graphics();
 
 public:
 	Game();
 	~Game();
 
-	int Update(Data *data, Time *time);
-
-	int Render(Data *data, Time *time);
+	int Update(const Data &data, const Time &time);
+	int Render(const Data &data, const Time &time);
 };
-
-
-inline Game::Game()
-{ }
-
-inline Game::~Game()
-{ }
-
-inline int Game::Update(Data *data, Time *time)
-{
-
-	return 0;
-}
-
-inline int Game::Render(Data *data, Time *time)
-{
-
-	return 0;
-}

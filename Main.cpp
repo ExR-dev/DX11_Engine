@@ -63,9 +63,9 @@ int APIENTRY wWinMain(
 		return -1;
 	}
 
+	Game game = Game();
 	Data data = Data();
 	Time time = Time();
-	Game game = Game();
 
 	ID3D11Device *device;
 	ID3D11DeviceContext	*immediateContext;
@@ -111,9 +111,8 @@ int APIENTRY wWinMain(
 	{
 		time.Update();
 
-		game.Update(&data, &time);
-
-		game.Render(&data, &time);
+		game.Update(data, time);
+		game.Render(data, time);
 
 
 		// TODO: Refactor

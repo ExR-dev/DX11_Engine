@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include "Transform.h"
 
 
 class Entity
@@ -8,6 +8,8 @@ class Entity
 private:
 
 public:
+	Transform transform;
+
 	Entity();
 	~Entity();
 
