@@ -1,19 +1,90 @@
+
 #include <Windows.h>
 #include <iostream>
 #include <d3d11.h>
-#include <DirectXMath.h>
+
+#include "WindowHelper.h"
+#include "PipelineHelper.h"
 
 #include "Game.h"
-#include "Data.h"
 #include "Time.h"
-#include "WindowHelper.h"
+
+
+int APIENTRY wWinMain(
+	_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
+{
+	constexpr UINT WIDTH = 900;
+	constexpr UINT HEIGHT = 900;
+	HWND window;
+
+	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
+	{
+		std::cerr << "Failed to setup window!" << std::endl;
+		return -1;
+	}
+
+	Game game = { };
+	
+	if (!game.SetupGraphics(WIDTH, HEIGHT, window))
+	{
+		std::cerr << "Failed to setup graphics!" << std::endl;
+		return -1;
+	}
+	
+	Time time = { };
+	MSG msg = { };
+
+	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
+	{
+		time.Update();
+
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		if (!game.Update(time))
+		{
+			std::cerr << "Failed to update game logic!" << std::endl;
+			return -1;
+		}
+
+		if (!game.Render(time))
+		{
+			std::cerr << "Failed to render frame!" << std::endl;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 #include "D3D11Helper.h"
 #include "PipelineHelper.h"
 
 using namespace DirectX;
 
 
-void Render(
+void Deprecated_Render(
 	ID3D11DeviceContext *immediateContext, ID3D11RenderTargetView *rtv,
 	ID3D11DepthStencilView *dsView, D3D11_VIEWPORT &viewport, 
 	ID3D11VertexShader *vShader, ID3D11PixelShader *pShader, 
@@ -47,7 +118,8 @@ void Render(
 	immediateContext->Draw(6, 0);
 }
 
-int APIENTRY wWinMain(
+
+int Deprecated_wWinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
@@ -63,8 +135,6 @@ int APIENTRY wWinMain(
 		return -1;
 	}
 
-	Game game = Game();
-	Data data = Data();
 	Time time = Time();
 
 	ID3D11Device *device;
@@ -111,12 +181,6 @@ int APIENTRY wWinMain(
 	{
 		time.Update();
 
-		game.Update(data, time);
-		game.Render(data, time);
-
-
-		// TODO: Refactor
-
 		XMVECTOR camPos = { lightingBufferData.camPos[0], lightingBufferData.camPos[1], lightingBufferData.camPos[2]};
 		XMVECTOR camDir = XMVector3Normalize(-camPos);
 
@@ -134,8 +198,8 @@ int APIENTRY wWinMain(
 			DispatchMessage(&msg);
 		}
 
-		XMStoreFloat4x4(&matrixBufferData.viewProjMatrix, XMMatrixTranspose(viewProjMatrix));
-		XMStoreFloat4x4(&matrixBufferData.worldMatrix, XMMatrixTranspose(worldMatrix));
+		DirectX::XMStoreFloat4x4(&matrixBufferData.viewProjMatrix, XMMatrixTranspose(viewProjMatrix));
+		DirectX::XMStoreFloat4x4(&matrixBufferData.worldMatrix, XMMatrixTranspose(worldMatrix));
 
 		if (!UpdateMatrixBuffer(immediateContext, matrixBuffer, matrixBufferData))
 		{
@@ -149,7 +213,7 @@ int APIENTRY wWinMain(
 			return -1;
 		}
 
-		Render(
+		Deprecated_Render(
 			immediateContext, rtv, 
 			dsView, viewport, 
 			vShader, pShader, 
@@ -178,3 +242,4 @@ int APIENTRY wWinMain(
 
 	return 0;
 }
+*/

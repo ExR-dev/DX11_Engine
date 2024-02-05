@@ -1,5 +1,7 @@
 #include "D3D11Helper.h"
 
+#include "Graphics.h"
+
 
 bool CreateInterfaces(
 	UINT width, UINT height, HWND window,

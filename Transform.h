@@ -2,15 +2,13 @@
 
 #include <DirectXMath.h>
 
-using namespace DirectX;
-
 
 class Transform
 {
 private:
-	XMMATRIX _world = XMMatrixIdentity();
+	DirectX::XMMATRIX _world = DirectX::XMMatrixIdentity();
 
-	XMFLOAT3
+	DirectX::XMFLOAT3
 		_pos = { 0.0f, 0.0f, 0.0f },
 		_rot = { 0.0f, 0.0f, 0.0f },
 		_size = { 1.0f, 1.0f, 1.0f };
@@ -23,25 +21,25 @@ public:
 	~Transform();
 
 
-	void Move(const XMFLOAT3 &movement);
-	void Rotate(const XMFLOAT3 &rotation);
-	void Scale(const XMFLOAT3 &factor);
+	void Move(const DirectX::XMFLOAT3 &movement);
+	void Rotate(const DirectX::XMFLOAT3 &rotation);
+	void Scale(const DirectX::XMFLOAT3 &factor);
 
 
-	void SetPosition(const XMFLOAT3 &position);
-	void SetRotation(const XMFLOAT3 &rotation);
-	void SetScale(const XMFLOAT3 &scale);
+	void SetPosition(const DirectX::XMFLOAT3 &position);
+	void SetRotation(const DirectX::XMFLOAT3 &rotation);
+	void SetScale(const DirectX::XMFLOAT3 &scale);
 
 
-	XMFLOAT3 GetRight() const;
-	XMFLOAT3 GetUp() const;
-	XMFLOAT3 GetForward() const;
+	DirectX::XMFLOAT3 GetRight() const;
+	DirectX::XMFLOAT3 GetUp() const;
+	DirectX::XMFLOAT3 GetForward() const;
 
-	XMFLOAT3 GetPosition() const;
-	XMFLOAT3 GetRotation() const;
-	XMFLOAT3 GetScale() const;
+	DirectX::XMFLOAT3 GetPosition() const;
+	DirectX::XMFLOAT3 GetRotation() const;
+	DirectX::XMFLOAT3 GetScale() const;
 
 
-	void SetWorldMatrix(const XMMATRIX &matrix);
-	XMMATRIX GetWorldMatrix() const;
+	void SetWorldMatrix(const DirectX::XMMATRIX &matrix);
+	DirectX::XMMATRIX GetWorldMatrix() const;
 };

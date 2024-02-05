@@ -1,30 +1,64 @@
 #include "Game.h"
 
+#include <iostream>
+
 
 Game::Game()
 {
-	// TODO
+	_device				= nullptr;
+	_immediateContext	= nullptr;
+
+	_graphics	= { };
+	_scene		= nullptr;
 }
 
 Game::~Game()
 {
-	// TODO
+	if (_immediateContext != nullptr)
+		_immediateContext->Release();
+
+	if (_device != nullptr)
+		_device->Release();
+}
+
+bool Game::SetupGraphics(UINT width, UINT height, HWND window)
+{
+	if (!_graphics.Setup(width, height, window, _device, _immediateContext))
+	{
+		std::cerr << "Failed to setup d3d11!" << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool Game::SetScene(Scene *scene)
+{
+	_scene = scene;
+	return true;
 }
 
 
-int Game::Update(const Data &data, const Time &time)
+bool Game::Update(const Time &time)
 {
-	// TODO
-	return -1;
+	// Update game logic here...
+
+	return true;
 }
 
-int Game::Render(const Data &data, const Time &time)
+bool Game::Render(const Time &time)
 {
-	// TODO
-	_graphics.BeginRender();
+	if (!_graphics.BeginRender())
+	{
+		std::cerr << "Failed to begin rendering!" << std::endl;
+		return false;
+	}
 
-	// Render scene here
+	// Render scene here..
 
-	_graphics.EndRender();
-	return 0;
+	if (!_graphics.EndRender())
+	{
+		std::cerr << "Failed to end rendering!" << std::endl;
+		return false;
+	}
+	return true;
 }

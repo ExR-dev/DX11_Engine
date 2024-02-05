@@ -6,10 +6,9 @@
 class Entity
 {
 private:
-
-public:
 	Transform transform;
 
+public:
 	Entity();
 	~Entity();
 
