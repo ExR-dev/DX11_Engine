@@ -6,6 +6,11 @@ Entity::Entity()
 	// TODO
 }
 
+Entity::Entity(const XMMATRIX &worldMatrix)
+{
+	_transform = Transform(worldMatrix);
+}
+
 Entity::~Entity()
 {
 	// TODO

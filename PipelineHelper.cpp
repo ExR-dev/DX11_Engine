@@ -90,6 +90,74 @@ bool LoadShaders(
 	return true;
 }
 
+bool LoadShader(ID3D11Device *device, void *&shader, ShaderType type, std::string &name, std::string &byteCode)
+{
+	std::string shaderData;
+	std::ifstream reader;
+
+	std::string path = "";
+
+#ifdef _WIN64
+	path = "x64/";
+#endif
+
+#ifdef _DEBUG
+	path += "Debug/";
+#else
+	path += "Release/";
+#endif 
+
+	reader.open(path + name + ".cso", std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+	{
+		std::cerr << "Could not open shader file!" << std::endl;
+		return false;
+	}
+
+	reader.seekg(0, std::ios::end);
+	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderData.assign(
+		std::istreambuf_iterator<char>(reader),
+		std::istreambuf_iterator<char>()
+	);
+
+	switch (type)
+	{
+		case ShaderType::Vertex:
+			if (FAILED(device->CreateVertexShader(
+					shaderData.c_str(), shaderData.length(),
+					nullptr, &((ID3D11VertexShader *&)shader))))
+			{
+				std::cerr << "Failed to create vertex shader!" << std::endl;
+				return false;
+			}
+			break;
+
+		case ShaderType::Pixel:
+			if (FAILED(device->CreatePixelShader(
+				shaderData.c_str(), shaderData.length(),
+				nullptr, &((ID3D11PixelShader *&)shader))))
+			{
+				std::cerr << "Failed to create pixel shader!" << std::endl;
+				return false;
+			}
+			break;
+
+		default:
+			std::cerr << "Creating shader type not implemented!" << std::endl;
+			return false;
+			break;
+	}
+
+	byteCode = shaderData;
+	shaderData.clear();
+	reader.close();
+
+	return true;
+}
+
 bool CreateInputLayout(
 	ID3D11Device *device, 
 	ID3D11InputLayout *&inputLayout, 
@@ -125,7 +193,7 @@ bool CreateVertexBuffer(
 		{{ 0.5f,  0.5f,  0.0f}, {0,  0, -1}, {1, 0}},
 	};
 
-	D3D11_BUFFER_DESC vertexBufferDesc;
+	D3D11_BUFFER_DESC vertexBufferDesc = { };
 	vertexBufferDesc.ByteWidth = sizeof(triangle);
 	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -133,7 +201,7 @@ bool CreateVertexBuffer(
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA srData;
+	D3D11_SUBRESOURCE_DATA srData = { };
 	srData.pSysMem = triangle;
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
@@ -148,7 +216,7 @@ bool CreateMatrixBuffer(
 {
 	MatrixBufferData matrixBufferData = { };
 
-	D3D11_BUFFER_DESC matrixBufferDesc;
+	D3D11_BUFFER_DESC matrixBufferDesc = { };
 	matrixBufferDesc.ByteWidth = sizeof(matrixBufferData);
 	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -156,7 +224,7 @@ bool CreateMatrixBuffer(
 	matrixBufferDesc.MiscFlags = 0;
 	matrixBufferDesc.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA srData;
+	D3D11_SUBRESOURCE_DATA srData = { };
 	srData.pSysMem = &matrixBufferData;
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
@@ -192,7 +260,7 @@ bool CreateLightingBuffer(
 		{0,0,0,0},
 	};
 
-	D3D11_BUFFER_DESC lightingBufferDesc;
+	D3D11_BUFFER_DESC lightingBufferDesc = { };
 	lightingBufferDesc.ByteWidth = sizeof(lightingBufferData);
 	lightingBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	lightingBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -200,7 +268,7 @@ bool CreateLightingBuffer(
 	lightingBufferDesc.MiscFlags = 0;
 	lightingBufferDesc.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA srData;
+	D3D11_SUBRESOURCE_DATA srData = { };
 	srData.pSysMem = &lightingBufferData;
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
@@ -214,7 +282,7 @@ bool UpdateLightingBuffer(
 	ID3D11Buffer *&lightingBuffer,
 	LightingBufferData &lightingBufferData)
 {
-	D3D11_MAPPED_SUBRESOURCE resource;
+	D3D11_MAPPED_SUBRESOURCE resource = { };
 	HRESULT hr = immediateContext->Map(lightingBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource);
 	if (FAILED(hr))
 		return false;
@@ -233,7 +301,7 @@ bool LoadTexture2D(
 	int x,y,n;
 	unsigned char *data = stbi_load("texture.png", &x, &y, &n, 4);
 
-	D3D11_TEXTURE2D_DESC textureDesc;
+	D3D11_TEXTURE2D_DESC textureDesc = { };
 	textureDesc.Width = x;
 	textureDesc.Height = y;
 	textureDesc.ArraySize = 1;
@@ -246,9 +314,9 @@ bool LoadTexture2D(
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 
-	D3D11_SUBRESOURCE_DATA srData;
+	D3D11_SUBRESOURCE_DATA srData = { };
 	srData.pSysMem = data;
-	srData.SysMemPitch = x * 4 * sizeof(unsigned char);
+	srData.SysMemPitch = x * sizeof(unsigned char) * 4;
 	srData.SysMemSlicePitch = 0;
 
 	if (FAILED(device->CreateTexture2D(&textureDesc, &srData, &texture2D)))
@@ -265,7 +333,7 @@ bool LoadTexture2D(
 		return false;
 	}
 
-	D3D11_SAMPLER_DESC samplerDesc;
+	D3D11_SAMPLER_DESC samplerDesc = { };
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;

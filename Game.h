@@ -16,6 +16,8 @@ private:
 	Graphics	_graphics;
 	Scene		*_scene;
 
+	bool hasCreatedMesh = false;
+
 public:
 	Game();
 	~Game();

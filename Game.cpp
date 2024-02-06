@@ -42,6 +42,13 @@ bool Game::Update(const Time &time)
 {
 	// Update game logic here...
 
+	if (!hasCreatedMesh && time.time >= 5.0f)
+	{
+		hasCreatedMesh = true;
+
+		
+	}
+
 	return true;
 }
 

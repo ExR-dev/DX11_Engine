@@ -1,8 +1,11 @@
 #pragma once
 
 #include <vector>
+#include <DirectXMath.h>
 
 #include "Entity.h"
+
+using namespace DirectX;
 
 
 class Scene
@@ -13,4 +16,6 @@ private:
 public:
 	Scene();
 	~Scene();
+
+	bool MakeQuad(const XMMATRIX &worldMatrix);
 };

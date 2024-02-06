@@ -1,7 +1,5 @@
 #include "Transform.h"
 
-using namespace DirectX;
-
 
 void Transform::UpdateMatrices()
 {
@@ -17,6 +15,13 @@ void Transform::UpdateVectors()
 Transform::Transform()
 {
 	// TODO
+}
+
+Transform::Transform(const XMMATRIX &worldMatrix)
+{
+	_world = worldMatrix;
+
+	UpdateVectors();
 }
 
 Transform::~Transform()

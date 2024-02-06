@@ -6,10 +6,11 @@
 class Entity
 {
 private:
-	Transform transform;
+	Transform _transform;
 
 public:
 	Entity();
+	Entity(const XMMATRIX &worldMatrix);
 	~Entity();
 
 	void Update();
