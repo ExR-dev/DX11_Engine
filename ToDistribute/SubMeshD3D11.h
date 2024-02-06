@@ -7,12 +7,12 @@
 class SubMeshD3D11
 {
 private:
-	size_t startIndex = 0;
-	size_t nrOfIndices = 0;
+	size_t _startIndex = 0;
+	size_t _nrOfIndices = 0;
 
-	ID3D11ShaderResourceView* ambientTexture = nullptr;
-	ID3D11ShaderResourceView* diffuseTexture = nullptr;
-	ID3D11ShaderResourceView* specularTexture = nullptr;
+	ID3D11ShaderResourceView* _ambientTexture = nullptr;
+	ID3D11ShaderResourceView* _diffuseTexture = nullptr;
+	ID3D11ShaderResourceView* _specularTexture = nullptr;
 
 public:
 	SubMeshD3D11() = default;

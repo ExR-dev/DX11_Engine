@@ -8,7 +8,7 @@
 class SamplerD3D11
 {
 private:
-	ID3D11SamplerState* sampler = nullptr;
+	ID3D11SamplerState* _sampler = nullptr;
 
 public:
 	SamplerD3D11() = default;

@@ -5,8 +5,8 @@
 class ShaderResourceTextureD3D11
 {
 private:
-	ID3D11Texture2D* texture = nullptr;
-	ID3D11ShaderResourceView* srv = nullptr;
+	ID3D11Texture2D* _texture = nullptr;
+	ID3D11ShaderResourceView* _srv = nullptr;
 
 public:
 	ShaderResourceTextureD3D11() = default;

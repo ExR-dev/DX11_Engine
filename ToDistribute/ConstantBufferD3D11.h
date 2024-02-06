@@ -5,8 +5,8 @@
 class ConstantBufferD3D11
 {
 private:
-	ID3D11Buffer* buffer = nullptr;
-	size_t bufferSize = 0;
+	ID3D11Buffer* _buffer = nullptr;
+	size_t _bufferSize = 0;
 
 public:
 	ConstantBufferD3D11() = default;

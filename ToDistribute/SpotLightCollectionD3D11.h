@@ -42,11 +42,11 @@ private:
 		DirectX::XMFLOAT3 position;
 	};
 
-	std::vector<LightBuffer> bufferData;
+	std::vector<LightBuffer> _bufferData;
 
-	DepthBufferD3D11 shadowMaps;
-	StructuredBufferD3D11 lightBuffer;
-	std::vector<CameraD3D11> shadowCameras;
+	DepthBufferD3D11 _shadowMaps;
+	StructuredBufferD3D11 _lightBuffer;
+	std::vector<CameraD3D11> _shadowCameras;
 
 public:
 	SpotLightCollectionD3D11() = default;

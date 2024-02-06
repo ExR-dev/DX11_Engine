@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Content.cpp" />
     <ClCompile Include="D3D11Helper.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -139,10 +140,13 @@
     <ClCompile Include="PipelineHelper.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="ToDistribute\IndexBufferD3D11.cpp" />
+    <ClCompile Include="ToDistribute\VertexBufferD3D11.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WindowHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Content.h" />
     <ClInclude Include="D3D11Helper.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Game.h" />
@@ -151,6 +155,10 @@
     <ClInclude Include="Scene.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Time.h" />
+    <ClInclude Include="ToDistribute\IndexBufferD3D11.h" />
+    <ClInclude Include="ToDistribute\MeshD3D11.h" />
+    <ClInclude Include="ToDistribute\SubMeshD3D11.h" />
+    <ClInclude Include="ToDistribute\VertexBufferD3D11.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="WindowHelper.h" />
   </ItemGroup>

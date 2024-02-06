@@ -16,13 +16,13 @@ struct ProjectionInfo
 class CameraD3D11
 {
 private:
-	DirectX::XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT3 forward = { 0.0f, 0.0f, 1.0f };
-	DirectX::XMFLOAT3 right = { 1.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT3 up = { 0.0f, 1.0f, 0.0f };
-	ProjectionInfo projInfo;
+	DirectX::XMFLOAT3 _position = { 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 _forward = { 0.0f, 0.0f, 1.0f };
+	DirectX::XMFLOAT3 _right = { 1.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 _up = { 0.0f, 1.0f, 0.0f };
+	ProjectionInfo _projInfo;
 
-	ConstantBufferD3D11 cameraBuffer;
+	ConstantBufferD3D11 _cameraBuffer;
 
 	void MoveInDirection(float amount, const DirectX::XMFLOAT3& direction);
 	void RotateAroundAxis(float amount, const DirectX::XMFLOAT3& axis);

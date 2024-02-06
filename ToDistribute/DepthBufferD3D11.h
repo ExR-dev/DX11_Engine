@@ -7,9 +7,9 @@
 class DepthBufferD3D11
 {
 private:
-	ID3D11Texture2D* texture = nullptr;
-	std::vector<ID3D11DepthStencilView*> depthStencilViews;
-	ID3D11ShaderResourceView* srv = nullptr;
+	ID3D11Texture2D* _texture = nullptr;
+	std::vector<ID3D11DepthStencilView*> _depthStencilViews;
+	ID3D11ShaderResourceView* _srv = nullptr;
 
 public:
 	DepthBufferD3D11() = default;

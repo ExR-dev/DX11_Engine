@@ -8,6 +8,7 @@
 #include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
 
+
 struct MeshData
 {
 	struct VertexInfo
@@ -38,9 +39,9 @@ struct MeshData
 class MeshD3D11
 {
 private:
-	std::vector<SubMeshD3D11> subMeshes;
-	VertexBufferD3D11 vertexBuffer;
-	IndexBufferD3D11 indexBuffer;
+	std::vector<SubMeshD3D11> _subMeshes;
+	VertexBufferD3D11 _vertexBuffer;
+	IndexBufferD3D11 _indexBuffer;
 
 public:
 	MeshD3D11() = default;

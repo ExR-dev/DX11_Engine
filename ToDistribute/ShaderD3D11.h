@@ -4,19 +4,19 @@
 
 enum class ShaderType
 {
-	VERTEX_SHADER,
-	HULL_SHADER,
-	DOMAIN_SHADER,
-	GEOMETRY_SHADER,
-	PIXEL_SHADER,
-	COMPUTE_SHADER
+	VERTEX,
+	HULL,
+	DOMAIN,
+	GEOMETRY,
+	PIXEL,
+	COMPUTE
 };
 
 class ShaderD3D11
 {
 private:
 
-	ShaderType type;
+	ShaderType _type;
 
 	union
 	{
@@ -26,9 +26,9 @@ private:
 		ID3D11GeometryShader* geometry;
 		ID3D11PixelShader* pixel;
 		ID3D11ComputeShader* compute;
-	} shader;
+	} _shader;
 
-	ID3DBlob* shaderBlob = nullptr;
+	ID3DBlob* _shaderBlob = nullptr;
 
 public:
 	ShaderD3D11() = default;
