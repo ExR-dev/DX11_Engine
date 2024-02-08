@@ -19,7 +19,7 @@ void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 	for (int i = 0; i < subMeshCount; i++)
 	{
 		// TODO
-		const SubMeshD3D11 *subMesh = &_subMeshes.at(i);
+		//const SubMeshD3D11 *subMesh = &_subMeshes.at(i);
 
 		//context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 

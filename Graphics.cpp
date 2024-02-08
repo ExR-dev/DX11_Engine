@@ -49,20 +49,46 @@ bool Graphics::Setup(
 }
 
 
-bool Graphics::BeginRender()
+ID3D11RenderTargetView *Graphics::GetRTV()
+{
+	return _rtv;
+}
+
+ID3D11Texture2D *Graphics::GetDsTexture()
+{
+	return _dsTexture;
+}
+
+ID3D11DepthStencilView *Graphics::GetDsView()
+{
+	return _dsView;
+}
+
+D3D11_VIEWPORT &Graphics::GetViewport()
+{
+	return _viewport;
+}
+
+
+bool Graphics::BeginRender(ID3D11DeviceContext *&immediateContext, DebugData &debugData)
 {
 	if (!_isSetup)
 		return false;
 	if (_isRendering)
 		return false;
 
-	// TODO
+	constexpr float clearColour[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	immediateContext->ClearRenderTargetView(_rtv, clearColour);
+	immediateContext->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+
+	immediateContext->RSSetViewports(1, &_viewport);
+	immediateContext->OMSetRenderTargets(1, &_rtv, _dsView);
 
 	_isRendering = true;
 	return true;
 }
 
-bool Graphics::Render(const Entity &entity)
+bool Graphics::Render(const Entity &entity, UINT &vertexCount)
 {
 	if (!_isRendering)
 		return false;
@@ -72,11 +98,12 @@ bool Graphics::Render(const Entity &entity)
 	return true;
 }
 
-bool Graphics::EndRender()
+bool Graphics::EndRender(ID3D11DeviceContext *&immediateContext, UINT &vertexCount)
 {
 	if (!_isRendering)
 		return false;
 
+	immediateContext->Draw(vertexCount, 0);
 	_swapChain->Present(0, 0);
 
 	_isRendering = false;
