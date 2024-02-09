@@ -1,5 +1,7 @@
 #include "Graphics.h"
 
+#include <iostream>
+
 #include "D3D11Helper.h"
 
 
@@ -44,6 +46,7 @@ bool Graphics::Setup(
 		return false;
 	}
 
+	_context = immediateContext;
 	_isSetup = true;
 	return true;
 }
@@ -70,7 +73,7 @@ D3D11_VIEWPORT &Graphics::GetViewport()
 }
 
 
-bool Graphics::BeginRender(ID3D11DeviceContext *&immediateContext, DebugData &debugData)
+bool Graphics::BeginRender()
 {
 	if (!_isSetup)
 		return false;
@@ -78,34 +81,34 @@ bool Graphics::BeginRender(ID3D11DeviceContext *&immediateContext, DebugData &de
 		return false;
 
 	constexpr float clearColour[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	immediateContext->ClearRenderTargetView(_rtv, clearColour);
-	immediateContext->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+	_context->ClearRenderTargetView(_rtv, clearColour);
+	_context->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-	immediateContext->RSSetViewports(1, &_viewport);
-	immediateContext->OMSetRenderTargets(1, &_rtv, _dsView);
+	_context->RSSetViewports(1, &_viewport);
+	_context->OMSetRenderTargets(1, &_rtv, _dsView);
 
 	_isRendering = true;
 	return true;
 }
 
-bool Graphics::Render(const Entity &entity, UINT &vertexCount)
+bool Graphics::EndRender()
+{
+	if (!_isRendering)
+		return false;
+
+	_swapChain->Present(0, 0);
+
+	_isRendering = false;
+	return true;
+}
+
+
+bool Graphics::Render(Entity &entity)
 {
 	if (!_isRendering)
 		return false;
 
 	// TODO
 
-	return true;
-}
-
-bool Graphics::EndRender(ID3D11DeviceContext *&immediateContext, UINT &vertexCount)
-{
-	if (!_isRendering)
-		return false;
-
-	immediateContext->Draw(vertexCount, 0);
-	_swapChain->Present(0, 0);
-
-	_isRendering = false;
 	return true;
 }

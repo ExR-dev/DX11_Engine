@@ -5,7 +5,6 @@
 #include "Scene.h"
 #include "Graphics.h"
 #include "Time.h"
-#include "DebugData.h"
 
 
 class Game
@@ -21,10 +20,10 @@ public:
 	Game();
 	~Game();
 
-	bool SetupGraphics(UINT width, UINT height, HWND window, DebugData &debugData);
+	bool Setup(UINT width, UINT height, HWND window);
 
 	bool SetScene(Scene *scene);
 
-	bool Update(const Time &time, DebugData &debugData);
-	bool Render(const Time &time, DebugData &debugData);
+	bool Update(const Time &time);
+	bool Render(const Time &time);
 };

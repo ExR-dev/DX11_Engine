@@ -25,7 +25,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	// Prerequisite variables
 	const float3 col = Texture.Sample(Sampler, input.tex_coord).xyz;
 	const float3 toLight = lightPosition.xyz - input.world_position.xyz;
-	const float lightDistSqr = pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2);
+	const float inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2));
 
 	const float3 lightDir = normalize(toLight);
 	const float3 viewDir = normalize(camPosition.xyz - input.world_position.xyz);
@@ -34,12 +34,12 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	// Lighting types
 	float3 ambCol = col * ambient.xyz * ambient.w;
 	
-	float3 diffCol = col * diffuse.xyz * diffuse.w * max(dot(input.normal, lightDir), 0);
+	float3 diffCol = col * diffuse.xyz * diffuse.w * max(dot(input.normal, lightDir), 0) * inverseLightDistSqr;
 	
 	float specFactor = pow(saturate(dot(input.normal, halfwayDir)), specular.w);
-	float3 specCol = specular.xyz * specFactor;
+	float3 specCol = specular.xyz * smoothstep(0, 1, specFactor * inverseLightDistSqr);
 	
 	// Apply lighting
-	float3 lighting = ambCol + (diffCol + specCol) / lightDistSqr;
+	float3 lighting = ambCol + diffCol + specCol;
 	return float4(saturate(lighting), 1.0f);
 }

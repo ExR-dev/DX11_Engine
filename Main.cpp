@@ -5,9 +5,10 @@
 
 #include "WindowHelper.h"
 
+#include <array>
+
 #include "Game.h"
 #include "Time.h"
-#include "DebugData.h"
 
 
 int APIENTRY wWinMain(
@@ -16,14 +17,9 @@ int APIENTRY wWinMain(
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	//Deprecated_wWinMain(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
-	//return 0;
-
 	constexpr UINT WIDTH = 900;
 	constexpr UINT HEIGHT = 900;
 	HWND window;
-
-	DebugData debugData = { };
 
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
 	{
@@ -32,7 +28,7 @@ int APIENTRY wWinMain(
 	}
 
 	Game game = { };
-	if (!game.SetupGraphics(WIDTH, HEIGHT, window, debugData))
+	if (!game.Setup(WIDTH, HEIGHT, window))
 	{
 		std::cerr << "Failed to setup graphics!" << std::endl;
 		return -1;
@@ -58,20 +54,19 @@ int APIENTRY wWinMain(
 
 		time.Update();
 
-		if (!game.Update(time, debugData))
+		if (!game.Update(time))
 		{
 			std::cerr << "Failed to update game logic!" << std::endl;
 			return -1;
 		}
 
-		if (!game.Render(time, debugData))
+		if (!game.Render(time))
 		{
 			std::cerr << "Failed to render frame!" << std::endl;
 			return -1;
 		}
 	}
 
-	debugData.Deinitialize();
 	return 0;
 }
 
