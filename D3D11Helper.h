@@ -13,5 +13,4 @@ bool SetupD3D11(
 	ID3D11RenderTargetView *&rtv,
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView,
-	D3D11_VIEWPORT &viewport
-);
+	D3D11_VIEWPORT &viewport);

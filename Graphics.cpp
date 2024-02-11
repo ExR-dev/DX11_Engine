@@ -96,7 +96,7 @@ bool Graphics::EndRender()
 	if (!_isRendering)
 		return false;
 
-	_swapChain->Present(0, 0);
+	_swapChain->Present(1, 0);
 
 	_isRendering = false;
 	return true;

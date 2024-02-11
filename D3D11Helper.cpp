@@ -19,20 +19,20 @@ bool CreateInterfaces(
 	swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
-	// Default
 	swapChainDesc.SampleDesc.Count = 1;
 	swapChainDesc.SampleDesc.Quality = 0;
 
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 1;
 	swapChainDesc.OutputWindow = window;
 	swapChainDesc.Windowed = true;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	swapChainDesc.BufferCount = 2;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDesc.Flags = 0;
-	
-	UINT flags = 0;
+
 #ifdef _DEBUG
-		flags = D3D11_CREATE_DEVICE_DEBUG;
+	UINT flags = D3D11_CREATE_DEVICE_DEBUG;
+#else
+	UINT flags = 0;
 #endif
 
 	D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
@@ -106,6 +106,7 @@ void SetViewport(
 	viewport.MinDepth = 0;
 	viewport.MaxDepth = 1;
 }
+
 
 bool SetupD3D11(
 	UINT width, UINT height, HWND window, 
