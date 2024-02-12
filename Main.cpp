@@ -90,26 +90,26 @@ void Deprecated_Render(
 	ID3D11Buffer *matrixBuffer, ID3D11Buffer *lightingBuffer,
 	ID3D11ShaderResourceView *resourceView, ID3D11SamplerState *samplerState)
 {
+	constexpr UINT stride = sizeof(SimpleVertex);
+	constexpr UINT offset = 0;
 	constexpr float clearColour[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	
 	immediateContext->ClearRenderTargetView(rtv, clearColour);
 	immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-	constexpr UINT stride = sizeof(SimpleVertex);
-	constexpr UINT offset = 0;
-
 	immediateContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-
 	immediateContext->IASetInputLayout(inputLayout);
 	immediateContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
 	immediateContext->PSSetConstantBuffers(0, 1, &lightingBuffer);
 	immediateContext->PSSetShaderResources(0, 1, &resourceView);
 	immediateContext->PSSetSamplers(0, 1, &samplerState);
+	immediateContext->PSSetShader(pShader, nullptr, 0);
 
 	immediateContext->VSSetShader(vShader, nullptr, 0);
 	immediateContext->VSSetConstantBuffers(0, 1, &matrixBuffer);
 
 	immediateContext->RSSetViewports(1, &viewport);
-	immediateContext->PSSetShader(pShader, nullptr, 0);
 
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 

@@ -7,15 +7,6 @@
 using namespace DirectX;
 
 
-enum class ShaderType {
-	Vertex,
-	Hull,
-	Domain,
-	Geometry,
-	Pixel,
-	Compute,
-};
-
 struct SimpleVertex 
 {
 	float pos[3];

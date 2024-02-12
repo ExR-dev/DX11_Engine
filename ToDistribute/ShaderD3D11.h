@@ -2,14 +2,15 @@
 
 #include <d3d11_4.h>
 
+
 enum class ShaderType
 {
-	VERTEX,
-	HULL,
-	DOMAIN,
-	GEOMETRY,
-	PIXEL,
-	COMPUTE
+	VERTEX_SHADER	= 0,
+	HULL_SHADER		= 1,
+	DOMAIN_SHADER	= 2,
+	GEOMETRY_SHADER = 3,
+	PIXEL_SHADER	= 4,
+	COMPUTE_SHADER	= 5,
 };
 
 class ShaderD3D11
@@ -33,8 +34,10 @@ private:
 public:
 	ShaderD3D11() = default;
 	~ShaderD3D11();
+
 	ShaderD3D11(ID3D11Device* device, ShaderType shaderType, const void* dataPtr, size_t dataSize);
 	ShaderD3D11(ID3D11Device* device, ShaderType shaderType, const char* csoPath);
+
 	ShaderD3D11(const ShaderD3D11& other) = delete;
 	ShaderD3D11& operator=(const ShaderD3D11& other) = delete;
 	ShaderD3D11(ShaderD3D11&& other) = delete;
@@ -43,8 +46,8 @@ public:
 	void Initialize(ID3D11Device* device, ShaderType shaderType, const void* dataPtr, size_t dataSize);
 	void Initialize(ID3D11Device* device, ShaderType shaderType, const char* csoPath);
 
+	void BindShader(ID3D11DeviceContext* context) const;
+
 	const void* GetShaderByteData() const;
 	size_t GetShaderByteSize() const;
-
-	void BindShader(ID3D11DeviceContext* context) const;
 };

@@ -9,7 +9,7 @@
 //#include "ToDistribute/DepthBufferD3D11.h"
 //#include "ToDistribute/StructuredBufferD3D11.h"
 //
-//#include "ToDistribute/ShaderD3D11.h"
+#include "ToDistribute/ShaderD3D11.h"
 //#include "ToDistribute/SamplerD3D11.h"
 //#include "ToDistribute/ShaderResourceTextureD3D11.h"
 //
@@ -32,4 +32,8 @@ private:
 public:
 	Content();
 	~Content();
+	Content(const Content &other) = delete;
+	Content &operator=(const Content &other) = delete;
+	Content(Content &&other) = delete;
+	Content &operator=(Content &&other) = delete;
 };

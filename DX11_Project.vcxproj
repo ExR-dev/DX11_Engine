@@ -147,6 +147,7 @@
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="ToDistribute\IndexBufferD3D11.cpp" />
     <ClCompile Include="ToDistribute\MeshD3D11.cpp" />
+    <ClCompile Include="ToDistribute\ShaderD3D11.cpp" />
     <ClCompile Include="ToDistribute\SubMeshD3D11.cpp" />
     <ClCompile Include="ToDistribute\VertexBufferD3D11.cpp" />
     <ClCompile Include="Transform.cpp" />
