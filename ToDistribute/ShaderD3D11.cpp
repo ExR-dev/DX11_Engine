@@ -6,73 +6,6 @@
 #include <iostream>
 
 
-bool LoadShader(ID3D11Device *device, const ShaderType type, void *&shader, const std::string &filePath, std::string &byteCode)
-{
-	std::string shaderData;
-	std::ifstream reader;
-
-	reader.open(filePath, std::ios::binary | std::ios::ate);
-	if (!reader.is_open())
-	{
-		std::cerr << "Could not open shader file!" << std::endl;
-		return false;
-	}
-
-	reader.seekg(0, std::ios::end);
-	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
-	reader.seekg(0, std::ios::beg);
-
-	shaderData.assign(
-		std::istreambuf_iterator<char>(reader),
-		std::istreambuf_iterator<char>()
-	);
-
-	switch (type)
-	{
-		case ShaderType::VERTEX_SHADER:
-			if (FAILED(device->CreateVertexShader(
-				shaderData.c_str(), shaderData.length(),
-				nullptr, &((ID3D11VertexShader *&)shader))))
-			{
-				std::cerr << "Failed to create vertex shader!" << std::endl;
-				return false;
-			}
-			break;
-
-		case ShaderType::PIXEL_SHADER:
-			if (FAILED(device->CreatePixelShader(
-				shaderData.c_str(), shaderData.length(),
-				nullptr, &((ID3D11PixelShader *&)shader))))
-			{
-				std::cerr << "Failed to create pixel shader!" << std::endl;
-				return false;
-			}
-			break;
-
-		default:
-			std::cerr << "Shader type not implemented!" << std::endl;
-			reader.close();
-			return false;
-	}
-
-	byteCode = shaderData;
-	shaderData.clear();
-	reader.close();
-
-	return true;
-}
-
-
-ShaderD3D11::ShaderD3D11(ID3D11Device *device, ShaderType shaderType, const void *dataPtr, size_t dataSize)
-{
-
-}
-
-ShaderD3D11::ShaderD3D11(ID3D11Device *device, ShaderType shaderType, const char *csoPath)
-{
-
-}
-
 ShaderD3D11::~ShaderD3D11()
 {
 	switch (_type)
@@ -106,16 +39,93 @@ ShaderD3D11::~ShaderD3D11()
 }
 
 
-void ShaderD3D11::Initialize(ID3D11Device *device, ShaderType shaderType, const void *dataPtr, size_t dataSize)
+void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
+	D3DCreateBlob(dataSize, &_shaderBlob);
+	std::memcpy(_shaderBlob->GetBufferPointer(), dataPtr, dataSize);
+	const void *shaderData = _shaderBlob->GetBufferPointer();
 
-	//D3DCreateBlob(dataSize, &_shaderBlob);
+	_type = shaderType;
+	switch (_type)
+	{
+		case ShaderType::VERTEX_SHADER:
+			if (FAILED(device->CreateVertexShader(
+					shaderData, dataSize,
+					nullptr, &_shader.vertex)))
+			{
+				std::cerr << "Failed to create vertex shader!" << std::endl;
+			}
+			break;
+
+		case ShaderType::HULL_SHADER:
+			if (FAILED(device->CreateHullShader(
+					shaderData, dataSize,
+					nullptr, &_shader.hull)))
+			{
+				std::cerr << "Failed to create hull shader!" << std::endl;
+			}
+			break;
+
+		case ShaderType::DOMAIN_SHADER:
+			if (FAILED(device->CreateDomainShader(
+					shaderData, dataSize,
+					nullptr, &_shader.domain)))
+			{
+				std::cerr << "Failed to create domain shader!" << std::endl;
+			}
+			break;
+
+		case ShaderType::GEOMETRY_SHADER:
+			if (FAILED(device->CreateGeometryShader(
+					shaderData, dataSize,
+					nullptr, &_shader.geometry)))
+			{
+				std::cerr << "Failed to create geometry shader!" << std::endl;
+			}
+			break;
+
+		case ShaderType::PIXEL_SHADER:
+			if (FAILED(device->CreatePixelShader(
+					shaderData, dataSize,
+					nullptr, &_shader.pixel)))
+			{
+				std::cerr << "Failed to create pixel shader!" << std::endl;
+			}
+			break;
+
+		case ShaderType::COMPUTE_SHADER:
+			if (FAILED(device->CreateComputeShader(
+					shaderData, dataSize,
+					nullptr, &_shader.compute)))
+			{
+				std::cerr << "Failed to create compute shader!" << std::endl;
+			}
+			break;
+	}
 }
 
-void ShaderD3D11::Initialize(ID3D11Device *device, ShaderType shaderType, const char *csoPath)
+void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const char *csoPath)
 {
+	std::string shaderFileData;
+	std::ifstream reader;
 
-	//D3DCreateBlob(dataSize, &_shaderBlob);
+	reader.open(csoPath, std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+		std::cerr << "Could not open shader file!" << std::endl;
+
+	reader.seekg(0, std::ios::end);
+	shaderFileData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderFileData.assign(
+		std::istreambuf_iterator<char>(reader),
+		std::istreambuf_iterator<char>()
+	);
+
+	Initialize(device, shaderType, shaderFileData.c_str(), shaderFileData.length());
+
+	shaderFileData.clear();
+	reader.close();
 }
 
 
@@ -123,29 +133,29 @@ void ShaderD3D11::BindShader(ID3D11DeviceContext *context) const
 {
 	switch (_type)
 	{
-	case ShaderType::VERTEX_SHADER:
-		context->VSSetShader(_shader.vertex, nullptr, 0);
-		break;
+		case ShaderType::VERTEX_SHADER:
+			context->VSSetShader(_shader.vertex, nullptr, 0);
+			break;
 
-	case ShaderType::HULL_SHADER:
-		context->HSSetShader(_shader.hull, nullptr, 0);
-		break;
+		case ShaderType::HULL_SHADER:
+			context->HSSetShader(_shader.hull, nullptr, 0);
+			break;
 
-	case ShaderType::DOMAIN_SHADER:
-		context->DSSetShader(_shader.domain, nullptr, 0);
-		break;
+		case ShaderType::DOMAIN_SHADER:
+			context->DSSetShader(_shader.domain, nullptr, 0);
+			break;
 
-	case ShaderType::GEOMETRY_SHADER:
-		context->GSSetShader(_shader.geometry, nullptr, 0);
-		break;
+		case ShaderType::GEOMETRY_SHADER:
+			context->GSSetShader(_shader.geometry, nullptr, 0);
+			break;
 
-	case ShaderType::PIXEL_SHADER:
-		context->PSSetShader(_shader.pixel, nullptr, 0);
-		break;
+		case ShaderType::PIXEL_SHADER:
+			context->PSSetShader(_shader.pixel, nullptr, 0);
+			break;
 
-	case ShaderType::COMPUTE_SHADER:
-		context->CSSetShader(_shader.compute, nullptr, 0);
-		break;
+		case ShaderType::COMPUTE_SHADER:
+			context->CSSetShader(_shader.compute, nullptr, 0);
+			break;
 	}
 }
 

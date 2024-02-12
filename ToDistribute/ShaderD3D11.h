@@ -35,9 +35,6 @@ public:
 	ShaderD3D11() = default;
 	~ShaderD3D11();
 
-	ShaderD3D11(ID3D11Device* device, ShaderType shaderType, const void* dataPtr, size_t dataSize);
-	ShaderD3D11(ID3D11Device* device, ShaderType shaderType, const char* csoPath);
-
 	ShaderD3D11(const ShaderD3D11& other) = delete;
 	ShaderD3D11& operator=(const ShaderD3D11& other) = delete;
 	ShaderD3D11(ShaderD3D11&& other) = delete;
