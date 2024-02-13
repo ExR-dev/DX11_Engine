@@ -47,9 +47,11 @@ public:
 	Content(Content &&other) = delete;
 	Content &operator=(Content &&other) = delete;
 
-	UINT AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshInfo);
+	UINT AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData);
+	UINT AddMesh(ID3D11Device *device, const std::string &name, const char *path);
+
 	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const void *dataPtr, size_t dataSize);
-	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const char *csoPath);
+	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const char *path);
 
 	MeshD3D11 *GetMesh(const std::string &name);
 	MeshD3D11 *GetMesh(const UINT id);

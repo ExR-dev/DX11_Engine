@@ -1,4 +1,5 @@
 #include "Content.h"
+#include "ContentLoader.h"
 
 
 Content::Content()
@@ -12,7 +13,7 @@ Content::~Content()
 }
 
 
-UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshInfo)
+UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData)
 {
 	const UINT id = _meshes.size();
 	for (UINT i = 0; i < id; i++)
@@ -22,9 +23,28 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshD
 	}
 
 	_meshes.emplace_back(name, id);
-	_meshes.at(id).data.Initialize(device, meshInfo);
+	_meshes.at(id).data.Initialize(device, meshData);
 	return id;
 }
+
+UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char *path)
+{
+	MeshData meshData = { };
+	if (!LoadMeshFromFile(path, meshData))
+		return 0;
+
+	const UINT id = _meshes.size();
+	for (UINT i = 0; i < id; i++)
+	{
+		if (_meshes.at(i).name == name)
+			return i;
+	}
+
+	_meshes.emplace_back(name, id);
+	_meshes.at(id).data.Initialize(device, meshData);
+	return id;
+}
+
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
@@ -40,7 +60,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 	return id;
 }
 
-UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const char *csoPath)
+UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const char *path)
 {
 	const UINT id = _shaders.size();
 	for (UINT i = 0; i < id; i++)
@@ -50,7 +70,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 	}
 
 	_shaders.emplace_back(name, id);
-	_shaders.at(id).data.Initialize(device, shaderType, csoPath);
+	_shaders.at(id).data.Initialize(device, shaderType, path);
 	return id;
 }
 

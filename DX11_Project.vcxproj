@@ -145,6 +145,7 @@
     <ClCompile Include="PipelineHelper.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="ContentLoader.cpp" />
     <ClCompile Include="ToDistribute\IndexBufferD3D11.cpp" />
     <ClCompile Include="ToDistribute\MeshD3D11.cpp" />
     <ClCompile Include="ToDistribute\ShaderD3D11.cpp" />
@@ -155,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Content.h" />
+    <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="D3D11Helper.h" />
     <ClInclude Include="DebugObject.h" />
     <ClInclude Include="Entity.h" />
