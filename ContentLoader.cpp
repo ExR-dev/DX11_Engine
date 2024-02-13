@@ -7,10 +7,10 @@
 #include <iostream>
 
 
-struct RawVertex	{ float		x, y, z;	};
-struct RawNormal	{ float		x, y, z;	};
-struct RawTexCoord	{ float		u, v;		};
-struct RawIndex		{ int		v, t, n;	};
+struct RawVertex	{ float	x, y, z; };
+struct RawTexCoord	{ float	u, v;	 };
+struct RawNormal	{ float	x, y, z; };
+struct RawIndex		{ int	v, t, n; };
 
 
 bool LoadMeshFromFile(const char *path, MeshData &meshData)
@@ -18,11 +18,13 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	std::ifstream fileStream(path);
 	std::string line;
 
-	std::vector<RawVertex>		currVertices;
-	std::vector<RawNormal>		currNormals;
-	std::vector<RawTexCoord>	currTexCoords;
-	std::vector<RawIndex>		currIndices;
+	std::vector<RawVertex> vertexPositions;
+	std::vector<RawTexCoord> vertexTexCoords;
+	std::vector<RawNormal> vertexNormals;
+	std::vector<RawIndex> indexGroups;
+
 	bool begunReadingSubMesh = false;
+	int endOfLastSubMesh = 0;
 
 	while (std::getline(fileStream, line))
 	{
@@ -71,20 +73,51 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			
 		}
 		else if (dataType == "v")
-		{ // Vertex
+		{ // Vertex Point
+			float x, y, z;
+			if (!(segments >> x >> y >> z))
+			{
+				std::cerr << "Failed to get vertex position from line \"" << line << "\"!"<< std::endl;
+				return false;
+			}
 
+			vertexPositions.push_back({ x, y, z });
 		}
 		else if (dataType == "vt")
-		{ // Texture coordinate
+		{ // Vertex Texture coordinate
+			float u, v;
+			if (!(segments >> u >> v))
+			{
+				std::cerr << "Failed to get texture coordinate from line \"" << line << "\"!"<< std::endl;
+				return false;
+			}
 
+			vertexTexCoords.push_back({ u, v });
 		}
 		else if (dataType == "vn")
 		{ // Normal
+			float x, y, z;
+			if (!(segments >> x >> y >> z))
+			{
+				std::cerr << "Failed to get normal from line \"" << line << "\"!"<< std::endl;
+				return false;
+			}
 
+			vertexNormals.push_back({ x, y, z });
 		}
 		else if (dataType == "f")
 		{ // Index group
+			for (int i = 0; i < 3; i++)
+			{
+				int vi, ti, ni;
+				if (!(segments >> vi >> ti >> ni))
+				{
+					std::cerr << "Failed to get index group " << i << " from line \"" << line << "\"!"<< std::endl;
+					return false;
+				}
 
+				indexGroups.push_back({ vi, ti, ni });
+			}
 		}
 		else if (dataType == "s")
 		{ // Smooth shading
@@ -99,11 +132,19 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			}
 
 			// Flush previous submesh
-			if (currIndices.empty())
+			if (indexGroups.empty())
 				continue; // Skip submesh without faces
 
-			// Clear submesh data
-			currIndices.clear();
+			int indexCount = indexGroups.size();
+
+			meshData.subMeshInfo.push_back({});
+			meshData.subMeshInfo.back().startIndexValue = endOfLastSubMesh;
+			meshData.subMeshInfo.back().nrOfIndicesInSubMesh = indexCount - endOfLastSubMesh;
+			meshData.subMeshInfo.back().ambientTextureSRV = nullptr;
+			meshData.subMeshInfo.back().diffuseTextureSRV = nullptr;
+			meshData.subMeshInfo.back().specularTextureSRV = nullptr;
+
+			endOfLastSubMesh = indexCount;
 		}
 		else
 		{
@@ -111,5 +152,15 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		}
 	}
 
-	return true;
+	meshData.vertexInfo.nrOfVerticesInBuffer = vertexPositions.size();
+	meshData.vertexInfo.sizeOfVertex = sizeof(RawVertex);
+	meshData.vertexInfo.vertexData = new RawVertex[vertexPositions.size()];
+	std::memcpy(meshData.vertexInfo.vertexData, vertexPositions.data(), vertexPositions.size() * sizeof(RawVertex));
+
+	meshData.indexInfo.nrOfIndicesInBuffer = indexGroups.size();
+	meshData.indexInfo.indexData = new uint32_t[indexGroups.size()];
+	for (int i = 0; i < indexGroups.size(); i++)
+	{ meshData.indexInfo.indexData[i] = indexGroups.at(i).v; }
+
+	return true;	
 }
