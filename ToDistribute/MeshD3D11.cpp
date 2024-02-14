@@ -26,7 +26,12 @@ void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 		//context->PSSetShaderResources(0, 1, &(subMesh.GetAmbientSRV()));
 		//context->PSSetShaderResources(0, 1, &(subMesh.GetDiffuseSRV()));
 		//context->PSSetShaderResources(0, 1, &(subMesh.GetSpecularSRV()));
+
 	}
+
+	// TODO
+	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
+	//context->IASetVertexBuffers(0, 1, &vertxBuffer, _vertexBuffer., &offset);
 }
 
 void MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const

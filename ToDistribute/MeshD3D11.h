@@ -13,27 +13,36 @@ struct MeshData
 {
 	struct VertexInfo
 	{
-		size_t sizeOfVertex;
-		size_t nrOfVerticesInBuffer;
-		void *vertexData;
+		size_t sizeOfVertex = 0;
+		size_t nrOfVerticesInBuffer = 0;
+		void *vertexData = nullptr;
 	} vertexInfo;
 
 	struct IndexInfo
 	{
-		size_t nrOfIndicesInBuffer;
-		uint32_t *indexData;
+		size_t nrOfIndicesInBuffer = 0;
+		uint32_t *indexData = nullptr;
 	} indexInfo;
 
 	struct SubMeshInfo
 	{
-		size_t startIndexValue;
-		size_t nrOfIndicesInSubMesh;
-		ID3D11ShaderResourceView *ambientTextureSRV;
-		ID3D11ShaderResourceView *diffuseTextureSRV;
-		ID3D11ShaderResourceView *specularTextureSRV;
+		size_t startIndexValue = 0;
+		size_t nrOfIndicesInSubMesh = 0;
+		ID3D11ShaderResourceView *ambientTextureSRV = nullptr;
+		ID3D11ShaderResourceView *diffuseTextureSRV = nullptr;
+		ID3D11ShaderResourceView *specularTextureSRV = nullptr;
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
+
+	~MeshData()
+	{
+		if (vertexInfo.vertexData != nullptr)
+			delete[] vertexInfo.vertexData;
+
+		if (indexInfo.indexData != nullptr)
+			delete[] indexInfo.indexData;
+	}
 };
 
 class MeshD3D11

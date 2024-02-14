@@ -17,7 +17,7 @@ class ShaderD3D11
 {
 private:
 
-	ShaderType _type;
+	ShaderType _type = ShaderType::VERTEX_SHADER;
 
 	union
 	{

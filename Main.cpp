@@ -9,6 +9,7 @@
 
 #include "Game.h"
 #include "Time.h"
+#include "ContentLoader.h"
 
 
 int APIENTRY wWinMain(
@@ -17,6 +18,13 @@ int APIENTRY wWinMain(
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
+	MeshData meshData = { };
+
+	LoadMeshFromFile("Models\\SimpleSubmesh.obj", meshData);
+	WriteMeshToFile("Models\\NewSimpleSubmesh.txt", meshData);
+
+	return 0;
+
 	constexpr UINT WIDTH = 900;
 	constexpr UINT HEIGHT = 900;
 	HWND window;

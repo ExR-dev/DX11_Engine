@@ -16,7 +16,7 @@ struct Mesh
 	Mesh(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	Mesh(const Mesh &other) = delete;
 	Mesh &operator=(const Mesh &other) = delete;
-	Mesh(Mesh &&other) : name(std::move(other.name)), id(other.id) { }
+	Mesh(Mesh &&other) noexcept : name(std::move(other.name)), id(other.id) { }
 	Mesh &operator=(Mesh &&other) = delete;
 };
 
@@ -29,7 +29,7 @@ struct Shader
 	Shader(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	Shader(const Shader &other) = delete;
 	Shader &operator=(const Shader &other) = delete;
-	Shader(Shader &&other) : name(std::move(other.name)), id(other.id) { }
+	Shader(Shader &&other) noexcept : name(std::move(other.name)), id(other.id) { }
 	Shader &operator=(Shader &&other) = delete;
 };
 

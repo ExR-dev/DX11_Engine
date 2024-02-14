@@ -15,7 +15,7 @@ Content::~Content()
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData)
 {
-	const UINT id = _meshes.size();
+	const UINT id = (UINT)_meshes.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i).name == name)
@@ -33,7 +33,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 	if (!LoadMeshFromFile(path, meshData))
 		return 0;
 
-	const UINT id = _meshes.size();
+	const UINT id = (UINT)_meshes.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i).name == name)
@@ -48,7 +48,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
-	const UINT id = _shaders.size();
+	const UINT id = (UINT)_shaders.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i).name == name)
@@ -62,7 +62,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const char *path)
 {
-	const UINT id = _shaders.size();
+	const UINT id = (UINT)_shaders.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i).name == name)
@@ -77,7 +77,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 
 MeshD3D11 *Content::GetMesh(const std::string &name)
 {
-	const UINT count = _meshes.size();
+	const UINT count = (UINT)_meshes.size();
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -99,7 +99,7 @@ MeshD3D11 *Content::GetMesh(const UINT id)
 
 ShaderD3D11 *Content::GetShader(const std::string &name)
 {
-	const UINT count = _shaders.size();
+	const UINT count = (UINT)_shaders.size();
 
 	for (UINT i = 0; i < count; i++)
 	{
