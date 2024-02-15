@@ -26,6 +26,14 @@ bool Game::Setup(UINT width, UINT height, HWND window)
 	if (!_graphics.Setup(width, height, window, _device, _immediateContext))
 	{
 		std::cerr << "Failed to setup d3d11!" << std::endl;
+		OutputDebugString(L"Failed to setup d3d11!\n");
+		return false;
+	}
+
+	if (!_content.AddMesh(_device, "FallbackMesh", "Models\\SimpleSubmesh.obj"))
+	{
+		std::cerr << "Failed to add fallback mesh!" << std::endl;
+		OutputDebugString(L"Failed to add fallback mesh!\n");
 		return false;
 	}
 
@@ -42,6 +50,7 @@ bool Game::SetScene(Scene *scene)
 	if (!_scene->Initialize(_device))
 	{
 		std::cerr << "Failed to initialize scene!" << std::endl;
+		OutputDebugString(L"Failed to initialize scene!\n");
 		return false;
 	}
 
@@ -59,6 +68,7 @@ bool Game::Update(const Time &time)
 		if (!_scene->Update(_immediateContext, time))
 		{
 			std::cerr << "Failed to update scene!" << std::endl;
+			OutputDebugString(L"Failed to update scene!\n");
 			return false;
 		}
 
@@ -75,6 +85,7 @@ bool Game::Render(const Time &time)
 	if (!_graphics.BeginRender())
 	{
 		std::cerr << "Failed to begin rendering!" << std::endl;
+		OutputDebugString(L"Failed to begin rendering!\n");
 		return false;
 	}
 
@@ -86,6 +97,7 @@ bool Game::Render(const Time &time)
 		if (!_scene->Render(_immediateContext))
 		{
 			std::cerr << "Failed to render scene!" << std::endl;
+			OutputDebugString(L"Failed to render scene!\n");
 			return false;
 		}
 
@@ -96,7 +108,8 @@ bool Game::Render(const Time &time)
 
 	if (!_graphics.EndRender())
 	{
-		std::cerr << "Failed to end rendering!" << std::endl;
+		std::cerr << "" << std::endl;
+		OutputDebugString(L"Failed to end rendering!\n");
 		return false;
 	}
 

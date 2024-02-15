@@ -34,6 +34,7 @@ bool Scene::Initialize(ID3D11Device *device)
 		if (!dObj->Initialize(device))
 		{
 			std::cerr << "Failed to initialize debug object!" << std::endl;
+			OutputDebugString(L"Failed to initialize debug object!\n");
 			return false;
 		}
 	}
@@ -55,6 +56,7 @@ bool Scene::Uninitialize()
 		if (!dObj->Uninitialize())
 		{
 			std::cerr << "Failed to uninitialize debug object!" << std::endl;
+			OutputDebugString(L"Failed to uninitialize debug object!\n");
 			return false;
 		}
 	}
@@ -98,18 +100,21 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 		if (!dObj->SetVPM(context, 50.0f, 1.0f, 0.1f, 15.0f, camPos, camDir))
 		{
 			std::cerr << "Failed to update debug object view projection matrix!" << std::endl;
+			OutputDebugString(L"Failed to update debug object view projection matrix!\n");
 			return false;
 		}
 
 		if (!dObj->SetWM(context, objPos, objRot, objScale))
 		{
 			std::cerr << "Failed to update debug object world matrix!" << std::endl;
+			OutputDebugString(L"Failed to update debug object world matrix!\n");
 			return false;
 		}
 
 		if (!dObj->Update(context, time))
 		{
 			std::cerr << "Failed to update debug object!" << std::endl;
+			OutputDebugString(L"Failed to update debug object!\n");
 			return false;
 		}
 	}
@@ -129,6 +134,7 @@ bool Scene::Render(ID3D11DeviceContext *context)
 		if (!dObj->Render(context))
 		{
 			std::cerr << "Failed to render debug object!" << std::endl;
+			OutputDebugString(L"Failed to render debug object!\n");
 			return false;
 		}
 	}

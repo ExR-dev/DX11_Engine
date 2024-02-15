@@ -39,7 +39,7 @@ ShaderD3D11::~ShaderD3D11()
 }
 
 
-void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
+bool ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
 	D3DCreateBlob(dataSize, &_shaderBlob);
 	std::memcpy(_shaderBlob->GetBufferPointer(), dataPtr, dataSize);
@@ -54,6 +54,8 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.vertex)))
 			{
 				std::cerr << "Failed to create vertex shader!" << std::endl;
+				OutputDebugString(L"Failed to create vertex shader!\n");
+				return false;
 			}
 			break;
 
@@ -63,6 +65,8 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.hull)))
 			{
 				std::cerr << "Failed to create hull shader!" << std::endl;
+				OutputDebugString(L"Failed to create hull shader!\n");
+				return false;
 			}
 			break;
 
@@ -72,6 +76,8 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.domain)))
 			{
 				std::cerr << "Failed to create domain shader!" << std::endl;
+				OutputDebugString(L"Failed to create domain shader!\n");
+				return false;
 			}
 			break;
 
@@ -81,6 +87,8 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.geometry)))
 			{
 				std::cerr << "Failed to create geometry shader!" << std::endl;
+				OutputDebugString(L"Failed to create geometry shader!\n");
+				return false;
 			}
 			break;
 
@@ -90,6 +98,8 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.pixel)))
 			{
 				std::cerr << "Failed to create pixel shader!" << std::endl;
+				OutputDebugString(L"Failed to create pixel shader!\n");
+				return false;
 			}
 			break;
 
@@ -99,19 +109,27 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 					nullptr, &_shader.compute)))
 			{
 				std::cerr << "Failed to create compute shader!" << std::endl;
+				OutputDebugString(L"Failed to create compute shader!\n");
+				return false;
 			}
 			break;
 	}
+	
+	return true;
 }
 
-void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const char *csoPath)
+bool ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, const char *csoPath)
 {
 	std::string shaderFileData;
 	std::ifstream reader;
 
 	reader.open(csoPath, std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
-		std::cerr << "Could not open shader file!" << std::endl;
+	{
+		std::cerr << "Failed to open shader file!" << std::endl;
+		OutputDebugString(L"Failed to open shader file!\n");
+		return false;
+	}
 
 	reader.seekg(0, std::ios::end);
 	shaderFileData.reserve(static_cast<unsigned int>(reader.tellg()));
@@ -122,14 +140,20 @@ void ShaderD3D11::Initialize(ID3D11Device *device, const ShaderType shaderType, 
 		std::istreambuf_iterator<char>()
 	);
 
-	Initialize(device, shaderType, shaderFileData.c_str(), shaderFileData.length());
+	if (!Initialize(device, shaderType, shaderFileData.c_str(), shaderFileData.length()))
+	{
+		std::cerr << "Failed to initialize shader buffer!" << std::endl;
+		OutputDebugString(L"Failed to initialize shader buffer!\n");
+		return false;
+	}
 
 	shaderFileData.clear();
 	reader.close();
+	return true;
 }
 
 
-void ShaderD3D11::BindShader(ID3D11DeviceContext *context) const
+bool ShaderD3D11::BindShader(ID3D11DeviceContext *context) const
 {
 	switch (_type)
 	{
@@ -157,6 +181,8 @@ void ShaderD3D11::BindShader(ID3D11DeviceContext *context) const
 			context->CSSetShader(_shader.compute, nullptr, 0);
 			break;
 	}
+
+	return true;
 }
 
 

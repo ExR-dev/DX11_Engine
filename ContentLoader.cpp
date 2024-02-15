@@ -86,6 +86,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		meshData.indexInfo.indexData != nullptr)
 	{
 		std::cerr << "meshData is not nullified!" << std::endl;
+		OutputDebugString(L"meshData is not nullified!\n");
 		return false;
 	}
 
@@ -131,6 +132,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		if (!(segments >> dataType))
 		{
 			std::cerr << "Failed to get data type from line \"" << line << "\"!" << std::endl;
+			OutputDebugString(L"Failed to get data type from line!\n");
 			return false;
 		}
 
@@ -152,6 +154,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			if (!(segments >> x >> y >> z))
 			{
 				std::cerr << "Failed to get vertex position from line \"" << line << "\"!" << std::endl;
+				OutputDebugString(L"Failed to get vertex position from line!\n");
 				return false;
 			}
 
@@ -163,6 +166,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			if (!(segments >> u >> v))
 			{
 				std::cerr << "Failed to get texture coordinate from line \"" << line << "\"!" << std::endl;
+				OutputDebugString(L"Failed to get texture coordinate from line!\n");
 				return false;
 			}
 
@@ -174,6 +178,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			if (!(segments >> x >> y >> z))
 			{
 				std::cerr << "Failed to get normal from line \"" << line << "\"!" << std::endl;
+				OutputDebugString(L"Failed to get normal from line!\n");
 				return false;
 			}
 
@@ -184,6 +189,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			if (!begunReadingSubMesh)
 			{
 				std::cerr << "Reached index group before creating submesh!" << std::endl;
+				OutputDebugString(L"Reached index group before creating submesh!\n");
 				return false;
 			}
 
@@ -193,15 +199,12 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 				if (!(segments >> vi >> ti >> ni))
 				{
 					std::cerr << "Failed to get index group " << i << " from line \"" << line << "\"!" << std::endl;
+					OutputDebugString(L"Failed to get index group from line!\n");
 					return false;
 				}
 
 				indexGroups.back().push_back({ --vi, --ti, --ni });
 			}
-		}
-		else if (dataType == "s")
-		{ // Smooth Shading
-
 		}
 		else if (dataType == "usemtl")
 		{ // Start of submesh with material
@@ -217,6 +220,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		else
 		{
 			std::cerr << "Unrecognized type flag '" << dataType << "'!" << std::endl;
+			OutputDebugString(L"Unrecognized type flag!\n");
 		}
 	}
 
@@ -249,7 +253,8 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		}
 	}
 
-	//ResolveDuplicateVertices(formattedVertices, formattedIndexGroups); // Keep or discard?
+	/* Keep or discard ? */
+	// ResolveDuplicateVertices(formattedVertices, formattedIndexGroups); 
 
 	// Send vertex data to meshData
 	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
@@ -290,13 +295,14 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	return true;	
 }
 
-
+/// Debug Function
 bool WriteMeshToFile(const char *path, MeshData &meshData)
 {
 	if (meshData.vertexInfo.vertexData == nullptr || 
 		meshData.indexInfo.indexData == nullptr)
 	{
 		std::cerr << "meshData is nullified!" << std::endl;
+		OutputDebugString(L"meshData is nullified!\n");
 		return false;
 	}
 

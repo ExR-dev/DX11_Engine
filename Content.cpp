@@ -23,16 +23,18 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshD
 	}
 
 	_meshes.emplace_back(name, id);
-	_meshes.at(id).data.Initialize(device, meshData);
+	if (!_meshes.at(id).data.Initialize(device, meshData))
+	{
+		OutputDebugString(L"Failed to initialize added mesh!\n");
+		_meshes.pop_back();
+		return LOAD_ERROR;
+	}
+
 	return id;
 }
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char *path)
 {
-	MeshData meshData = { };
-	if (!LoadMeshFromFile(path, meshData))
-		return 0;
-
 	const UINT id = (UINT)_meshes.size();
 	for (UINT i = 0; i < id; i++)
 	{
@@ -40,8 +42,21 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 			return i;
 	}
 
+	MeshData meshData = { };
+	if (!LoadMeshFromFile(path, meshData))
+	{
+		OutputDebugString(L"Failed to load mesh from file!\n");
+		return LOAD_ERROR;
+	}
+
 	_meshes.emplace_back(name, id);
-	_meshes.at(id).data.Initialize(device, meshData);
+	if (!_meshes.at(id).data.Initialize(device, meshData))
+	{
+		OutputDebugString(L"Failed to initialize added mesh!\n");
+		_meshes.pop_back();
+		return LOAD_ERROR;
+	}
+
 	return id;
 }
 
@@ -56,7 +71,13 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 	}
 
 	_shaders.emplace_back(name, id);
-	_shaders.at(id).data.Initialize(device, shaderType, dataPtr, dataSize);
+	if (!_shaders.at(id).data.Initialize(device, shaderType, dataPtr, dataSize))
+	{
+		OutputDebugString(L"Failed to initialize added shader!\n");
+		_shaders.pop_back();
+		return LOAD_ERROR;
+	}
+
 	return id;
 }
 
@@ -70,7 +91,13 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 	}
 
 	_shaders.emplace_back(name, id);
-	_shaders.at(id).data.Initialize(device, shaderType, path);
+	if (!_shaders.at(id).data.Initialize(device, shaderType, path))
+	{
+		OutputDebugString(L"Failed to initialize added shader!\n");
+		_shaders.pop_back();
+		return LOAD_ERROR;
+	}
+
 	return id;
 }
 

@@ -60,10 +60,10 @@ public:
 	MeshD3D11(MeshD3D11 &&other) = delete;
 	MeshD3D11 &operator=(MeshD3D11 &&other) = delete;
 
-	void Initialize(ID3D11Device *device, const MeshData &meshInfo);
+	bool Initialize(ID3D11Device *device, const MeshData &meshInfo);
 
-	void BindMeshBuffers(ID3D11DeviceContext *context) const;
-	void PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
+	bool BindMeshBuffers(ID3D11DeviceContext *context) const;
+	bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
 
 	size_t GetNrOfSubMeshes() const;
 	ID3D11ShaderResourceView *GetAmbientSRV(size_t subMeshIndex) const;

@@ -167,6 +167,7 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="ToDistribute\IndexBufferD3D11.h" />
+    <ClInclude Include="ToDistribute\Material.h" />
     <ClInclude Include="ToDistribute\MeshD3D11.h" />
     <ClInclude Include="ToDistribute\SubMeshD3D11.h" />
     <ClInclude Include="ToDistribute\VertexBufferD3D11.h" />

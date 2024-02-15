@@ -7,6 +7,9 @@
 #include "ToDistribute/MeshD3D11.h"
 
 
+constexpr UINT LOAD_ERROR = 0xFFFFFFFF;
+
+
 struct Mesh
 {
 	std::string name;

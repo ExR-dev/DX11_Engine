@@ -36,6 +36,7 @@ bool LoadShaders(
 	if (!reader.is_open())
 	{
 		std::cerr << "Could not open VS file!" << std::endl;
+		OutputDebugString(L"Could not open VS file!\n");
 		return false;
 	}
 
@@ -55,6 +56,7 @@ bool LoadShaders(
 			&vShader)))
 	{
 		std::cerr << "Failed to create vertex shader!" << std::endl;
+		OutputDebugString(L"Failed to create vertex shader!\n");
 		return false;
 	}
 
@@ -65,6 +67,7 @@ bool LoadShaders(
 	if (!reader.is_open())
 	{
 		std::cerr << "Could not open PS file!" << std::endl;
+		OutputDebugString(L"Could not open PS file!\n");
 		return false;
 	}
 
@@ -84,6 +87,7 @@ bool LoadShaders(
 			&pShader)))
 	{
 		std::cerr << "Failed to create pixel shader!" << std::endl;
+		OutputDebugString(L"Failed to create pixel shader!\n");
 		return false;
 	}
 
@@ -246,6 +250,7 @@ bool LoadTexture2D(
 	if (FAILED(device->CreateTexture2D(&textureDesc, &srData, &texture2D)))
 	{
 		std::cerr << "Error creating texture2D!" << std::endl;
+		OutputDebugString(L"Error creating texture2D!\n");
 		stbi_image_free(data);
 		return false;
 	}
@@ -253,6 +258,7 @@ bool LoadTexture2D(
 	if (FAILED(device->CreateShaderResourceView(texture2D, nullptr, &resourceView)))
 	{
 		std::cerr << "Error creating shader resource view!" << std::endl;
+		OutputDebugString(L"Error creating shader resource view!\n");
 		stbi_image_free(data);
 		return false;
 	}
@@ -271,6 +277,7 @@ bool LoadTexture2D(
 	if (FAILED(device->CreateSamplerState(&samplerDesc, &samplerState)))
 	{
 		std::cerr << "Error creating sampler state!" << std::endl;
+		OutputDebugString(L"Error creating sampler state!\n");
 		stbi_image_free(data);
 		return false;
 	}
@@ -296,36 +303,42 @@ bool SetupPipeline(
 	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
 	{
 		std::cerr << "Error loading shaders!" << std::endl;
+		OutputDebugString(L"Error loading shaders!\n");
 		return false;
 	}
 
 	if (!CreateInputLayout(device, inputLayout, vShaderByteCode))
 	{
 		std::cerr << "Error creating input layout!" << std::endl;
+		OutputDebugString(L"Error creating input layout!\n");
 		return false;
 	}
 
 	if (!CreateVertexBuffer(device, vertexBuffer, vertices, vertexCount))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
+		OutputDebugString(L"Error creating vertex buffer!\n");
 		return false;
 	}
 
 	if (!CreateMatrixBuffer(device, matrixBuffer))
 	{
 		std::cerr << "Error creating matrix buffer!" << std::endl;
+		OutputDebugString(L"Error creating matrix buffer!\n");
 		return false;
 	}
 
 	if (!CreateLightingBuffer(device, lightingBuffer))
 	{
 		std::cerr << "Error creating lighting buffer!" << std::endl;
+		OutputDebugString(L"Error creating lighting buffer!\n");
 		return false;
 	}
 
 	if (!LoadTexture2D(device, texture2D, resourceView, samplerState))
 	{
 		std::cerr << "Error loading 2D texture!" << std::endl;
+		OutputDebugString(L"Error loading 2D texture!\n");
 		return false;
 	}
 

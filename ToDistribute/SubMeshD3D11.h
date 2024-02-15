@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-
 #include <d3d11_4.h>
+
 
 class SubMeshD3D11
 {
@@ -22,11 +22,11 @@ public:
 	SubMeshD3D11(SubMeshD3D11 &&other) = default;
 	SubMeshD3D11 &operator=(SubMeshD3D11 &&other) = default;
 
-	void Initialize(size_t startIndexValue, size_t nrOfIndicesInSubMesh,
+	bool Initialize(size_t startIndexValue, size_t nrOfIndicesInSubMesh,
 		ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV,
 		ID3D11ShaderResourceView *specularTextureSRV);
 
-	void PerformDrawCall(ID3D11DeviceContext *context) const;
+	bool PerformDrawCall(ID3D11DeviceContext *context) const;
 
 	ID3D11ShaderResourceView *GetAmbientSRV() const;
 	ID3D11ShaderResourceView *GetDiffuseSRV() const;

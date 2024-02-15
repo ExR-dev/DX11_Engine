@@ -42,6 +42,7 @@ bool SetupWindow(HINSTANCE instance, UINT width, UINT height, int nCmdShow, HWND
 	if (window == nullptr)
 	{
 		std::cerr << "HWND was nullptr, last error: " << GetLastError() << std::endl;
+		OutputDebugString(L"HWND was nullptr!\n");
 		return false;
 	}
 

@@ -18,12 +18,15 @@ int APIENTRY wWinMain(
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	MeshData meshData = { };
+	OutputDebugString(L"\n=======| Start |===========================================================================\n");
+
+	/*MeshData meshData = { };
 
 	LoadMeshFromFile("Models\\SimpleSubmesh.obj", meshData);
 	WriteMeshToFile("Models\\NewSimpleSubmesh.txt", meshData);
 
-	return 0;
+	OutputDebugString(L"========| End |============================================================================\n\n");
+	return 0;*/
 
 	constexpr UINT WIDTH = 900;
 	constexpr UINT HEIGHT = 900;
@@ -32,6 +35,7 @@ int APIENTRY wWinMain(
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
 	{
 		std::cerr << "Failed to setup window!" << std::endl;
+		OutputDebugString(L"Failed to setup window!\n");
 		return -1;
 	}
 
@@ -39,6 +43,7 @@ int APIENTRY wWinMain(
 	if (!game.Setup(WIDTH, HEIGHT, window))
 	{
 		std::cerr << "Failed to setup graphics!" << std::endl;
+		OutputDebugString(L"Failed to setup graphics!\n");
 		return -1;
 	}
 
@@ -46,6 +51,7 @@ int APIENTRY wWinMain(
 	if (!game.SetScene(&scene))
 	{
 		std::cerr << "Failed to set scene!" << std::endl;
+		OutputDebugString(L"Failed to set scene!\n");
 		return -1;
 	}
 	
@@ -65,16 +71,19 @@ int APIENTRY wWinMain(
 		if (!game.Update(time))
 		{
 			std::cerr << "Failed to update game logic!" << std::endl;
+			OutputDebugString(L"Failed to update game logic!\n");
 			return -1;
 		}
 
 		if (!game.Render(time))
 		{
 			std::cerr << "Failed to render frame!" << std::endl;
+			OutputDebugString(L"Failed to render frame!\n");
 			return -1;
 		}
 	}
 
+	OutputDebugString(L"========| End |============================================================================\n\n");
 	return 0;
 }
 

@@ -1,7 +1,7 @@
 #include "MeshD3D11.h"
 
 
-void MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
+bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 {
 	int subMeshCount = meshInfo.subMeshInfo.size();
 
@@ -9,10 +9,12 @@ void MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 	{
 		// TODO
 	}
+
+	return false;
 }
 
 
-void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
+bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 {
 	int subMeshCount = GetNrOfSubMeshes();
 
@@ -32,11 +34,14 @@ void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 	// TODO
 	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
 	//context->IASetVertexBuffers(0, 1, &vertxBuffer, _vertexBuffer., &offset);
+
+	return false;
 }
 
-void MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const
+bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const
 {
 	// TODO
+	return false;
 }
 
 

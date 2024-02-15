@@ -13,6 +13,8 @@ Graphics::Graphics()
 	_dsView		= nullptr;
 	_viewport	= { };
 
+	_context	= nullptr;
+
 	_isSetup		= false;
 	_isRendering	= false;
 }
@@ -43,6 +45,7 @@ bool Graphics::Setup(
 			_swapChain, _rtv, _dsTexture, _dsView, _viewport))
 	{
 		std::cerr << "Failed to setup d3d11!" << std::endl;
+		OutputDebugString(L"Failed to setup d3d11!\n");
 		return false;
 	}
 

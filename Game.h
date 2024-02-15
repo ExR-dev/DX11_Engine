@@ -4,6 +4,7 @@
 
 #include "Scene.h"
 #include "Graphics.h"
+#include "Content.h"
 #include "Time.h"
 
 
@@ -14,6 +15,7 @@ private:
 	ID3D11DeviceContext *_immediateContext;
 
 	Graphics	_graphics;
+	Content		_content;
 	Scene		*_scene;
 
 public:
