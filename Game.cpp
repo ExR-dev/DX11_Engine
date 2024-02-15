@@ -30,7 +30,8 @@ bool Game::Setup(UINT width, UINT height, HWND window)
 		return false;
 	}
 
-	if (!_content.AddMesh(_device, "FallbackMesh", "Models\\SimpleSubmesh.obj"))
+	const UINT fallbackMeshID = _content.AddMesh(_device, "FallbackMesh", "Models\\SimpleSubmesh.obj");
+	if (fallbackMeshID == CONTENT_LOAD_ERROR)
 	{
 		std::cerr << "Failed to add fallback mesh!" << std::endl;
 		OutputDebugString(L"Failed to add fallback mesh!\n");

@@ -3,14 +3,32 @@
 
 bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 {
-	int subMeshCount = meshInfo.subMeshInfo.size();
-
-	for (int i = 0; i < subMeshCount; i++)
+	if (!_vertexBuffer.Initialize(device, meshInfo.vertexInfo.sizeOfVertex, meshInfo.vertexInfo.nrOfVerticesInBuffer, meshInfo.vertexInfo.vertexData))
 	{
-		// TODO
+		OutputDebugString(L"Failed to initialize vertex buffer!\n");
+		return false;
 	}
 
-	return false;
+	if (!_indexBuffer.Initialize(device, meshInfo.indexInfo.nrOfIndicesInBuffer, meshInfo.indexInfo.indexData))
+	{
+		OutputDebugString(L"Failed to initialize index buffer!\n");
+		return false;
+	}
+
+	int subMeshCount = meshInfo.subMeshInfo.size();
+	for (int i = 0; i < subMeshCount; i++)
+	{
+		SubMeshD3D11 subMesh;
+		if (!subMesh.Initialize(device, meshInfo.subMeshInfo.at(i)))
+		{
+			OutputDebugString(L"Failed to initialize sub mesh!\n");
+			return false;
+		}
+
+		_subMeshes.push_back(subMesh);
+	}
+
+	return true;
 }
 
 

@@ -19,7 +19,7 @@ public:
 	IndexBufferD3D11(IndexBufferD3D11&& other) = delete;
 	IndexBufferD3D11& operator=(IndexBufferD3D11&& other) = delete;
 
-	void Initialize(ID3D11Device* device, size_t nrOfIndicesInBuffer, const uint32_t* indexData);
+	bool Initialize(ID3D11Device* device, size_t nrOfIndicesInBuffer, const uint32_t* indexData);
 
 	size_t GetNrOfIndices() const;
 	ID3D11Buffer* GetBuffer() const;
