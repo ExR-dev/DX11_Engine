@@ -1,0 +1,212 @@
+Loaded Mesh:
+
+---------------- Vertex Data ----------------
+count = 36
+size = 32
+
+Vertex 0
+	Position(1, 1, -1)
+	Normal(-0, 1, -0)
+	TexCoord(0.625, 0.5)
+
+Vertex 1
+	Position(-1, 1, -1)
+	Normal(-0, 1, -0)
+	TexCoord(0.875, 0.5)
+
+Vertex 2
+	Position(-1, 1, 1)
+	Normal(-0, 1, -0)
+	TexCoord(0.875, 0.75)
+
+Vertex 3
+	Position(-1, 1, -1)
+	Normal(-0, 1, -0)
+	TexCoord(0.875, 0.5)
+
+Vertex 4
+	Position(-1, 1, 1)
+	Normal(-0, 1, -0)
+	TexCoord(0.875, 0.75)
+
+Vertex 5
+	Position(1, 1, 1)
+	Normal(-0, 1, -0)
+	TexCoord(0.625, 0.75)
+
+Vertex 6
+	Position(1, -1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.375, 0.75)
+
+Vertex 7
+	Position(1, 1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.625, 0.75)
+
+Vertex 8
+	Position(-1, 1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.625, 1)
+
+Vertex 9
+	Position(1, 1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.625, 0.75)
+
+Vertex 10
+	Position(-1, 1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.625, 1)
+
+Vertex 11
+	Position(-1, -1, 1)
+	Normal(-0, -0, 1)
+	TexCoord(0.375, 1)
+
+Vertex 12
+	Position(-1, -1, 1)
+	Normal(-1, -0, -0)
+	TexCoord(0.375, 0)
+
+Vertex 13
+	Position(-1, 1, 1)
+	Normal(-1, -0, -0)
+	TexCoord(0.625, 0)
+
+Vertex 14
+	Position(-1, 1, -1)
+	Normal(-1, -0, -0)
+	TexCoord(0.625, 0.25)
+
+Vertex 15
+	Position(-1, 1, 1)
+	Normal(-1, -0, -0)
+	TexCoord(0.625, 0)
+
+Vertex 16
+	Position(-1, 1, -1)
+	Normal(-1, -0, -0)
+	TexCoord(0.625, 0.25)
+
+Vertex 17
+	Position(-1, -1, -1)
+	Normal(-1, -0, -0)
+	TexCoord(0.375, 0.25)
+
+Vertex 18
+	Position(-1, -1, -1)
+	Normal(-0, -1, -0)
+	TexCoord(0.125, 0.5)
+
+Vertex 19
+	Position(1, -1, -1)
+	Normal(-0, -1, -0)
+	TexCoord(0.375, 0.5)
+
+Vertex 20
+	Position(1, -1, 1)
+	Normal(-0, -1, -0)
+	TexCoord(0.375, 0.75)
+
+Vertex 21
+	Position(1, -1, -1)
+	Normal(-0, -1, -0)
+	TexCoord(0.375, 0.5)
+
+Vertex 22
+	Position(1, -1, 1)
+	Normal(-0, -1, -0)
+	TexCoord(0.375, 0.75)
+
+Vertex 23
+	Position(-1, -1, 1)
+	Normal(-0, -1, -0)
+	TexCoord(0.125, 0.75)
+
+Vertex 24
+	Position(1, -1, -1)
+	Normal(1, -0, -0)
+	TexCoord(0.375, 0.5)
+
+Vertex 25
+	Position(1, 1, -1)
+	Normal(1, -0, -0)
+	TexCoord(0.625, 0.5)
+
+Vertex 26
+	Position(1, 1, 1)
+	Normal(1, -0, -0)
+	TexCoord(0.625, 0.75)
+
+Vertex 27
+	Position(1, 1, -1)
+	Normal(1, -0, -0)
+	TexCoord(0.625, 0.5)
+
+Vertex 28
+	Position(1, 1, 1)
+	Normal(1, -0, -0)
+	TexCoord(0.625, 0.75)
+
+Vertex 29
+	Position(1, -1, 1)
+	Normal(1, -0, -0)
+	TexCoord(0.375, 0.75)
+
+Vertex 30
+	Position(-1, -1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.375, 0.25)
+
+Vertex 31
+	Position(-1, 1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.625, 0.25)
+
+Vertex 32
+	Position(1, 1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.625, 0.5)
+
+Vertex 33
+	Position(-1, 1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.625, 0.25)
+
+Vertex 34
+	Position(1, 1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.625, 0.5)
+
+Vertex 35
+	Position(1, -1, -1)
+	Normal(-0, -0, -1)
+	TexCoord(0.375, 0.5)
+
+---------------------------------------------
+
+---------------- Index Data ----------------
+count = 36
+indices 0-2	 (0/1/2)
+indices 3-5	 (3/4/5)
+indices 6-8	 (6/7/8)
+indices 9-11	 (9/10/11)
+indices 12-14	 (12/13/14)
+indices 15-17	 (15/16/17)
+indices 18-20	 (18/19/20)
+indices 21-23	 (21/22/23)
+indices 24-26	 (24/25/26)
+indices 27-29	 (27/28/29)
+indices 30-32	 (30/31/32)
+indices 33-35	 (33/34/35)
+--------------------------------------------
+
+
+---------------- Submesh Data ----------------
+Submesh 0
+	start index = 0
+	length = 36
+
+----------------------------------------------
+

@@ -2,21 +2,24 @@
 
 #include "PipelineHelper.h"
 #include "Time.h"
+#include "Content.h"
 
 
 struct DebugRenderData
 {
-	UINT vertexCount;
+	//UINT vertexCount;
 
 	ID3D11VertexShader *vShader;
 	ID3D11PixelShader *pShader;
 	ID3D11InputLayout *inputLayout;
-	ID3D11Buffer *vertexBuffer;
+	//ID3D11Buffer *vertexBuffer;
 	ID3D11Buffer *matrixBuffer;
 	ID3D11Buffer *lightingBuffer;
 	ID3D11Texture2D *texture2D;
 	ID3D11ShaderResourceView *resourceView;
 	ID3D11SamplerState *samplerState;
+
+	MeshD3D11 *mesh;
 
 	MatrixBufferData matrixBufferData = { };
 	LightingBufferData lightingBufferData = {
@@ -40,8 +43,8 @@ public:
 	DebugObject();
 	~DebugObject();
 
-	bool Initialize(ID3D11Device *device);
-	bool Initialize(ID3D11Device *device, SimpleVertex *mesh, UINT vertexCount);
+	bool Initialize(ID3D11Device *device, MeshD3D11 *meshRef);
+	bool Initialize(ID3D11Device *device, MeshD3D11 *meshRef, SimpleVertex *mesh, UINT vertexCount);
 	bool Uninitialize();
 
 	bool SetVPM(ID3D11DeviceContext *context, const float fov, const float aspect, const float nearPlane, const float farPlane, const XMVECTOR &camPos, const XMVECTOR &camDir);

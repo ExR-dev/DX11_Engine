@@ -4,32 +4,32 @@ Loaded Mesh:
 count = 6
 size = 32
 
-0
+Vertex 0
 	Position(-0.996754, 1, -1)
 	Normal(0.2013, 0.9795, -0)
 	TexCoords(0.75, 0.625)
 
-1
+Vertex 1
 	Position(-0.996754, -1, -1)
 	Normal(-0.0276, -0, 0.9996)
 	TexCoords(0.875, 0.75)
 
-2
+Vertex 2
 	Position(-1.48052, 1, 1)
 	Normal(-0.8754, 0.4834, -0)
 	TexCoords(0.75, 0.75)
 
-3
+Vertex 3
 	Position(2.67251, 0.873266, -1)
 	Normal(-0.3997, 0.5753, -0.7136)
 	TexCoords(0.875, 0.75)
 
-4
+Vertex 4
 	Position(3.01153, -1, -1)
 	Normal(-0.6281, -0.3253, 0.7069)
 	TexCoords(0.75, 0.75)
 
-5
+Vertex 5
 	Position(-0.996754, -1, -1)
 	Normal(-0.0276, -0, 0.9996)
 	TexCoords(0.875, 0.75)
@@ -38,17 +38,17 @@ size = 32
 
 ---------------- Index Data ----------------
 count = 6
-	0-2 (0/1/2)
-	3-5 (3/4/5)
+indices 0-2	 (0/1/2)
+indices 3-5	 (3/4/5)
 --------------------------------------------
 
 
 ---------------- Submesh Data ----------------
-ID = 0
+Submesh 0
 	start index = 0
 	length = 3
 
-ID = 1
+Submesh 1
 	start index = 3
 	length = 3
 

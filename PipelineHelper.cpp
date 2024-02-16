@@ -8,6 +8,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "ErrMsg.h"
+
 using namespace DirectX;
 
 
@@ -35,8 +37,7 @@ bool LoadShaders(
 	reader.open(shaderPath + "VertexShader.cso", std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
 	{
-		std::cerr << "Could not open VS file!" << std::endl;
-		OutputDebugString(L"Could not open VS file!\n");
+		ErrMsg("Could not open VS file!");
 		return false;
 	}
 
@@ -55,8 +56,7 @@ bool LoadShaders(
 			nullptr, 
 			&vShader)))
 	{
-		std::cerr << "Failed to create vertex shader!" << std::endl;
-		OutputDebugString(L"Failed to create vertex shader!\n");
+		ErrMsg("Failed to create vertex shader!");
 		return false;
 	}
 
@@ -66,8 +66,7 @@ bool LoadShaders(
 	reader.open(shaderPath + "PixelShader.cso", std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
 	{
-		std::cerr << "Could not open PS file!" << std::endl;
-		OutputDebugString(L"Could not open PS file!\n");
+		ErrMsg("Could not open PS file!");
 		return false;
 	}
 
@@ -86,8 +85,7 @@ bool LoadShaders(
 			nullptr, 
 			&pShader)))
 	{
-		std::cerr << "Failed to create pixel shader!" << std::endl;
-		OutputDebugString(L"Failed to create pixel shader!\n");
+		ErrMsg("Failed to create pixel shader!");
 		return false;
 	}
 
@@ -249,16 +247,14 @@ bool LoadTexture2D(
 
 	if (FAILED(device->CreateTexture2D(&textureDesc, &srData, &texture2D)))
 	{
-		std::cerr << "Error creating texture2D!" << std::endl;
-		OutputDebugString(L"Error creating texture2D!\n");
+		ErrMsg("Error creating texture2D!");
 		stbi_image_free(data);
 		return false;
 	}
 
 	if (FAILED(device->CreateShaderResourceView(texture2D, nullptr, &resourceView)))
 	{
-		std::cerr << "Error creating shader resource view!" << std::endl;
-		OutputDebugString(L"Error creating shader resource view!\n");
+		ErrMsg("Error creating shader resource view!");
 		stbi_image_free(data);
 		return false;
 	}
@@ -276,8 +272,7 @@ bool LoadTexture2D(
 
 	if (FAILED(device->CreateSamplerState(&samplerDesc, &samplerState)))
 	{
-		std::cerr << "Error creating sampler state!" << std::endl;
-		OutputDebugString(L"Error creating sampler state!\n");
+		ErrMsg("Error creating sampler state!");
 		stbi_image_free(data);
 		return false;
 	}
@@ -288,7 +283,7 @@ bool LoadTexture2D(
 
 bool SetupPipeline(
 	ID3D11Device *device, 
-	ID3D11Buffer *&vertexBuffer,
+	//ID3D11Buffer *&vertexBuffer,
 	ID3D11Buffer *&matrixBuffer,
 	ID3D11Buffer *&lightingBuffer,
 	ID3D11Texture2D *&texture2D,
@@ -302,43 +297,37 @@ bool SetupPipeline(
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
 	{
-		std::cerr << "Error loading shaders!" << std::endl;
-		OutputDebugString(L"Error loading shaders!\n");
+		ErrMsg("Error loading shaders!");
 		return false;
 	}
 
 	if (!CreateInputLayout(device, inputLayout, vShaderByteCode))
 	{
-		std::cerr << "Error creating input layout!" << std::endl;
-		OutputDebugString(L"Error creating input layout!\n");
+		ErrMsg("Error creating input layout!");
 		return false;
 	}
 
-	if (!CreateVertexBuffer(device, vertexBuffer, vertices, vertexCount))
+	/*if (!CreateVertexBuffer(device, vertexBuffer, vertices, vertexCount))
 	{
-		std::cerr << "Error creating vertex buffer!" << std::endl;
-		OutputDebugString(L"Error creating vertex buffer!\n");
+		ErrMsg("Error creating vertex buffer!");
 		return false;
-	}
+	}*/
 
 	if (!CreateMatrixBuffer(device, matrixBuffer))
 	{
-		std::cerr << "Error creating matrix buffer!" << std::endl;
-		OutputDebugString(L"Error creating matrix buffer!\n");
+		ErrMsg("Error creating matrix buffer!");
 		return false;
 	}
 
 	if (!CreateLightingBuffer(device, lightingBuffer))
 	{
-		std::cerr << "Error creating lighting buffer!" << std::endl;
-		OutputDebugString(L"Error creating lighting buffer!\n");
+		ErrMsg("Error creating lighting buffer!");
 		return false;
 	}
 
 	if (!LoadTexture2D(device, texture2D, resourceView, samplerState))
 	{
-		std::cerr << "Error loading 2D texture!" << std::endl;
-		OutputDebugString(L"Error loading 2D texture!\n");
+		ErrMsg("Error loading 2D texture!");
 		return false;
 	}
 

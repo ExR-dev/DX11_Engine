@@ -77,7 +77,7 @@ bool UpdateLightingBuffer(
 
 bool SetupPipeline(
 	ID3D11Device *device,
-	ID3D11Buffer *&vertexBuffer, 
+	//ID3D11Buffer *&vertexBuffer, 
 	ID3D11Buffer *&matrixBuffer,
 	ID3D11Buffer *&lightingBuffer,
 	ID3D11Texture2D *&texture2D,

@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "D3D11Helper.h"
+#include "ErrMsg.h"
 
 
 Graphics::Graphics()
@@ -44,8 +45,7 @@ bool Graphics::Setup(
 	if (!SetupD3D11(width, height, window, device, immediateContext, 
 			_swapChain, _rtv, _dsTexture, _dsView, _viewport))
 	{
-		std::cerr << "Failed to setup d3d11!" << std::endl;
-		OutputDebugString(L"Failed to setup d3d11!\n");
+		ErrMsg("Failed to setup d3d11!");
 		return false;
 	}
 

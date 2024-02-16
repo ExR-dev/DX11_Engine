@@ -6,18 +6,21 @@
 #include <string>
 #include <iostream>
 
+#include "ErrMsg.h"
+
 
 struct RawPosition	{ float	x, y, z; };
-struct RawTexCoord	{ float	u, v;	 };
 struct RawNormal	{ float	x, y, z; };
+struct RawTexCoord	{ float	u, v;	 };
 struct RawIndex		{ int	v, t, n; };
 
 struct FormattedVertex {
 	float 
-		px, py, pz, u,
-		nx, ny, nz, v;
+		px, py, pz,
+		nx, ny, nz,
+		u, v;
 
-	bool operator==(const FormattedVertex &other)
+	bool operator==(const FormattedVertex &other) const
 	{
 		if (px != other.px) return false;
 		if (py != other.py) return false;
@@ -85,8 +88,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	if (meshData.vertexInfo.vertexData != nullptr || 
 		meshData.indexInfo.indexData != nullptr)
 	{
-		std::cerr << "meshData is not nullified!" << std::endl;
-		OutputDebugString(L"meshData is not nullified!\n");
+		ErrMsg("meshData is not nullified!");
 		return false;
 	}
 
@@ -131,8 +133,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		std::string dataType;
 		if (!(segments >> dataType))
 		{
-			std::cerr << "Failed to get data type from line \"" << line << "\"!" << std::endl;
-			OutputDebugString(L"Failed to get data type from line!\n");
+			ErrMsg("Failed to get data type from line \"" + line + "\"!");
 			return false;
 		}
 
@@ -153,8 +154,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				std::cerr << "Failed to get vertex position from line \"" << line << "\"!" << std::endl;
-				OutputDebugString(L"Failed to get vertex position from line!\n");
+				ErrMsg("Failed to get vertex position from line \"" + line + "\"!");
 				return false;
 			}
 
@@ -165,8 +165,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			float u, v;
 			if (!(segments >> u >> v))
 			{
-				std::cerr << "Failed to get texture coordinate from line \"" << line << "\"!" << std::endl;
-				OutputDebugString(L"Failed to get texture coordinate from line!\n");
+				ErrMsg("Failed to get texture coordinate from line \"" + line + "\"!");
 				return false;
 			}
 
@@ -177,8 +176,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				std::cerr << "Failed to get normal from line \"" << line << "\"!" << std::endl;
-				OutputDebugString(L"Failed to get normal from line!\n");
+				ErrMsg("Failed to get normal from line \"" + line + "\"!");
 				return false;
 			}
 
@@ -188,22 +186,32 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		{ // Index Group
 			if (!begunReadingSubMesh)
 			{
-				std::cerr << "Reached index group before creating submesh!" << std::endl;
-				OutputDebugString(L"Reached index group before creating submesh!\n");
+				ErrMsg("Reached index group before creating submesh!");
 				return false;
 			}
 
-			for (int i = 0; i < 3; i++)
-			{
-				int vi, ti, ni;
-				if (!(segments >> vi >> ti >> ni))
-				{
-					std::cerr << "Failed to get index group " << i << " from line \"" << line << "\"!" << std::endl;
-					OutputDebugString(L"Failed to get index group from line!\n");
-					return false;
-				}
+			std::vector<RawIndex> indicesInGroup;
+			int vi, ti, ni;
 
-				indexGroups.back().push_back({ --vi, --ti, --ni });
+			while (segments >> vi >> ti >> ni)
+				indicesInGroup.push_back({ --vi, --ti, --ni });
+
+			int groupSize = indicesInGroup.size();
+			if (groupSize < 3 || groupSize > 4)
+			{
+				ErrMsg("Unparseable group size '" + std::to_string(groupSize) + "' at line \"" + line + "\"!");
+				return false;
+			}
+
+			indexGroups.back().push_back(indicesInGroup.at(0));
+			indexGroups.back().push_back(indicesInGroup.at(1));
+			indexGroups.back().push_back(indicesInGroup.at(2));
+
+			if (groupSize == 4)
+			{ // Group is a quad
+				indexGroups.back().push_back(indicesInGroup.at(0));
+				indexGroups.back().push_back(indicesInGroup.at(2));
+				indexGroups.back().push_back(indicesInGroup.at(3));
 			}
 		}
 		else if (dataType == "usemtl")
@@ -211,41 +219,41 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			if (!begunReadingSubMesh)
 			{ // First submesh
 				begunReadingSubMesh = true;
-				indexGroups.push_back({ });
+				indexGroups.emplace_back();
 				continue;
 			}
 
-			indexGroups.push_back({ });
+			indexGroups.emplace_back();
 		}
 		else
 		{
-			std::cerr << "Unrecognized type flag '" << dataType << "'!" << std::endl;
-			OutputDebugString(L"Unrecognized type flag!\n");
+			ErrMsg("Unrecognized type flag '" + dataType + "'!");
 		}
 	}
 
 	std::vector<FormattedVertex> formattedVertices;
 	std::vector<std::vector<uint32_t>> formattedIndexGroups;
 
-	int groupCount = indexGroups.size();
-	for (size_t group_i = 0; group_i < groupCount; group_i++)
+	size_t groupCount = indexGroups.size();
+	for (size_t groupIndex = 0; groupIndex < groupCount; groupIndex++)
 	{
-		formattedIndexGroups.push_back({ });
+		formattedIndexGroups.emplace_back();
 		std::vector<uint32_t> *formattedGroup = &formattedIndexGroups.back();
-		const std::vector<RawIndex> *rawGroup = &indexGroups.at(group_i);
+		const std::vector<RawIndex> *rawGroup = &indexGroups.at(groupIndex);
 
-		int groupSize = rawGroup->size();
-		for (size_t vert_i = 0; vert_i < groupSize; vert_i++)
+		size_t groupSize = rawGroup->size();
+		for (size_t vertIndex = 0; vertIndex < groupSize; vertIndex++)
 		{
-			RawIndex rI = rawGroup->at(vert_i);
+			RawIndex rI = rawGroup->at(vertIndex);
 
 			RawPosition rP = vertexPositions.at(rI.v);
 			RawTexCoord rT = vertexTexCoords.at(rI.t);
 			RawNormal rN = vertexNormals.at(rI.n);
 
 			FormattedVertex newVert = { 
-				rP.x, rP.y, rP.z, rT.u,
-				rN.x, rN.y, rN.z, rT.v,
+				rP.x, rP.y, rP.z,
+				rN.x, rN.y, rN.z,
+				rT.u, rT.v,				
 			};
 
 			formattedGroup->push_back(formattedVertices.size());
@@ -301,8 +309,7 @@ bool WriteMeshToFile(const char *path, MeshData &meshData)
 	if (meshData.vertexInfo.vertexData == nullptr || 
 		meshData.indexInfo.indexData == nullptr)
 	{
-		std::cerr << "meshData is nullified!" << std::endl;
-		OutputDebugString(L"meshData is nullified!\n");
+		ErrMsg("meshData is nullified!");
 		return false;
 	}
 
@@ -318,11 +325,11 @@ bool WriteMeshToFile(const char *path, MeshData &meshData)
 	{
 		const FormattedVertex *vData = &((FormattedVertex*)meshData.vertexInfo.vertexData)[i];
 
-		fileStream << i << std::endl;
+		fileStream << "Vertex " << i << std::endl;
 
 		fileStream << "\tPosition(" << vData->px << ", " << vData->py << ", " << vData->pz << ")" << std::endl;
 		fileStream << "\tNormal(" << vData->nx << ", " << vData->ny << ", " << vData->nz << ")" << std::endl;
-		fileStream << "\tTexCoords(" << vData->u << ", " << vData->v << ")" << std::endl;
+		fileStream << "\tTexCoord(" << vData->u << ", " << vData->v << ")" << std::endl;
 
 		fileStream << std::endl;
 	}
@@ -335,14 +342,14 @@ bool WriteMeshToFile(const char *path, MeshData &meshData)
 	{
 		const uint32_t *iData = &meshData.indexInfo.indexData[i*3];
 
-		fileStream << "\t" << i*3 << "-" << i*3+2 << " (" << iData[0] << "/" << iData[1] << "/" << iData[2] << ")" << std::endl;
+		fileStream << "indices " << i*3 << "-" << i*3+2 << "\t (" << iData[0] << "/" << iData[1] << "/" << iData[2] << ")" << std::endl;
 	}
 	fileStream << "--------------------------------------------" << std::endl << std::endl << std::endl;
 
 	fileStream << "---------------- Submesh Data ----------------" << std::endl;
 	for (size_t i = 0; i < meshData.subMeshInfo.size(); i++)
 	{
-		fileStream << "ID = " << i << std::endl;
+		fileStream << "Submesh " << i << std::endl;
 		fileStream << "\tstart index = " << meshData.subMeshInfo.at(i).startIndexValue << std::endl;
 		fileStream << "\tlength = " << meshData.subMeshInfo.at(i).nrOfIndicesInSubMesh << std::endl;
 		fileStream << std::endl;

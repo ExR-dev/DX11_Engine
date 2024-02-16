@@ -1,6 +1,7 @@
 #include "WindowHelper.h"
 
 #include <iostream>
+#include "ErrMsg.h"
 
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -41,8 +42,7 @@ bool SetupWindow(HINSTANCE instance, UINT width, UINT height, int nCmdShow, HWND
 
 	if (window == nullptr)
 	{
-		std::cerr << "HWND was nullptr, last error: " << GetLastError() << std::endl;
-		OutputDebugString(L"HWND was nullptr!\n");
+		ErrMsg("HWND was nullptr, last error: " + std::to_string(GetLastError()));
 		return false;
 	}
 

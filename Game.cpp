@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "ErrMsg.h"
+
 
 Game::Game()
 {
@@ -25,16 +27,28 @@ bool Game::Setup(UINT width, UINT height, HWND window)
 {
 	if (!_graphics.Setup(width, height, window, _device, _immediateContext))
 	{
-		std::cerr << "Failed to setup d3d11!" << std::endl;
-		OutputDebugString(L"Failed to setup d3d11!\n");
+		ErrMsg("Failed to setup d3d11!");
 		return false;
 	}
 
-	const UINT fallbackMeshID = _content.AddMesh(_device, "FallbackMesh", "Models\\SimpleSubmesh.obj");
+	const UINT fallbackMeshID = _content.AddMesh(_device, "Fallback", "Models\\Fallback.obj");
 	if (fallbackMeshID == CONTENT_LOAD_ERROR)
 	{
-		std::cerr << "Failed to add fallback mesh!" << std::endl;
-		OutputDebugString(L"Failed to add fallback mesh!\n");
+		ErrMsg("Failed to add fallback mesh!");
+		return false;
+	}
+
+	const UINT ShapeMeshID = _content.AddMesh(_device, "Shape", "Models\\ShapeTri.obj");
+	if (ShapeMeshID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add shape mesh!");
+		return false;
+	}
+
+	const UINT SubMeshID = _content.AddMesh(_device, "Submesh", "Models\\SimpleSubmesh.obj");
+	if (SubMeshID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add simpleSubmesh mesh!");
 		return false;
 	}
 
@@ -48,10 +62,9 @@ bool Game::SetScene(Scene *scene)
 
 	_scene = scene;
 
-	if (!_scene->Initialize(_device))
+	if (!_scene->Initialize(_device, &_content))
 	{
-		std::cerr << "Failed to initialize scene!" << std::endl;
-		OutputDebugString(L"Failed to initialize scene!\n");
+		ErrMsg("Failed to initialize scene!");
 		return false;
 	}
 
@@ -68,8 +81,7 @@ bool Game::Update(const Time &time)
 	if (_scene != nullptr)
 		if (!_scene->Update(_immediateContext, time))
 		{
-			std::cerr << "Failed to update scene!" << std::endl;
-			OutputDebugString(L"Failed to update scene!\n");
+			ErrMsg("Failed to update scene!");
 			return false;
 		}
 
@@ -85,8 +97,7 @@ bool Game::Render(const Time &time)
 {
 	if (!_graphics.BeginRender())
 	{
-		std::cerr << "Failed to begin rendering!" << std::endl;
-		OutputDebugString(L"Failed to begin rendering!\n");
+		ErrMsg("Failed to begin rendering!");
 		return false;
 	}
 
@@ -97,11 +108,9 @@ bool Game::Render(const Time &time)
 	if (_scene != nullptr)
 		if (!_scene->Render(_immediateContext))
 		{
-			std::cerr << "Failed to render scene!" << std::endl;
-			OutputDebugString(L"Failed to render scene!\n");
+			ErrMsg("Failed to render scene!");
 			return false;
 		}
-
 
 	/// ^==========================================^ ///
 	/// ^        Render scene here...              ^ ///
@@ -109,8 +118,7 @@ bool Game::Render(const Time &time)
 
 	if (!_graphics.EndRender())
 	{
-		std::cerr << "" << std::endl;
-		OutputDebugString(L"Failed to end rendering!\n");
+		ErrMsg("Failed to end rendering!\n");
 		return false;
 	}
 

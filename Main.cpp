@@ -4,12 +4,10 @@
 #include <d3d11.h>
 
 #include "WindowHelper.h"
-
-#include <array>
-
+#include "ContentLoader.h"
 #include "Game.h"
 #include "Time.h"
-#include "ContentLoader.h"
+#include "ErrMsg.h"
 
 
 int APIENTRY wWinMain(
@@ -22,8 +20,8 @@ int APIENTRY wWinMain(
 
 	/*MeshData meshData = { };
 
-	LoadMeshFromFile("Models\\SimpleSubmesh.obj", meshData);
-	WriteMeshToFile("Models\\NewSimpleSubmesh.txt", meshData);
+	LoadMeshFromFile("Models\\Fallback.obj", meshData);
+	WriteMeshToFile("Models\\Fallback.txt", meshData);
 
 	OutputDebugString(L"========| End |============================================================================\n\n");
 	return 0;*/
@@ -34,24 +32,21 @@ int APIENTRY wWinMain(
 
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
 	{
-		std::cerr << "Failed to setup window!" << std::endl;
-		OutputDebugString(L"Failed to setup window!\n");
+		ErrMsg("Failed to setup window!");
 		return -1;
 	}
 
 	Game game = { };
 	if (!game.Setup(WIDTH, HEIGHT, window))
 	{
-		std::cerr << "Failed to setup graphics!" << std::endl;
-		OutputDebugString(L"Failed to setup graphics!\n");
+		ErrMsg("Failed to setup graphics!");
 		return -1;
 	}
 
 	Scene scene = { };
 	if (!game.SetScene(&scene))
 	{
-		std::cerr << "Failed to set scene!" << std::endl;
-		OutputDebugString(L"Failed to set scene!\n");
+		ErrMsg("Failed to set scene!");
 		return -1;
 	}
 	
@@ -70,15 +65,13 @@ int APIENTRY wWinMain(
 
 		if (!game.Update(time))
 		{
-			std::cerr << "Failed to update game logic!" << std::endl;
-			OutputDebugString(L"Failed to update game logic!\n");
+			ErrMsg("Failed to update game logic!");
 			return -1;
 		}
 
 		if (!game.Render(time))
 		{
-			std::cerr << "Failed to render frame!" << std::endl;
-			OutputDebugString(L"Failed to render frame!\n");
+			ErrMsg("Failed to render frame!");
 			return -1;
 		}
 	}
@@ -146,7 +139,7 @@ int Deprecated_wWinMain(
 
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
 	{
-		std::cerr << "Failed to setup window!" << std::endl;
+		ErrMsg("Failed to setup window!");
 		return -1;
 	}
 
@@ -171,13 +164,13 @@ int Deprecated_wWinMain(
 
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, dsTexture, dsView, viewport))
 	{
-		std::cerr << "Failed to setup d3d11!" << std::endl;
+		ErrMsg("Failed to setup d3d11!");
 		return -1;
 	}
 
 	if (!SetupPipeline(device, vertexBuffer, matrixBuffer, lightingBuffer, texture2D, resourceView, samplerState, vShader, pShader, inputLayout))
 	{
-		std::cerr << "Failed to setup pipeline!" << std::endl;
+		ErrMsg("Failed to setup pipeline!");
 		return -1;
 	}
 
@@ -218,13 +211,13 @@ int Deprecated_wWinMain(
 
 		if (!UpdateMatrixBuffer(immediateContext, matrixBuffer, matrixBufferData))
 		{
-			std::cerr << "Failed to update matrix buffer!" << std::endl;
+			ErrMsg("Failed to update matrix buffer!");
 			return -1;
 		}
 
 		if (!UpdateLightingBuffer(immediateContext, lightingBuffer, lightingBufferData))
 		{
-			std::cerr << "Failed to update lighting buffer!" << std::endl;
+			ErrMsg("Failed to update lighting buffer!");
 			return -1;
 		}
 

@@ -1,27 +1,29 @@
 #include "MeshD3D11.h"
 
+#include "../ErrMsg.h"
+
 
 bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 {
 	if (!_vertexBuffer.Initialize(device, meshInfo.vertexInfo.sizeOfVertex, meshInfo.vertexInfo.nrOfVerticesInBuffer, meshInfo.vertexInfo.vertexData))
 	{
-		OutputDebugString(L"Failed to initialize vertex buffer!\n");
+		ErrMsg("Failed to initialize vertex buffer!");
 		return false;
 	}
 
 	if (!_indexBuffer.Initialize(device, meshInfo.indexInfo.nrOfIndicesInBuffer, meshInfo.indexInfo.indexData))
 	{
-		OutputDebugString(L"Failed to initialize index buffer!\n");
+		ErrMsg("Failed to initialize index buffer!");
 		return false;
 	}
 
-	int subMeshCount = meshInfo.subMeshInfo.size();
-	for (int i = 0; i < subMeshCount; i++)
+	const size_t subMeshCount = meshInfo.subMeshInfo.size();
+	for (size_t i = 0; i < subMeshCount; i++)
 	{
 		SubMeshD3D11 subMesh;
-		if (!subMesh.Initialize(device, meshInfo.subMeshInfo.at(i)))
+		if (!subMesh.Initialize(meshInfo.subMeshInfo.at(i).startIndexValue, meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh, nullptr, nullptr, nullptr)) // TODO
 		{
-			OutputDebugString(L"Failed to initialize sub mesh!\n");
+			ErrMsg("Failed to initialize sub mesh!");
 			return false;
 		}
 
@@ -34,9 +36,9 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 
 bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 {
-	int subMeshCount = GetNrOfSubMeshes();
+	/*const size_t subMeshCount = GetNrOfSubMeshes();
 
-	for (int i = 0; i < subMeshCount; i++)
+	for (size_t i = 0; i < subMeshCount; i++)
 	{
 		// TODO
 		//const SubMeshD3D11 *subMesh = &_subMeshes.at(i);
@@ -47,19 +49,24 @@ bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 		//context->PSSetShaderResources(0, 1, &(subMesh.GetDiffuseSRV()));
 		//context->PSSetShaderResources(0, 1, &(subMesh.GetSpecularSRV()));
 
-	}
+	}*/
 
-	// TODO
 	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
-	//context->IASetVertexBuffers(0, 1, &vertxBuffer, _vertexBuffer., &offset);
 
-	return false;
+	const UINT stride = _vertexBuffer.GetVertexSize();
+	const UINT offset = 0;
+
+	context->IASetVertexBuffers(0, 1, &vertxBuffer, &stride, &offset);
+	context->IASetIndexBuffer(_indexBuffer.GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
+
+	return true;
 }
 
-bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const
+bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_t subMeshIndex) const
 {
 	// TODO
-	return false;
+	_subMeshes.at(subMeshIndex).PerformDrawCall(context);
+	return true;
 }
 
 
@@ -68,7 +75,7 @@ size_t MeshD3D11::GetNrOfSubMeshes() const
 	return _subMeshes.size();
 }
 
-ID3D11ShaderResourceView *MeshD3D11::GetAmbientSRV(size_t subMeshIndex) const
+ID3D11ShaderResourceView *MeshD3D11::GetAmbientSRV(const size_t subMeshIndex) const
 {
 	if (GetNrOfSubMeshes() <= subMeshIndex)
 		return nullptr;
@@ -76,7 +83,7 @@ ID3D11ShaderResourceView *MeshD3D11::GetAmbientSRV(size_t subMeshIndex) const
 	return _subMeshes.at(subMeshIndex).GetAmbientSRV();
 }
 
-ID3D11ShaderResourceView *MeshD3D11::GetDiffuseSRV(size_t subMeshIndex) const
+ID3D11ShaderResourceView *MeshD3D11::GetDiffuseSRV(const size_t subMeshIndex) const
 {
 	if (GetNrOfSubMeshes() <= subMeshIndex)
 		return nullptr;
@@ -84,7 +91,7 @@ ID3D11ShaderResourceView *MeshD3D11::GetDiffuseSRV(size_t subMeshIndex) const
 	return _subMeshes.at(subMeshIndex).GetDiffuseSRV();
 }
 
-ID3D11ShaderResourceView *MeshD3D11::GetSpecularSRV(size_t subMeshIndex) const
+ID3D11ShaderResourceView *MeshD3D11::GetSpecularSRV(const size_t subMeshIndex) const
 {
 	if (GetNrOfSubMeshes() <= subMeshIndex)
 		return nullptr;

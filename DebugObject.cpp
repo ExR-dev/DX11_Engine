@@ -1,22 +1,25 @@
 #include "DebugObject.h"
 
 #include <iostream>
+#include "ErrMsg.h"
 
 
 DebugObject::DebugObject()
 {
 	_initialized = false;
-	_renderData.vertexCount = 0;
+	//_renderData.vertexCount = 0;
 
 	_renderData.vShader = nullptr;
 	_renderData.pShader = nullptr;
 	_renderData.inputLayout = nullptr;
-	_renderData.vertexBuffer = nullptr;
+	//_renderData.vertexBuffer = nullptr;
 	_renderData.matrixBuffer = nullptr;
 	_renderData.lightingBuffer = nullptr;
 	_renderData.texture2D = nullptr;
 	_renderData.resourceView = nullptr;
 	_renderData.samplerState = nullptr;
+
+	_renderData.mesh = nullptr;
 }
 
 DebugObject::~DebugObject()
@@ -34,8 +37,8 @@ DebugObject::~DebugObject()
 		_renderData.lightingBuffer->Release();
 	if (_renderData.matrixBuffer != nullptr)
 		_renderData.matrixBuffer->Release();
-	if (_renderData.vertexBuffer != nullptr)
-		_renderData.vertexBuffer->Release();
+	//if (_renderData.vertexBuffer != nullptr)
+	//	_renderData.vertexBuffer->Release();
 	if (_renderData.inputLayout != nullptr)
 		_renderData.inputLayout->Release();
 	if (_renderData.pShader != nullptr)
@@ -45,12 +48,20 @@ DebugObject::~DebugObject()
 }
 
 
-bool DebugObject::Initialize(ID3D11Device *device)
+bool DebugObject::Initialize(ID3D11Device *device, MeshD3D11 *meshRef)
 {
 	if (_initialized)
 		return false;
 
-	SimpleVertex mesh[] = {
+	if (meshRef == nullptr)
+	{
+		ErrMsg("meshRef is nullptr!");
+		return false;
+	}
+
+	_renderData.mesh = meshRef;
+
+	/*SimpleVertex mesh[] = {
 		// -Z
 		{{-0.5f, -0.5f, -0.5f}, { 0,  0, -1}, {0, 1}},
 		{{-0.5f,  0.5f, -0.5f}, { 0,  0, -1}, {0, 0}},
@@ -114,15 +125,22 @@ bool DebugObject::Initialize(ID3D11Device *device)
 		_renderData.texture2D, _renderData.resourceView, _renderData.samplerState,
 		_renderData.vShader, _renderData.pShader, _renderData.inputLayout,
 		mesh, _renderData.vertexCount))
+		return false;*/
+
+	if (!SetupPipeline(device,
+		_renderData.matrixBuffer, _renderData.lightingBuffer,
+		_renderData.texture2D, _renderData.resourceView, _renderData.samplerState,
+		_renderData.vShader, _renderData.pShader, _renderData.inputLayout,
+		nullptr, 0))
 		return false;
 
 	_initialized = true;
 	return true;
 }
 
-bool DebugObject::Initialize(ID3D11Device *device, SimpleVertex *mesh, UINT vertexCount)
+bool DebugObject::Initialize(ID3D11Device *device, MeshD3D11 *meshRef, SimpleVertex *mesh, UINT vertexCount)
 {
-	if (_initialized)
+	/*if (_initialized)
 		return false;
 
 	_renderData.vertexCount = vertexCount;
@@ -135,7 +153,8 @@ bool DebugObject::Initialize(ID3D11Device *device, SimpleVertex *mesh, UINT vert
 		return false;
 
 	_initialized = true;
-	return true;
+	return true;*/
+	return false;
 }
 
 bool DebugObject::Uninitialize()
@@ -163,9 +182,9 @@ bool DebugObject::Uninitialize()
 		_renderData.matrixBuffer->Release();
 	_renderData.matrixBuffer = nullptr;
 
-	if (_renderData.vertexBuffer != nullptr)
+	/*if (_renderData.vertexBuffer != nullptr)
 		_renderData.vertexBuffer->Release();
-	_renderData.vertexBuffer = nullptr;
+	_renderData.vertexBuffer = nullptr;*/
 
 	if (_renderData.inputLayout != nullptr)
 		_renderData.inputLayout->Release();
@@ -233,12 +252,18 @@ bool DebugObject::Update(ID3D11DeviceContext *context, const Time &time)
 
 bool DebugObject::Render(ID3D11DeviceContext *context)
 {
-	constexpr UINT stride = sizeof(SimpleVertex);
-	constexpr UINT offset = 0;
+	if (!_renderData.mesh->BindMeshBuffers(context))
+	{
+		ErrMsg("Failed to bind mesh buffer!");
+		return false;
+	}
 
-	context->IASetVertexBuffers(0, 1, &_renderData.vertexBuffer, &stride, &offset);
+	//constexpr UINT stride = sizeof(SimpleVertex);
+	//constexpr UINT offset = 0;
+	//context->IASetVertexBuffers(0, 1, &_renderData.vertexBuffer, &stride, &offset);
 	context->IASetInputLayout(_renderData.inputLayout);
 	context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 
 	context->VSSetShader(_renderData.vShader, nullptr, 0);
 	context->VSSetConstantBuffers(0, 1, &_renderData.matrixBuffer);
@@ -248,6 +273,12 @@ bool DebugObject::Render(ID3D11DeviceContext *context)
 	context->PSSetShaderResources(0, 1, &_renderData.resourceView);
 	context->PSSetSamplers(0, 1, &_renderData.samplerState);
 
-	context->Draw(_renderData.vertexCount, 0);
+	//context->Draw(_renderData.vertexCount, 0);
+	if (!_renderData.mesh->PerformSubMeshDrawCall(context, 0))
+	{
+		ErrMsg("Failed to perform sub-mesh draw call!");
+		return false;
+	}
+
 	return true;
 }

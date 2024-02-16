@@ -1,6 +1,7 @@
 #include "D3D11Helper.h"
 
 #include "Graphics.h"
+#include "ErrMsg.h"
 
 
 bool CreateInterfaces(
@@ -56,8 +57,7 @@ bool CreateRenderTargetView(
 	ID3D11Texture2D *backBuffer = nullptr;
 	if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&backBuffer))))
 	{
-		std::cerr << "Failed to get back buffer!" << std::endl;
-		OutputDebugString(L"Failed to get back buffer!\n");
+		ErrMsg("Failed to get back buffer!");
 		return false;
 	}
 
@@ -88,8 +88,7 @@ bool CreateDepthStencil(
 
 	if (FAILED(device->CreateTexture2D(&textureDesc, nullptr, &dsTexture)))
 	{
-		std::cerr << "Failed to create depth stencil texture!" << std::endl;
-		OutputDebugString(L"Failed to create depth stencil texture!\n");
+		ErrMsg("Failed to create depth stencil texture!");
 		return false;
 	}
 
@@ -122,22 +121,19 @@ bool SetupD3D11(
 {
 	if (!CreateInterfaces(width, height, window, device, immediateContext, swapChain))
 	{
-		std::cerr << "Error creating interfaces!" << std::endl;
-		OutputDebugString(L"Error creating interfaces!\n");
+		ErrMsg("Error creating interfaces!");
 		return false;
 	}
 
 	if (!CreateRenderTargetView(device, swapChain, rtv))
 	{
-		std::cerr << "Error creating rtv!" << std::endl;
-		OutputDebugString(L"Error creating rtv!\n");
+		ErrMsg("Error creating rtv!");
 		return false;
 	}
 
 	if (!CreateDepthStencil(device, width, height, dsTexture, dsView))
 	{
-		std::cerr << "Error creating depth stencil view!" << std::endl;
-		OutputDebugString(L"Error creating depth stencil view!\n");
+		ErrMsg("Error creating depth stencil view!");
 		return false;
 	}
 

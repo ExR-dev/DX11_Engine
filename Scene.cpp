@@ -1,8 +1,9 @@
 #include "Scene.h"
 
-#include <iostream>
 #include <stdlib.h>
 #include <cmath>
+
+#include "ErrMsg.h"
 
 
 Scene::Scene()
@@ -22,7 +23,7 @@ Scene::~Scene()
 
 }
 
-bool Scene::Initialize(ID3D11Device *device)
+bool Scene::Initialize(ID3D11Device *device, Content *content)
 {
 	if (_initialized)
 		return false;
@@ -31,10 +32,9 @@ bool Scene::Initialize(ID3D11Device *device)
 	{
 		DebugObject *dObj = &_debugObjects.at(i);
 
-		if (!dObj->Initialize(device))
+		if (!dObj->Initialize(device, content->GetMesh("FallbackMesh")))
 		{
-			std::cerr << "Failed to initialize debug object!" << std::endl;
-			OutputDebugString(L"Failed to initialize debug object!\n");
+			ErrMsg("Failed to initialize debug object!");
 			return false;
 		}
 	}
@@ -55,8 +55,7 @@ bool Scene::Uninitialize()
 
 		if (!dObj->Uninitialize())
 		{
-			std::cerr << "Failed to uninitialize debug object!" << std::endl;
-			OutputDebugString(L"Failed to uninitialize debug object!\n");
+			ErrMsg("Failed to uninitialize debug object!");
 			return false;
 		}
 	}
@@ -89,9 +88,9 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 		XMVECTOR objPos	= { 0.0f, 0.0f, 5.0f };
 		XMVECTOR objRot	= { rX, rY, rZ }; // = { 0.0f, 0.0f, 0.0f };
 		XMVECTOR objScale = { 
-			1 + fmodf(abs(rX), 1.0f) * (std::signbit(rX) ? -1 : 1), 
-			1 + fmodf(abs(rY), 1.0f) * (std::signbit(rY) ? -1 : 1),
-			1 + fmodf(abs(rZ), 1.0f) * (std::signbit(rZ) ? -1 : 1) 
+			0.5f + fmodf(abs(rX), 1.0f) * 0.5f * (std::signbit(rX) ? -1 : 1),
+			0.5f + fmodf(abs(rY), 1.0f) * 0.5f * (std::signbit(rY) ? -1 : 1),
+			0.5f + fmodf(abs(rZ), 1.0f) * 0.5f * (std::signbit(rZ) ? -1 : 1)
 		};
 
 		objPos.m128_f32[0] = (float)(i - 1) * 1.25f;
@@ -99,22 +98,19 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 
 		if (!dObj->SetVPM(context, 50.0f, 1.0f, 0.1f, 15.0f, camPos, camDir))
 		{
-			std::cerr << "Failed to update debug object view projection matrix!" << std::endl;
-			OutputDebugString(L"Failed to update debug object view projection matrix!\n");
+			ErrMsg("Failed to update debug object view projection matrix!");
 			return false;
 		}
 
 		if (!dObj->SetWM(context, objPos, objRot, objScale))
 		{
-			std::cerr << "Failed to update debug object world matrix!" << std::endl;
-			OutputDebugString(L"Failed to update debug object world matrix!\n");
+			ErrMsg("Failed to update debug object world matrix!");
 			return false;
 		}
 
 		if (!dObj->Update(context, time))
 		{
-			std::cerr << "Failed to update debug object!" << std::endl;
-			OutputDebugString(L"Failed to update debug object!\n");
+			ErrMsg("Failed to update debug object!");
 			return false;
 		}
 	}
@@ -133,8 +129,7 @@ bool Scene::Render(ID3D11DeviceContext *context)
 
 		if (!dObj->Render(context))
 		{
-			std::cerr << "Failed to render debug object!" << std::endl;
-			OutputDebugString(L"Failed to render debug object!\n");
+			ErrMsg("Failed to render debug object!");
 			return false;
 		}
 	}
