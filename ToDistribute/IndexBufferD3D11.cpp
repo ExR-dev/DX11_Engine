@@ -1,16 +1,24 @@
 #include "IndexBufferD3D11.h"
 
+#include "VertexBufferD3D11.h"
+#include "../ErrMsg.h"
+
 
 IndexBufferD3D11::~IndexBufferD3D11()
 {
-	_buffer->Release();
+	if (_buffer != nullptr)
+		_buffer->Release();
+	_buffer = nullptr;
 }
 
 
 bool IndexBufferD3D11::Initialize(ID3D11Device *device, const size_t nrOfIndicesInBuffer, const uint32_t *indexData)
 {
 	if (_buffer != nullptr)
-		_buffer->Release();
+	{
+		ErrMsg("Index buffer is not nullptr!");
+		return false;
+	}
 
 	_nrOfIndices = nrOfIndicesInBuffer;
 
@@ -29,11 +37,12 @@ bool IndexBufferD3D11::Initialize(ID3D11Device *device, const size_t nrOfIndices
 
 	if (FAILED(device->CreateBuffer(&bufferDesc, &srData, &_buffer)))
 	{
-		OutputDebugString(L"Failed to create index buffer!\n");
+		ErrMsg("Failed to create index buffer!");
 		return false;
 	}
 	return true;
 }
+
 
 size_t IndexBufferD3D11::GetNrOfIndices() const
 {

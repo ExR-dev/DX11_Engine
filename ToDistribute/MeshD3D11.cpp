@@ -3,6 +3,12 @@
 #include "../ErrMsg.h"
 
 
+MeshD3D11::~MeshD3D11()
+{
+	
+}
+
+
 bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 {
 	if (!_vertexBuffer.Initialize(device, meshInfo.vertexInfo.sizeOfVertex, meshInfo.vertexInfo.nrOfVerticesInBuffer, meshInfo.vertexInfo.vertexData))
@@ -36,20 +42,7 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 
 bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 {
-	/*const size_t subMeshCount = GetNrOfSubMeshes();
-
-	for (size_t i = 0; i < subMeshCount; i++)
-	{
-		// TODO
-		//const SubMeshD3D11 *subMesh = &_subMeshes.at(i);
-
-		//context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-
-		//context->PSSetShaderResources(0, 1, &(subMesh.GetAmbientSRV()));
-		//context->PSSetShaderResources(0, 1, &(subMesh.GetDiffuseSRV()));
-		//context->PSSetShaderResources(0, 1, &(subMesh.GetSpecularSRV()));
-
-	}*/
+	// TODO: Bind submesh data
 
 	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
 
@@ -64,7 +57,6 @@ bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 
 bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_t subMeshIndex) const
 {
-	// TODO
 	_subMeshes.at(subMeshIndex).PerformDrawCall(context);
 	return true;
 }

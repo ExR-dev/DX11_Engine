@@ -1,15 +1,24 @@
 #include "VertexBufferD3D11.h"
 
+#include "../ErrMsg.h"
+
 
 VertexBufferD3D11::~VertexBufferD3D11()
 {
 	if (_buffer != nullptr)
 		_buffer->Release();
+	_buffer = nullptr;
 }
 
 
 bool VertexBufferD3D11::Initialize(ID3D11Device *device, const size_t sizeOfVertex, const size_t nrOfVerticesInBuffer, const void *vertexData)
 {
+	if (_buffer != nullptr)
+	{
+		ErrMsg("Vertex buffer is not nullptr!");
+		return false;
+	}
+
 	_vertexSize = sizeOfVertex;
 	_nrOfVertices = nrOfVerticesInBuffer;
 
@@ -28,12 +37,13 @@ bool VertexBufferD3D11::Initialize(ID3D11Device *device, const size_t sizeOfVert
 
 	if (FAILED(device->CreateBuffer(&bufferDesc, &srData, &_buffer)))
 	{
-		OutputDebugString(L"Failed to create vertex buffer!\n");
+		ErrMsg("Failed to create vertex buffer!");
 		return false;
 	}
 
 	return true;
 }
+
 
 size_t VertexBufferD3D11::GetNrOfVertices() const
 {

@@ -17,9 +17,10 @@ struct Mesh
 	MeshD3D11 data;
 
 	Mesh(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	~Mesh() = default;
 	Mesh(const Mesh &other) = delete;
 	Mesh &operator=(const Mesh &other) = delete;
-	Mesh(Mesh &&other) noexcept : name(std::move(other.name)), id(other.id) { }
+	Mesh(Mesh &&other) = delete;
 	Mesh &operator=(Mesh &&other) = delete;
 };
 
@@ -30,17 +31,18 @@ struct Shader
 	ShaderD3D11 data;
 
 	Shader(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	~Shader() = default;
 	Shader(const Shader &other) = delete;
 	Shader &operator=(const Shader &other) = delete;
-	Shader(Shader &&other) noexcept : name(std::move(other.name)), id(other.id) { }
+	Shader(Shader &&other) = delete;
 	Shader &operator=(Shader &&other) = delete;
 };
 
 class Content
 {
 private:
-	std::vector<Mesh> _meshes;
-	std::vector<Shader> _shaders;
+	std::vector<Mesh*> _meshes;
+	std::vector<Shader*> _shaders;
 
 public:
 	Content();

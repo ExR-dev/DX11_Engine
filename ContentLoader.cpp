@@ -14,6 +14,7 @@ struct RawNormal	{ float	x, y, z; };
 struct RawTexCoord	{ float	u, v;	 };
 struct RawIndex		{ int	v, t, n; };
 
+
 struct FormattedVertex {
 	float 
 		px, py, pz,
@@ -267,7 +268,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	// Send vertex data to meshData
 	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
 	meshData.vertexInfo.sizeOfVertex = sizeof(FormattedVertex);
-	meshData.vertexInfo.vertexData = new FormattedVertex[meshData.vertexInfo.nrOfVerticesInBuffer];
+	meshData.vertexInfo.vertexData = reinterpret_cast<float*>(new FormattedVertex[meshData.vertexInfo.nrOfVerticesInBuffer]);
 
 	std::memcpy(
 		meshData.vertexInfo.vertexData,
@@ -323,7 +324,7 @@ bool WriteMeshToFile(const char *path, MeshData &meshData)
 
 	for (size_t i = 0; i < meshData.vertexInfo.nrOfVerticesInBuffer; i++)
 	{
-		const FormattedVertex *vData = &((FormattedVertex*)meshData.vertexInfo.vertexData)[i];
+		const FormattedVertex *vData = &reinterpret_cast<FormattedVertex*>(meshData.vertexInfo.vertexData)[i];
 
 		fileStream << "Vertex " << i << std::endl;
 

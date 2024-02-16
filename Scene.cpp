@@ -32,7 +32,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	{
 		DebugObject *dObj = &_debugObjects.at(i);
 
-		if (!dObj->Initialize(device, content->GetMesh("FallbackMesh")))
+		if (!dObj->Initialize(device, content->GetMesh(i)))
 		{
 			ErrMsg("Failed to initialize debug object!");
 			return false;
@@ -47,7 +47,6 @@ bool Scene::Uninitialize()
 {
 	if (!_initialized)
 		return false;
-
 
 	for (int i = 0; i < _debugObjects.size(); i++)
 	{
@@ -86,7 +85,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 		float rZ = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
 
 		XMVECTOR objPos	= { 0.0f, 0.0f, 5.0f };
-		XMVECTOR objRot	= { rX, rY, rZ }; // = { 0.0f, 0.0f, 0.0f };
+		XMVECTOR objRot	= { rX, rY, rZ };
 		XMVECTOR objScale = { 
 			0.5f + fmodf(abs(rX), 1.0f) * 0.5f * (std::signbit(rX) ? -1 : 1),
 			0.5f + fmodf(abs(rY), 1.0f) * 0.5f * (std::signbit(rY) ? -1 : 1),
@@ -94,7 +93,6 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 		};
 
 		objPos.m128_f32[0] = (float)(i - 1) * 1.25f;
-		//objRot.m128_f32[1] = time.time * (float)i;
 
 		if (!dObj->SetVPM(context, 50.0f, 1.0f, 0.1f, 15.0f, camPos, camDir))
 		{

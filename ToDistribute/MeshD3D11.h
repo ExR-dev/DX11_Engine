@@ -15,13 +15,23 @@ struct MeshData
 	{
 		size_t sizeOfVertex = 0;
 		size_t nrOfVerticesInBuffer = 0;
-		void *vertexData = nullptr;
+		float *vertexData = nullptr;
+
+		~VertexInfo()
+		{
+			delete[] vertexData;
+		}
 	} vertexInfo;
 
 	struct IndexInfo
 	{
 		size_t nrOfIndicesInBuffer = 0;
 		uint32_t *indexData = nullptr;
+
+		~IndexInfo()
+		{
+			delete[] indexData;
+		}
 	} indexInfo;
 
 	struct SubMeshInfo
@@ -34,15 +44,6 @@ struct MeshData
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
-
-	~MeshData()
-	{
-		if (vertexInfo.vertexData != nullptr)
-			delete[] vertexInfo.vertexData;
-
-		if (indexInfo.indexData != nullptr)
-			delete[] indexInfo.indexData;
-	}
 };
 
 class MeshD3D11
@@ -54,7 +55,7 @@ private:
 
 public:
 	MeshD3D11() = default;
-	~MeshD3D11() = default;
+	~MeshD3D11();
 	MeshD3D11(const MeshD3D11 &other) = delete;
 	MeshD3D11 &operator=(const MeshD3D11 &other) = delete;
 	MeshD3D11(MeshD3D11 &&other) = delete;
