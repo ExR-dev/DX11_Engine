@@ -66,8 +66,8 @@ public:
 	bool BindMeshBuffers(ID3D11DeviceContext *context) const;
 	bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
 
-	size_t GetNrOfSubMeshes() const;
-	ID3D11ShaderResourceView *GetAmbientSRV(size_t subMeshIndex) const;
-	ID3D11ShaderResourceView *GetDiffuseSRV(size_t subMeshIndex) const;
-	ID3D11ShaderResourceView *GetSpecularSRV(size_t subMeshIndex) const;
+	[[nodiscard]] size_t GetNrOfSubMeshes() const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetAmbientSRV(size_t subMeshIndex) const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetDiffuseSRV(size_t subMeshIndex) const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetSpecularSRV(size_t subMeshIndex) const;
 };

@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 
-#include "../ErrMsg.h"
+#include "ErrMsg.h"
 
 
 ShaderD3D11::~ShaderD3D11()

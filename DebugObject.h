@@ -1,27 +1,27 @@
 #pragma once
 
+#include "ConstantBufferD3D11.h"
 #include "PipelineHelper.h"
 #include "Time.h"
 #include "Content.h"
+#include "Transform.h"
 
 
 struct DebugRenderData
 {
-	//UINT vertexCount;
+	// TODO: Refactor
+	//ID3D11VertexShader *vShader = nullptr;
+	//ID3D11PixelShader *pShader = nullptr;
+	ID3D11InputLayout *inputLayout = nullptr;
+	//ID3D11Buffer *worldMatrixBuffer = nullptr;
+	//ID3D11Buffer *viewProjMatrixBuffer = nullptr;
+	//ID3D11Buffer *lightingBuffer = nullptr;
+	ID3D11Texture2D *texture2D = nullptr;
+	ID3D11ShaderResourceView *resourceView = nullptr;
+	ID3D11SamplerState *samplerState = nullptr;
 
-	ID3D11VertexShader *vShader;
-	ID3D11PixelShader *pShader;
-	ID3D11InputLayout *inputLayout;
-	//ID3D11Buffer *vertexBuffer;
-	ID3D11Buffer *matrixBuffer;
-	ID3D11Buffer *lightingBuffer;
-	ID3D11Texture2D *texture2D;
-	ID3D11ShaderResourceView *resourceView;
-	ID3D11SamplerState *samplerState;
-
-	MeshD3D11 *mesh;
-
-	MatrixBufferData matrixBufferData = { };
+	WorldMatrixBufferData worldMatrixBufferData = { };
+	ViewProjMatrixBufferData viewProjMatrixBufferData = { };
 	LightingBufferData lightingBufferData = {
 		{0.0f, 0.0f, 0.0f, 1.0f}, // Camera position
 		{0.5f, 2.0f, 2.5f, 1.0f}, // Light position
@@ -30,6 +30,14 @@ struct DebugRenderData
 		{1.0f, 1.0f, 1.0f, 5.0f}, // Diffuse
 		{10.0f, 10.0f, 10.0f, 128.0f}, // Specular
 	};
+
+	// Refactored
+	UINT meshID = CONTENT_LOAD_ERROR;
+	UINT vsID = CONTENT_LOAD_ERROR;
+	UINT psID = CONTENT_LOAD_ERROR;
+
+	ConstantBufferD3D11 *worldMatrixBuffer = nullptr;
+	ConstantBufferD3D11 *lightingBuffer = nullptr;
 };
 
 
@@ -37,17 +45,20 @@ class DebugObject
 {
 private:
 	bool _initialized;
+	Transform _transform;
 	DebugRenderData _renderData;
 
 public:
 	DebugObject();
 	~DebugObject();
+	DebugObject(const DebugObject &other) = delete;
+	DebugObject &operator=(const DebugObject &other) = delete;
+	DebugObject(DebugObject &&other) = default;
+	DebugObject &operator=(DebugObject &&other) = delete;
 
-	bool Initialize(ID3D11Device *device, MeshD3D11 *meshRef);
-	bool Initialize(ID3D11Device *device, MeshD3D11 *meshRef, SimpleVertex *mesh, UINT vertexCount);
-	bool Uninitialize();
+	bool Initialize(ID3D11Device *device, UINT meshID, UINT vsID, UINT psID);
 
-	bool SetVPM(ID3D11DeviceContext *context, const float fov, const float aspect, const float nearPlane, const float farPlane, const XMVECTOR &camPos, const XMVECTOR &camDir);
+	bool SetVPM(ID3D11DeviceContext *context, float fov, float aspect, float nearPlane, float farPlane, const XMVECTOR &camPos, const XMVECTOR &camDir);
 	bool SetWM(ID3D11DeviceContext *context, const XMVECTOR &pos, const XMVECTOR &rot, const XMVECTOR &scale);
 
 	bool Update(ID3D11DeviceContext *context, const Time &time);

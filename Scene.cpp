@@ -48,17 +48,6 @@ bool Scene::Uninitialize()
 	if (!_initialized)
 		return false;
 
-	for (int i = 0; i < _debugObjects.size(); i++)
-	{
-		DebugObject *dObj = &_debugObjects.at(i);
-
-		if (!dObj->Uninitialize())
-		{
-			ErrMsg("Failed to uninitialize debug object!");
-			return false;
-		}
-	}
-
 	_initialized = false;
 	return true;
 }
@@ -72,27 +61,30 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 	XMVECTOR camPos = { 0.0f, 0.0f, 0.0f };
 	XMVECTOR camDir = { 0.0f, 0.0f, 1.0f };
 
-
 	for (int i = 0; i < _debugObjects.size(); i++)
 	{
 		DebugObject *dObj = &_debugObjects.at(i);
 
 		srand(8146426 + i*10000 + 0*100);
-		float rX = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
+		const float rX = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
 		srand(3871666 + i*10000 + 1*100);
-		float rY = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
+		const float rY = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
 		srand(1846144 + i*10000 + 2*100);
-		float rZ = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
+		const float rZ = 0.75f * time.time * ((float)(rand() % 200) / 100.0f - 1.0f);
 
-		XMVECTOR objPos	= { 0.0f, 0.0f, 5.0f };
-		XMVECTOR objRot	= { rX, rY, rZ };
-		XMVECTOR objScale = { 
+		XMVECTOR objPos		= { 0.0f, 0.0f, 5.0f };
+		/*XMVECTOR objRot	= { rX, rY, rZ };
+		XMVECTOR objScale	= { 
 			0.5f + fmodf(abs(rX), 1.0f) * 0.5f * (std::signbit(rX) ? -1 : 1),
 			0.5f + fmodf(abs(rY), 1.0f) * 0.5f * (std::signbit(rY) ? -1 : 1),
 			0.5f + fmodf(abs(rZ), 1.0f) * 0.5f * (std::signbit(rZ) ? -1 : 1)
-		};
+		};*/
+
+		XMVECTOR objRot		= { 0, -time.time, 0 };
+		XMVECTOR objScale	= { 0.5f, 0.5f, 0.5f };
 
 		objPos.m128_f32[0] = (float)(i - 1) * 1.25f;
+		objPos.m128_f32[1] = (float)(i - 1) * 1.0f;
 
 		if (!dObj->SetVPM(context, 50.0f, 1.0f, 0.1f, 15.0f, camPos, camDir))
 		{

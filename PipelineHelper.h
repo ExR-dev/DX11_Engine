@@ -26,14 +26,22 @@ struct SimpleVertex
 	}
 };
 
-struct MatrixBufferData
+struct WorldMatrixBufferData
 {
 	XMFLOAT4X4 worldMatrix;
-	XMFLOAT4X4 viewProjMatrix; 
 	
-	MatrixBufferData()
+	WorldMatrixBufferData()
 	{
 		XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
+	}
+};
+
+struct ViewProjMatrixBufferData
+{
+	XMFLOAT4X4 viewProjMatrix; 
+	
+	ViewProjMatrixBufferData()
+	{
 		XMStoreFloat4x4(&viewProjMatrix, XMMatrixIdentity());
 	}
 };
@@ -63,10 +71,15 @@ struct LightingBufferData
 	}
 };
 
-bool UpdateMatrixBuffer(
+bool UpdateWorldMatrixBuffer(
 	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&matrixBuffer,
-	MatrixBufferData &matrixBufferData
+	ID3D11Buffer *&worldMatrixBuffer,
+	WorldMatrixBufferData &worldMatrixBufferData
+);
+bool UpdateViewProjMatrixBuffer(
+	ID3D11DeviceContext *immediateContext,
+	ID3D11Buffer *&viewProjMatrixBuffer,
+	ViewProjMatrixBufferData &viewProjMatrixBufferData
 );
 
 bool UpdateLightingBuffer(
@@ -78,7 +91,8 @@ bool UpdateLightingBuffer(
 bool SetupPipeline(
 	ID3D11Device *device,
 	//ID3D11Buffer *&vertexBuffer, 
-	ID3D11Buffer *&matrixBuffer,
+	ID3D11Buffer *&worldMatrixBuffer,
+	ID3D11Buffer *&viewProjMatrixBuffer,
 	ID3D11Buffer *&lightingBuffer,
 	ID3D11Texture2D *&texture2D,
 	ID3D11ShaderResourceView *&resourceView,

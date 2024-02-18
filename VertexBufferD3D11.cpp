@@ -1,6 +1,6 @@
 #include "VertexBufferD3D11.h"
 
-#include "../ErrMsg.h"
+#include "ErrMsg.h"
 
 
 VertexBufferD3D11::~VertexBufferD3D11()
@@ -23,7 +23,7 @@ bool VertexBufferD3D11::Initialize(ID3D11Device *device, const size_t sizeOfVert
 	_nrOfVertices = nrOfVerticesInBuffer;
 
 	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = _vertexSize * _nrOfVertices;
+	bufferDesc.ByteWidth = (UINT)(_vertexSize * _nrOfVertices);
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;

@@ -51,18 +51,18 @@ private:
 public:
 	SpotLightCollectionD3D11() = default;
 	~SpotLightCollectionD3D11() = default;
-	SpotLightCollectionD3D11(const SpotLightCollectionD3D11& other) = delete;
-	SpotLightCollectionD3D11& operator=(const SpotLightCollectionD3D11& other) = delete;
-	SpotLightCollectionD3D11(SpotLightCollectionD3D11&& other) = delete;
-	SpotLightCollectionD3D11& operator=(DepthBufferD3D11 && other) = delete;
+	SpotLightCollectionD3D11(const SpotLightCollectionD3D11 &other) = delete;
+	SpotLightCollectionD3D11 &operator=(const SpotLightCollectionD3D11 &other) = delete;
+	SpotLightCollectionD3D11(SpotLightCollectionD3D11 &&other) = delete;
+	SpotLightCollectionD3D11 &operator=(DepthBufferD3D11  &&other) = delete;
 
-	void Initialize(ID3D11Device* device, const SpotLightData& lightInfo);
+	void Initialize(ID3D11Device *device, const SpotLightData &lightInfo);
 
-	void UpdateLightBuffers(ID3D11DeviceContext* context);
+	void UpdateLightBuffers(ID3D11DeviceContext *context);
 
-	UINT GetNrOfLights() const;
-	ID3D11DepthStencilView* GetShadowMapDSV(UINT lightIndex) const;
-	ID3D11ShaderResourceView* GetShadowMapsSRV() const;
-	ID3D11ShaderResourceView* GetLightBufferSRV() const;
-	ID3D11Buffer* GetLightCameraConstantBuffer(UINT lightIndex) const;
+	[[nodiscard]] UINT GetNrOfLights() const;
+	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetShadowMapsSRV() const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
+	[[nodiscard]] ID3D11Buffer *GetLightCameraConstantBuffer(UINT lightIndex) const;
 };

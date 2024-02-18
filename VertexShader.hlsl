@@ -1,9 +1,14 @@
 
-cbuffer MatrixBuffer : register(b0)
+cbuffer WorldMatrixBuffer : register(b0)
 {
     matrix worldMatrix;
+};
+
+cbuffer ViewProjMatrixBuffer : register(b1)
+{
     matrix viewProjMatrix;
 };
+
 
 struct VertexShaderInput
 {

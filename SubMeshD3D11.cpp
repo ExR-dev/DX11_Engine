@@ -1,6 +1,6 @@
 #include "SubMeshD3D11.h"
 
-#include "../ErrMsg.h"
+#include "ErrMsg.h"
 
 
 bool SubMeshD3D11::Initialize(

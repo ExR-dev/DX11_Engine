@@ -1,6 +1,6 @@
 #include "MeshD3D11.h"
 
-#include "../ErrMsg.h"
+#include "ErrMsg.h"
 
 
 MeshD3D11::~MeshD3D11()

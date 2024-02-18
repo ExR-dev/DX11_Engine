@@ -16,12 +16,14 @@ Entity::~Entity()
 	// TODO
 }
 
-void Entity::Update()
+bool Entity::Update(const Time &time)
 {
 	// TODO
+	return false;
 }
 
-void Entity::Render()
+bool Entity::Render(ID3D11DeviceContext *context)
 {
 	// TODO
+	return false;
 }

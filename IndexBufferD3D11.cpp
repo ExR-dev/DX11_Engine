@@ -1,7 +1,6 @@
 #include "IndexBufferD3D11.h"
 
-#include "VertexBufferD3D11.h"
-#include "../ErrMsg.h"
+#include "ErrMsg.h"
 
 
 IndexBufferD3D11::~IndexBufferD3D11()
@@ -23,7 +22,7 @@ bool IndexBufferD3D11::Initialize(ID3D11Device *device, const size_t nrOfIndices
 	_nrOfIndices = nrOfIndicesInBuffer;
 
 	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = sizeof(uint32_t) * _nrOfIndices;
+	bufferDesc.ByteWidth = (UINT)sizeof(uint32_t) * (UINT)_nrOfIndices;
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;

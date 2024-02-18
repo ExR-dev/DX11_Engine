@@ -7,6 +7,7 @@
 #endif // DEBUG_MESSAGES
 
 #include <string>
+#include <format>
 
 
 void ErrMsg(const char *msg);

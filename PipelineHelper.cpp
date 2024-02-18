@@ -136,41 +136,75 @@ bool CreateVertexBuffer(
 	return !(FAILED(hr));
 }
 
-bool CreateMatrixBuffer(
+bool CreateWorldMatrixBuffer(
 	ID3D11Device *device, 
-	ID3D11Buffer *&matrixBuffer)
+	ID3D11Buffer *&worldMatrixBuffer)
 {
-	MatrixBufferData matrixBufferData = { };
+	WorldMatrixBufferData bufferData = { };
 
-	D3D11_BUFFER_DESC matrixBufferDesc = { };
-	matrixBufferDesc.ByteWidth = sizeof(matrixBufferData);
-	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	matrixBufferDesc.MiscFlags = 0;
-	matrixBufferDesc.StructureByteStride = 0;
+	D3D11_BUFFER_DESC bufferDesc = { };
+	bufferDesc.ByteWidth = sizeof(bufferData);
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = &matrixBufferData;
+	srData.pSysMem = &bufferData;
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
 
-	HRESULT hr = device->CreateBuffer(&matrixBufferDesc, &srData, &matrixBuffer);
-	return !(FAILED(hr));
+	return SUCCEEDED(device->CreateBuffer(&bufferDesc, &srData, &worldMatrixBuffer));
 }
 
-bool UpdateMatrixBuffer(
+bool UpdateWorldMatrixBuffer(
 	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&matrixBuffer,
-	MatrixBufferData &matrixBufferData)
+	ID3D11Buffer *&worldMatrixBuffer,
+	WorldMatrixBufferData &worldMatrixBufferData)
 {
 	D3D11_MAPPED_SUBRESOURCE resource;
-	HRESULT hr = immediateContext->Map(matrixBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource);
-	if (FAILED(hr))
+	if (FAILED(immediateContext->Map(worldMatrixBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
 		return false;
 
-	memcpy(resource.pData, &matrixBufferData, sizeof(MatrixBufferData));
-	immediateContext->Unmap(matrixBuffer, 0);
+	memcpy(resource.pData, &worldMatrixBufferData, sizeof(WorldMatrixBufferData));
+	immediateContext->Unmap(worldMatrixBuffer, 0);
+	return true;
+}
+
+bool CreateViewProjMatrixBuffer(
+	ID3D11Device *device,
+	ID3D11Buffer *&viewProjMatrixBuffer)
+{
+	ViewProjMatrixBufferData bufferData = { };
+
+	D3D11_BUFFER_DESC bufferDesc = { };
+	bufferDesc.ByteWidth = sizeof(ViewProjMatrixBufferData);
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA srData = { };
+	srData.pSysMem = &bufferData;
+	srData.SysMemPitch = 0;
+	srData.SysMemSlicePitch = 0;
+
+	return SUCCEEDED(device->CreateBuffer(&bufferDesc, &srData, &viewProjMatrixBuffer));
+}
+
+bool UpdateViewProjMatrixBuffer(
+	ID3D11DeviceContext *immediateContext,
+	ID3D11Buffer *&viewProjMatrixBuffer,
+	ViewProjMatrixBufferData &viewProjMatrixBufferData)
+{
+	D3D11_MAPPED_SUBRESOURCE resource;
+	if (FAILED(immediateContext->Map(viewProjMatrixBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
+		return false;
+
+	memcpy(resource.pData, &viewProjMatrixBufferData, sizeof(ViewProjMatrixBufferData));
+	immediateContext->Unmap(viewProjMatrixBuffer, 0);
 	return true;
 }
 
@@ -199,8 +233,7 @@ bool CreateLightingBuffer(
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
 
-	HRESULT hr = device->CreateBuffer(&lightingBufferDesc, &srData, &lightingBuffer);
-	return !(FAILED(hr));
+	return SUCCEEDED(device->CreateBuffer(&lightingBufferDesc, &srData, &lightingBuffer));
 }
 
 bool UpdateLightingBuffer(
@@ -209,8 +242,7 @@ bool UpdateLightingBuffer(
 	LightingBufferData &lightingBufferData)
 {
 	D3D11_MAPPED_SUBRESOURCE resource = { };
-	HRESULT hr = immediateContext->Map(lightingBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource);
-	if (FAILED(hr))
+	if (FAILED(immediateContext->Map(lightingBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
 		return false;
 
 	memcpy(resource.pData, &lightingBufferData, sizeof(LightingBufferData));
@@ -283,8 +315,8 @@ bool LoadTexture2D(
 
 bool SetupPipeline(
 	ID3D11Device *device, 
-	//ID3D11Buffer *&vertexBuffer,
-	ID3D11Buffer *&matrixBuffer,
+	ID3D11Buffer *&worldMatrixBuffer,
+	ID3D11Buffer *&viewProjMatrixBuffer,
 	ID3D11Buffer *&lightingBuffer,
 	ID3D11Texture2D *&texture2D,
 	ID3D11ShaderResourceView *&resourceView,
@@ -307,15 +339,15 @@ bool SetupPipeline(
 		return false;
 	}
 
-	/*if (!CreateVertexBuffer(device, vertexBuffer, vertices, vertexCount))
+	if (!CreateWorldMatrixBuffer(device, worldMatrixBuffer))
 	{
-		ErrMsg("Error creating vertex buffer!");
+		ErrMsg("Error creating world matrix buffer!");
 		return false;
-	}*/
+	}
 
-	if (!CreateMatrixBuffer(device, matrixBuffer))
+	if (!CreateViewProjMatrixBuffer(device, viewProjMatrixBuffer))
 	{
-		ErrMsg("Error creating matrix buffer!");
+		ErrMsg("Error creating view projection matrix buffer!");
 		return false;
 	}
 

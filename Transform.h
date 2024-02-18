@@ -8,41 +8,39 @@ using namespace DirectX;
 class Transform
 {
 private:
-	XMMATRIX _world = XMMatrixIdentity();
 
 	XMFLOAT3
-		_pos = { 0.0f, 0.0f, 0.0f },
-		_rot = { 0.0f, 0.0f, 0.0f },
-		_size = { 1.0f, 1.0f, 1.0f };
+		_pos	= { 0.0f, 0.0f, 0.0f },
+		_rot	= { 0.0f, 0.0f, 0.0f },
+		_scale	= { 1.0f, 1.0f, 1.0f };
 
-	void UpdateMatrices();
-	void UpdateVectors();
+	XMMATRIX _world = XMMatrixIdentity();
+	bool _dirty = true;
+
+	void UpdateMatrix();
 
 public:
-	Transform();
-	Transform(const XMMATRIX &worldMatrix);
-	~Transform();
-
-
 	void Move(const XMFLOAT3 &movement);
 	void Rotate(const XMFLOAT3 &rotation);
 	void Scale(const XMFLOAT3 &factor);
 
+	void AxisRotation(const XMFLOAT3 &axis, float angle);
+
+	void MoveLocal(const XMFLOAT3 &movement);
 
 	void SetPosition(const XMFLOAT3 &position);
 	void SetRotation(const XMFLOAT3 &rotation);
 	void SetScale(const XMFLOAT3 &scale);
 
-
-	XMFLOAT3 GetRight() const;
-	XMFLOAT3 GetUp() const;
-	XMFLOAT3 GetForward() const;
-
-	XMFLOAT3 GetPosition() const;
-	XMFLOAT3 GetRotation() const;
-	XMFLOAT3 GetScale() const;
-
-
 	void SetWorldMatrix(const XMMATRIX &matrix);
-	XMMATRIX GetWorldMatrix() const;
+
+	[[nodiscard]] XMFLOAT3 GetPosition() const;
+	[[nodiscard]] XMFLOAT3 GetRotation() const;
+	[[nodiscard]] XMFLOAT3 GetScale() const;
+
+	[[nodiscard]] XMFLOAT3 GetRight();
+	[[nodiscard]] XMFLOAT3 GetUp();
+	[[nodiscard]] XMFLOAT3 GetForward();
+
+	[[nodiscard]] XMMATRIX GetWorldMatrix();
 };

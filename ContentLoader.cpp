@@ -4,9 +4,11 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <iostream>
 
 #include "ErrMsg.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 struct RawPosition	{ float	x, y, z; };
@@ -14,12 +16,26 @@ struct RawNormal	{ float	x, y, z; };
 struct RawTexCoord	{ float	u, v;	 };
 struct RawIndex		{ int	v, t, n; };
 
-
 struct FormattedVertex {
 	float 
 		px, py, pz,
 		nx, ny, nz,
 		u, v;
+
+	FormattedVertex() :
+	px(0.0f), py(0.0f), pz(0.0f),
+	nx(0.0f), ny(0.0f), nz(0.0f),
+	u(0.0f), v(0.0f)
+	{ }
+
+	FormattedVertex(
+		const float px, const float py, const float pz, 
+		const float nx, const float ny, const float nz, 
+		const float u, const float v) :
+	px(px), py(py), pz(pz),
+	nx(nx), ny(ny), nz(nz),
+	u(u), v(v)
+	{ }
 
 	bool operator==(const FormattedVertex &other) const
 	{
@@ -39,67 +55,14 @@ struct FormattedVertex {
 };
 
 
-void ResolveDuplicateVertices(
-	std::vector<FormattedVertex> &vertices,
-	std::vector<std::vector<uint32_t>> &indexGroups)
+static bool ReadWavefrontFile(const char *path, 
+	std::vector<RawPosition> &vertexPositions, 
+	std::vector<RawTexCoord> &vertexTexCoords,
+	std::vector<RawNormal> &vertexNormals,
+	std::vector<std::vector<RawIndex>> &indexGroups)
 {
-	const auto vertBegin = vertices.begin();
-	int vertCount = vertices.size();
-
-	std::vector<uint32_t> vertexMap(vertCount, 0);
-	for (size_t i = 0; i < vertCount; (vertexMap.at(i) = i++));
-
-	// Locate and erase duplicates
-	for (size_t i = 0; i < vertCount; i++)
-	{
-		const FormattedVertex checkedVert = vertices.at(i);
-
-		for (size_t j = i + 1; j < vertCount; j++)
-		{
-			if (vertices.at(j) == checkedVert)
-			{
-				vertexMap.at(j) = i;
-				vertices.erase(vertBegin + j);
-
-				vertCount--;
-				j--;
-			}
-		}
-	}
-
-	const int groupCount = indexGroups.size();
-
-	// Remap indices
-	for (size_t group_i = 0; group_i < groupCount; group_i++)
-	{
-		std::vector<uint32_t> *currGroup = &indexGroups.at(group_i);
-		const int groupSize = currGroup->size();
-
-		for (size_t i = 0; i < groupSize; i++)
-		{
-			const uint32_t oldIndex = currGroup->at(i);
-			currGroup->at(i) = vertexMap.at(oldIndex);
-		}
-	}
-}
-
-
-bool LoadMeshFromFile(const char *path, MeshData &meshData)
-{
-	if (meshData.vertexInfo.vertexData != nullptr || 
-		meshData.indexInfo.indexData != nullptr)
-	{
-		ErrMsg("meshData is not nullified!");
-		return false;
-	}
-
 	std::ifstream fileStream(path);
 	std::string line;
-
-	std::vector<RawPosition> vertexPositions;
-	std::vector<RawTexCoord> vertexTexCoords;
-	std::vector<RawNormal> vertexNormals;
-	std::vector<std::vector<RawIndex>> indexGroups;
 
 	bool begunReadingSubMesh = false;
 	int endOfLastSubMesh = 0;
@@ -112,18 +75,18 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 
 		if (line.empty())
 			continue; // Skip filler line
-		
+
 		if (line.length() > 1)
 			if (line.at(0) == 'f' && line.at(1) == ' ')
 			{
 				char sep = '/';
 				if (line.find('\\', 0) != std::string::npos)
 					sep = '\\';
-			
+
 				// Replace all instances of separator with whitespace.
 				std::string::size_type n = 0;
 				while ((n = line.find(sep, n)) != std::string::npos)
-				{ 
+				{
 					line.replace(n, 1, " ");
 					n++;
 				}
@@ -134,28 +97,28 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		std::string dataType;
 		if (!(segments >> dataType))
 		{
-			ErrMsg("Failed to get data type from line \"" + line + "\"!");
+			ErrMsg(std::format("Failed to get data type from line \"{}\"!", line));
 			return false;
 		}
 
-		if (dataType == "mtllib") 
+		if (dataType == "mtllib")
 		{ // Define where to find materials
 
 		}
 		else if (dataType == "g")
 		{ // Mesh Group
-			
+
 		}
 		else if (dataType == "o")
 		{ // Mesh Object
-			
+
 		}
 		else if (dataType == "v")
 		{ // Vertex Position
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				ErrMsg("Failed to get vertex position from line \"" + line + "\"!");
+				ErrMsg(std::format("Failed to get vertex position from line \"{}\"!", line));
 				return false;
 			}
 
@@ -166,7 +129,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			float u, v;
 			if (!(segments >> u >> v))
 			{
-				ErrMsg("Failed to get texture coordinate from line \"" + line + "\"!");
+				ErrMsg(std::format("Failed to get texture coordinate from line \"{}\"!", line));
 				return false;
 			}
 
@@ -177,7 +140,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				ErrMsg("Failed to get normal from line \"" + line + "\"!");
+				ErrMsg(std::format("Failed to get normal from line \"{}\"!", line));
 				return false;
 			}
 
@@ -197,10 +160,10 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 			while (segments >> vi >> ti >> ni)
 				indicesInGroup.push_back({ --vi, --ti, --ni });
 
-			int groupSize = indicesInGroup.size();
+			size_t groupSize = indicesInGroup.size();
 			if (groupSize < 3 || groupSize > 4)
 			{
-				ErrMsg("Unparseable group size '" + std::to_string(groupSize) + "' at line \"" + line + "\"!");
+				ErrMsg(std::format("Unparseable group size '{}' at line \"{}\"!", groupSize, line));
 				return false;
 			}
 
@@ -228,47 +191,97 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		}
 		else
 		{
-			ErrMsg("Unrecognized type flag '" + dataType + "'!");
+			ErrMsg(std::format("Unimplemented type flag '{}' on line \"{}\"!", dataType, line));
 		}
 	}
+	return true;
+}
 
-	std::vector<FormattedVertex> formattedVertices;
-	std::vector<std::vector<uint32_t>> formattedIndexGroups;
-
-	size_t groupCount = indexGroups.size();
+static void FormatRawMesh(
+	std::vector<FormattedVertex> &formattedVertices,
+	std::vector<std::vector<uint32_t>> &formattedIndexGroups,
+	const std::vector<RawPosition> &vertexPositions,
+	const std::vector<RawTexCoord> &vertexTexCoords,
+	const std::vector<RawNormal> &vertexNormals,
+	const std::vector<std::vector<RawIndex>> &indexGroups)
+{
+	const size_t groupCount = indexGroups.size();
 	for (size_t groupIndex = 0; groupIndex < groupCount; groupIndex++)
 	{
 		formattedIndexGroups.emplace_back();
 		std::vector<uint32_t> *formattedGroup = &formattedIndexGroups.back();
 		const std::vector<RawIndex> *rawGroup = &indexGroups.at(groupIndex);
 
-		size_t groupSize = rawGroup->size();
+		const size_t groupSize = rawGroup->size();
 		for (size_t vertIndex = 0; vertIndex < groupSize; vertIndex++)
 		{
-			RawIndex rI = rawGroup->at(vertIndex);
+			const RawIndex rI = rawGroup->at(vertIndex);
+			const RawPosition rP = vertexPositions.at(rI.v);
+			const RawTexCoord rT = vertexTexCoords.at(rI.t);
+			const RawNormal rN = vertexNormals.at(rI.n);
 
-			RawPosition rP = vertexPositions.at(rI.v);
-			RawTexCoord rT = vertexTexCoords.at(rI.t);
-			RawNormal rN = vertexNormals.at(rI.n);
-
-			FormattedVertex newVert = { 
+			formattedGroup->emplace_back((uint32_t)formattedVertices.size());
+			formattedVertices.emplace_back(
 				rP.x, rP.y, rP.z,
 				rN.x, rN.y, rN.z,
-				rT.u, rT.v,				
-			};
+				rT.u, rT.v
+			);
+		}
+	}
+}
 
-			formattedGroup->push_back(formattedVertices.size());
-			formattedVertices.push_back(newVert);
+static void ResolveDuplicateVertices(
+	std::vector<FormattedVertex> &formattedVertices,
+	std::vector<std::vector<uint32_t>> &formattedIndexGroups)
+{
+	const auto vertBegin = formattedVertices.begin();
+	uint32_t vertCount = (uint32_t)formattedVertices.size();
+
+	std::vector<uint32_t> vertexMap(vertCount, 0);
+	for (uint32_t i = 0; i < vertCount; (vertexMap.at(i) = i++)) { }
+
+	// Locate and erase duplicates
+	for (uint32_t i = 0; i < vertCount; i++)
+	{
+		const FormattedVertex checkedVert = formattedVertices.at(i);
+
+		for (uint32_t j = i + 1; j < vertCount; j++)
+		{
+			if (formattedVertices.at(j) == checkedVert)
+			{
+				vertexMap.at(j) = i;
+				formattedVertices.erase(vertBegin + j);
+
+				vertCount--;
+				j--;
+			}
 		}
 	}
 
-	/* Keep or discard ? */
-	// ResolveDuplicateVertices(formattedVertices, formattedIndexGroups); 
+	const uint32_t groupCount = (uint32_t)formattedIndexGroups.size();
 
+	// Remap indices
+	for (uint32_t group_i = 0; group_i < groupCount; group_i++)
+	{
+		std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
+		const uint32_t groupSize = (uint32_t)currGroup->size();
+
+		for (uint32_t i = 0; i < groupSize; i++)
+		{
+			const uint32_t oldIndex = currGroup->at(i);
+			currGroup->at(i) = vertexMap.at(oldIndex);
+		}
+	}
+}
+
+static void SendFormattedMeshToMeshData(MeshData &meshData,
+	const std::vector<FormattedVertex> &formattedVertices,
+	const std::vector<std::vector<uint32_t>> &formattedIndexGroups)
+{
 	// Send vertex data to meshData
 	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
 	meshData.vertexInfo.sizeOfVertex = sizeof(FormattedVertex);
-	meshData.vertexInfo.vertexData = reinterpret_cast<float*>(new FormattedVertex[meshData.vertexInfo.nrOfVerticesInBuffer]);
+	meshData.vertexInfo.vertexData = reinterpret_cast<float *>(new FormattedVertex[meshData.vertexInfo.nrOfVerticesInBuffer]);
 
 	std::memcpy(
 		meshData.vertexInfo.vertexData,
@@ -279,11 +292,11 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	// Send index data to meshData
 	std::vector<uint32_t> inlineIndices;
 
-	groupCount = formattedIndexGroups.size();
+	const size_t groupCount = formattedIndexGroups.size();
 	for (size_t group_i = 0; group_i < groupCount; group_i++)
 	{
 		MeshData::SubMeshInfo subMeshInfo = { };
-		std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
+		const std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
 
 		subMeshInfo.startIndexValue = inlineIndices.size();
 		subMeshInfo.nrOfIndicesInSubMesh = currGroup->size();
@@ -300,12 +313,54 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 		inlineIndices.data(),
 		sizeof(uint32_t) * meshData.indexInfo.nrOfIndicesInBuffer
 	);
+}
+
+bool LoadMeshFromFile(const char *path, MeshData &meshData)
+{
+	if (meshData.vertexInfo.vertexData != nullptr || 
+		meshData.indexInfo.indexData != nullptr)
+	{
+		ErrMsg("meshData is not nullified!");
+		return false;
+	}
+
+	std::string ext = path;
+	ext.erase(0, ext.find_last_of('.') + 1);
+
+	std::vector<RawPosition> vertexPositions;
+	std::vector<RawTexCoord> vertexTexCoords;
+	std::vector<RawNormal> vertexNormals;
+	std::vector<std::vector<RawIndex>> indexGroups;
+
+	if (ext == "obj")
+	{
+		if (!ReadWavefrontFile(path, vertexPositions, vertexTexCoords, vertexNormals, indexGroups))
+		{
+			ErrMsg("Failed to read wavefront file!");
+			return false;
+		}
+	}
+	else
+	{
+		ErrMsg(std::format("Unimplemented mesh file extension '{}'!", ext));
+		return false;
+	}
+
+	std::vector<FormattedVertex> formattedVertices;
+	std::vector<std::vector<uint32_t>> formattedIndexGroups;
+
+	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups);
+
+	// TODO: Keep or discard?
+	// ResolveDuplicateVertices(formattedVertices, formattedIndexGroups); 
+
+	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups);
 
 	return true;	
 }
 
 /// Debug Function
-bool WriteMeshToFile(const char *path, MeshData &meshData)
+bool WriteMeshToFile(const char *path, const MeshData &meshData)
 {
 	if (meshData.vertexInfo.vertexData == nullptr || 
 		meshData.indexInfo.indexData == nullptr)
@@ -358,5 +413,24 @@ bool WriteMeshToFile(const char *path, MeshData &meshData)
 	fileStream << "----------------------------------------------" << std::endl << std::endl;
 	
 	fileStream.close();
+	return true;
+}
+
+
+bool LoadTextureFromFile(const char *path, UINT &width, UINT &height, std::vector<unsigned char> &data)
+{
+	int w, h, comp;
+	unsigned char *imgData = stbi_load(path, &w, &h, &comp, STBI_rgb_alpha);
+	if (imgData == nullptr)
+	{
+		ErrMsg(std::format("Failed to load texture from file at path \"{}\"!", path));
+		return false;
+	}
+
+	width = (UINT)w;
+	height = (UINT)h;
+	data = std::vector(imgData, imgData + (4ul * w * h));
+
+	stbi_image_free(imgData);
 	return true;
 }

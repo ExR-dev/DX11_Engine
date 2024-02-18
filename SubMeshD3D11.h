@@ -28,7 +28,7 @@ public:
 
 	bool PerformDrawCall(ID3D11DeviceContext *context) const;
 
-	ID3D11ShaderResourceView *GetAmbientSRV() const;
-	ID3D11ShaderResourceView *GetDiffuseSRV() const;
-	ID3D11ShaderResourceView *GetSpecularSRV() const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetAmbientSRV() const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetDiffuseSRV() const;
+	[[nodiscard]] ID3D11ShaderResourceView *GetSpecularSRV() const;
 };
