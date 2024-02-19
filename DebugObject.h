@@ -36,8 +36,8 @@ struct DebugRenderData
 	UINT vsID = CONTENT_LOAD_ERROR;
 	UINT psID = CONTENT_LOAD_ERROR;
 
-	ConstantBufferD3D11 *worldMatrixBuffer = nullptr;
-	ConstantBufferD3D11 *lightingBuffer = nullptr;
+	ConstantBufferD3D11 worldMatrixBuffer;
+	ConstantBufferD3D11 lightingBuffer;
 };
 
 
@@ -58,8 +58,7 @@ public:
 
 	bool Initialize(ID3D11Device *device, UINT meshID, UINT vsID, UINT psID);
 
-	bool SetVPM(ID3D11DeviceContext *context, float fov, float aspect, float nearPlane, float farPlane, const XMVECTOR &camPos, const XMVECTOR &camDir);
-	bool SetWM(ID3D11DeviceContext *context, const XMVECTOR &pos, const XMVECTOR &rot, const XMVECTOR &scale);
+	bool SetWM(ID3D11DeviceContext *context) const;
 
 	bool Update(ID3D11DeviceContext *context, const Time &time);
 	bool Render(ID3D11DeviceContext *context);

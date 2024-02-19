@@ -67,34 +67,16 @@ bool DebugObject::Initialize(ID3D11Device *device, const UINT meshID, const UINT
 }
 
 
-bool DebugObject::SetVPM(
-	ID3D11DeviceContext *context, 
-	const float fov, const float aspect, const float nearPlane, const float farPlane,
-	const XMVECTOR &camPos, const XMVECTOR &camDir)
+bool DebugObject::SetWM(ID3D11DeviceContext *context) const
 {
-	if (!_initialized)
+	XMFLOAT4X4 worldMat;
+	XMStoreFloat4x4(&worldMat, XMMatrixTranspose(_transform.GetWorldMatrix()));
+
+	if (!_renderData.worldMatrixBuffer.UpdateBuffer(context, &worldMat))
+	{
+		ErrMsg("Failed to update world matrix buffer!");
 		return false;
-
-	const XMMATRIX viewProjMatrix =
-		XMMatrixLookAtLH(camPos, camPos + camDir, { 0, 1, 0 }) *
-		XMMatrixPerspectiveFovLH(fov * 0.0174533f, aspect, nearPlane, farPlane);
-
-	XMStoreFloat4x4(&_renderData.viewProjMatrixBufferData.viewProjMatrix, XMMatrixTranspose(viewProjMatrix));
-
-	return true;
-}
-
-bool DebugObject::SetWM(ID3D11DeviceContext *context, const XMVECTOR &pos, const XMVECTOR &rot, const XMVECTOR &scale)
-{
-	if (!_initialized)
-		return false;
-
-	const XMMATRIX worldMatrix =
-		XMMatrixScalingFromVector(scale) *
-		XMMatrixRotationRollPitchYawFromVector(rot) *
-		XMMatrixTranslationFromVector(pos);
-
-	XMStoreFloat4x4(&_renderData.worldMatrixBufferData.worldMatrix, XMMatrixTranspose(worldMatrix));
+	}
 	return true;
 }
 
@@ -104,14 +86,14 @@ bool DebugObject::Update(ID3D11DeviceContext *context, const Time &time)
 	if (!_initialized)
 		return false;
 
-	if (!UpdateWorldMatrixBuffer(context, _renderData.worldMatrixBuffer, _renderData.worldMatrixBufferData))
-		return false;
+	SetWM(context);
 
-	if (!UpdateViewProjMatrixBuffer(context, _renderData.viewProjMatrixBuffer, _renderData.viewProjMatrixBufferData))
+	// TODO: Deprecate
+	if (!_renderData.lightingBuffer.UpdateBuffer(context, &_renderData.lightingBufferData))
+	{
+		ErrMsg("Failed to update lighting buffer!");
 		return false;
-
-	if (!UpdateLightingBuffer(context, _renderData.lightingBuffer, _renderData.lightingBufferData))
-		return false;
+	}
 
 	return true;
 }

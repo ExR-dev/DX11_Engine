@@ -52,15 +52,21 @@ bool ConstantBufferD3D11::Initialize(ID3D11Device *device, const size_t byteSize
 	bufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = initialData;
+	srData.pSysMem = (initialData == nullptr) ? new char[byteSize] : initialData;
 	srData.SysMemPitch = 0;
 	srData.SysMemSlicePitch = 0;
 
 	if (FAILED(device->CreateBuffer(&bufferDesc, &srData, &_buffer)))
 	{
 		ErrMsg("Failed to create constant buffer!");
+
+		if (initialData == nullptr)
+			delete[] static_cast<const char*>(srData.pSysMem);
 		return false;
 	}
+
+	if (initialData == nullptr)
+		delete[] static_cast<const char*>(srData.pSysMem);
 	return true;
 }
 

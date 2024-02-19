@@ -3,62 +3,142 @@
 #include "ErrMsg.h"
 
 
-void Transform::Move(const XMFLOAT3 &movement)
+void Transform::Move(const XMFLOAT4A &movement)
 {
 	_pos.x += movement.x;
 	_pos.y += movement.y;
 	_pos.z += movement.z;
 }
 
-void Transform::Rotate(const XMFLOAT3 &rotation)
+void Transform::Rotate(const XMFLOAT4A &rotation)
 {
-	_rot.x += rotation.x;
-	_rot.y += rotation.y;
-	_rot.z += rotation.z;
-
-	_rot.x = fmodf(_rot.x, XM_2PI);
-	if (_rot.x < 0.0f) _rot.x += XM_2PI;
-
-	_rot.y = fmodf(_rot.y, XM_2PI);
-	if (_rot.y < 0.0f) _rot.y += XM_2PI;
-
-	_rot.z = fmodf(_rot.z, XM_2PI);
-	if (_rot.z < 0.0f) _rot.z += XM_2PI;
+	RotateByQuaternion(XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z));
 }
 
-void Transform::Scale(const XMFLOAT3 &factor)
+void Transform::Scale(const XMFLOAT4A &factor)
+{
+	const XMVECTOR factorVec = XMLoadFloat4A(&factor);
+
+	const float
+		rightFactor = XMVectorGetX(XMVector3Dot(*reinterpret_cast<XMVECTOR*>(&_right), factorVec)),
+		upFactor = XMVectorGetX(XMVector3Dot(*reinterpret_cast<XMVECTOR*>(&_up), factorVec)),
+		forwardFactor = XMVectorGetX(XMVector3Dot(*reinterpret_cast<XMVECTOR*>(&_forward), factorVec));
+
+	_right.x *= rightFactor;
+	_right.y *= rightFactor;
+	_right.z *= rightFactor;
+
+	_up.x *= upFactor;
+	_up.y *= upFactor;
+	_up.z *= upFactor;
+
+	_forward.x *= forwardFactor;
+	_forward.y *= forwardFactor;
+	_forward.z *= forwardFactor;
+}
+
+void Transform::MoveLocal(const XMFLOAT4A &movement)
+{
+	_pos.x += movement.x * _right.x + movement.y * _up.x + movement.z * _forward.x;
+	_pos.y += movement.x * _right.y + movement.y * _up.y + movement.z * _forward.y;
+	_pos.z += movement.x * _right.z + movement.y * _up.z + movement.z * _forward.z;
+}
+
+void Transform::RotateLocal(const XMFLOAT4A &rotation)
+{
+	RotateByQuaternion(XMQuaternionMultiply(XMQuaternionMultiply(
+		XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_right), rotation.x),
+			XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_up), rotation.y)),
+		XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_forward), rotation.z)));
+}
+
+void Transform::ScaleLocal(const XMFLOAT4A &factor)
 {
 	_right.x *= factor.x;
-	_right.y *= factor.y;
-	_right.z *= factor.z;
+	_right.y *= factor.x;
+	_right.z *= factor.x;
+
+	_up.x *= factor.y;
+	_up.y *= factor.y;
+	_up.z *= factor.y;
+
+	_forward.x *= factor.z;
+	_forward.y *= factor.z;
+	_forward.z *= factor.z;
+}
+
+
+void Transform::RotateRoll(const float& rotation)
+{
+	RotateByQuaternion(XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_forward), rotation));
+}
+
+void Transform::RotatePitch(const float& rotation)
+{
+	RotateByQuaternion(XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_right), rotation));
+}
+
+void Transform::RotateYaw(const float& rotation)
+{
+	RotateByQuaternion(XMQuaternionRotationAxis(*reinterpret_cast<XMVECTOR*>(&_up), rotation));
 }
 
 
 void Transform::RotateByQuaternion(const XMVECTOR &quaternion)
 {
-	const XMVECTOR quatConjugate = XMQuaternionConjugate(quaternion);
-
 	const XMVECTOR
-		newRight = quaternion * XMLoadFloat3(&_right)	* quatConjugate,
-		newUp = quaternion * XMLoadFloat3(&_up)		* quatConjugate,
-		newForward = quaternion * XMLoadFloat3(&_forward)	* quatConjugate;
+		quatConjugate = XMQuaternionConjugate(quaternion),
+		newRight = quaternion * (*reinterpret_cast<XMVECTOR*>(&_right)) * quatConjugate,
+		newUp = quaternion * (*reinterpret_cast<XMVECTOR*>(&_up)) * quatConjugate,
+		newForward = quaternion * (*reinterpret_cast<XMVECTOR*>(&_forward)) * quatConjugate;
 
-	_right = { newRight.m128_f32[0],	 newRight.m128_f32[1],	 newRight.m128_f32[2] };
-	_up = { newUp.m128_f32[0],		 newUp.m128_f32[1],		 newUp.m128_f32[2] };
-	_forward = { newForward.m128_f32[0], newForward.m128_f32[1], newForward.m128_f32[2] };
+	XMStoreFloat4A(&_right, newRight);
+	XMStoreFloat4A(&_up, newUp);
+	XMStoreFloat4A(&_forward, newForward);
 }
 
 
+void Transform::SetPosition(const XMFLOAT4A& position)
+{
+	_pos = position;
+}
+
+void Transform::SetAxes(const XMFLOAT4A& right, const XMFLOAT4A& up, const XMFLOAT4A& forward)
+{
+	_right = right;
+	_up = up;
+	_forward = forward;
+}
+
+
+XMFLOAT4A Transform::GetPosition() const
+{
+	return _pos;
+}
+
+XMFLOAT4A Transform::GetRight() const
+{
+	return _right;
+}
+
+XMFLOAT4A Transform::GetUp() const
+{
+	return _up;
+}
+
+XMFLOAT4A Transform::GetForward() const
+{
+	return _forward;
+}
+
 XMMATRIX Transform::GetWorldMatrix() const
 {
-	const XMMATRIX worldMatrix = XMMatrixSet(
+	return XMMatrixSet(
 		_right.x, _right.y, _right.z, 0,
 		_up.x, _up.y, _up.z, 0,
 		_forward.x, _forward.y, _forward.z, 0,
 		_pos.x, _pos.y, _pos.z, 1
 	);
-
-	return worldMatrix;
 }
 
 

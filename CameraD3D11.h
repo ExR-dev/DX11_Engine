@@ -23,21 +23,24 @@ private:
 
 	ConstantBufferD3D11 _cameraBuffer;
 
-	void MoveInDirection(float amount, const XMFLOAT3 &direction);
-	void RotateAroundAxis(float amount, const XMFLOAT3 &axis);
+	void Move(float amount, const XMFLOAT4A &direction);
+	void MoveLocal(float amount, const XMFLOAT4A &direction);
+
+	void RotatePitch(float amount);
+	void RotateYaw(float amount);
 
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT3 &initialPosition = XMFLOAT3(0.0f, 0.0f, 0.0f));
+		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f));
 	~CameraD3D11() = default;
 	CameraD3D11(const CameraD3D11 &other) = delete;
 	CameraD3D11 &operator=(const CameraD3D11 &other) = delete;
 	CameraD3D11(CameraD3D11 &&other) = default;
 	CameraD3D11 &operator=(CameraD3D11 &&other) = default;
 
-	void Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT3 &initialPosition = XMFLOAT3(0.0f, 0.0f, 0.0f));
+	bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
+		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f));
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);
@@ -47,12 +50,12 @@ public:
 	void RotateRight(float amount);
 	void RotateUp(float amount);
 
-	[[nodiscard]] const XMFLOAT3 &GetPosition() const;
-	[[nodiscard]] const XMFLOAT3 &GetForward() const;
-	[[nodiscard]] const XMFLOAT3 &GetRight() const;
-	[[nodiscard]] const XMFLOAT3 &GetUp() const;
+	[[nodiscard]] const XMFLOAT4A &GetPosition() const;
+	[[nodiscard]] const XMFLOAT4A &GetForward() const;
+	[[nodiscard]] const XMFLOAT4A &GetRight() const;
+	[[nodiscard]] const XMFLOAT4A &GetUp() const;
 
-	void UpdateInternalConstantBuffer(ID3D11DeviceContext *context);
+	bool UpdateInternalConstantBuffer(ID3D11DeviceContext *context) const;
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
 
 	[[nodiscard]] XMFLOAT4X4 GetViewProjectionMatrix() const;
