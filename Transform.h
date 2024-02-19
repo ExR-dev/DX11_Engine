@@ -8,19 +8,23 @@ using namespace DirectX;
 class Transform
 {
 private:
-
 	XMFLOAT3
-		_pos	= { 0.0f, 0.0f, 0.0f },
-		_rot	= { 0.0f, 0.0f, 0.0f },
-		_scale	= { 1.0f, 1.0f, 1.0f };
-
-	XMMATRIX _world = XMMatrixIdentity();
-	bool _dirty = true;
-
-	void UpdateMatrix();
+		_right		= { 1.0f, 0.0f, 0.0f },
+		_up			= { 0.0f, 1.0f, 0.0f },
+		_forward	= { 0.0f, 0.0f, 1.0f },
+		_pos		= { 0.0f, 0.0f, 0.0f };
 
 public:
 	void Move(const XMFLOAT3 &movement);
+	void Rotate(const XMFLOAT3 &rotation);
+	void Scale(const XMFLOAT3 &factor);
+
+	void RotateByQuaternion(const XMVECTOR &quaternion);
+
+	[[nodiscard]] XMMATRIX GetWorldMatrix() const;
+
+
+	/*void Move(const XMFLOAT3 &movement);
 	void Rotate(const XMFLOAT3 &rotation);
 	void Scale(const XMFLOAT3 &factor);
 
@@ -42,5 +46,5 @@ public:
 	[[nodiscard]] XMFLOAT3 GetUp();
 	[[nodiscard]] XMFLOAT3 GetForward();
 
-	[[nodiscard]] XMMATRIX GetWorldMatrix();
+	[[nodiscard]] XMMATRIX GetWorldMatrix();*/
 };

@@ -3,24 +3,11 @@
 #include "ErrMsg.h"
 
 
-void Transform::UpdateMatrix()
-{
-	_world = 
-		XMMatrixScaling(_scale.x, _scale.y, _scale.z) *
-		XMMatrixRotationRollPitchYaw(_rot.x, _rot.y, _rot.z) *
-		XMMatrixTranslation(_pos.x, _pos.y, _pos.z);
-
-	_dirty = false;
-}
-
-
 void Transform::Move(const XMFLOAT3 &movement)
 {
 	_pos.x += movement.x;
 	_pos.y += movement.y;
 	_pos.z += movement.z;
-
-	_dirty = true;
 }
 
 void Transform::Rotate(const XMFLOAT3 &rotation)
@@ -37,38 +24,68 @@ void Transform::Rotate(const XMFLOAT3 &rotation)
 
 	_rot.z = fmodf(_rot.z, XM_2PI);
 	if (_rot.z < 0.0f) _rot.z += XM_2PI;
-
-	_dirty = true;
 }
 
 void Transform::Scale(const XMFLOAT3 &factor)
 {
-	_scale.x *= factor.x;
-	_scale.y *= factor.y;
-	_scale.z *= factor.z;
-
-	_dirty = true;
+	_right.x *= factor.x;
+	_right.y *= factor.y;
+	_right.z *= factor.z;
 }
 
-void Transform::AxisRotation(const XMFLOAT3 &axis, const float angle)
+
+void Transform::RotateByQuaternion(const XMVECTOR &quaternion)
+{
+	const XMVECTOR quatConjugate = XMQuaternionConjugate(quaternion);
+
+	const XMVECTOR
+		newRight = quaternion * XMLoadFloat3(&_right)	* quatConjugate,
+		newUp = quaternion * XMLoadFloat3(&_up)		* quatConjugate,
+		newForward = quaternion * XMLoadFloat3(&_forward)	* quatConjugate;
+
+	_right = { newRight.m128_f32[0],	 newRight.m128_f32[1],	 newRight.m128_f32[2] };
+	_up = { newUp.m128_f32[0],		 newUp.m128_f32[1],		 newUp.m128_f32[2] };
+	_forward = { newForward.m128_f32[0], newForward.m128_f32[1], newForward.m128_f32[2] };
+}
+
+
+XMMATRIX Transform::GetWorldMatrix() const
+{
+	const XMMATRIX worldMatrix = XMMatrixSet(
+		_right.x, _right.y, _right.z, 0,
+		_up.x, _up.y, _up.z, 0,
+		_forward.x, _forward.y, _forward.z, 0,
+		_pos.x, _pos.y, _pos.z, 1
+	);
+
+	return worldMatrix;
+}
+
+
+
+
+
+
+
+/*void Transform::AxisRotation(const XMFLOAT3 &axis, const float angle)
 {
 	// TODO: This is incorrect, decomposition gives rotation in quaternion form, not euler angles
 	ErrMsg("Transform::AxisRotation() is incorrect, decomposition gives rotation in quaternion form, not euler angles");
 
-	_world =
+	_wMat =
 		XMMatrixScaling(_scale.x, _scale.y, _scale.z) *
 		XMMatrixRotationRollPitchYaw(_rot.x, _rot.y, _rot.z) *
 		XMMatrixRotationAxis(XMLoadFloat3(&axis), angle) *
 		XMMatrixTranslation(_pos.x, _pos.y, _pos.z);
 
 	XMVECTOR scale, rot, pos;
-	XMMatrixDecompose(&scale, &rot, &pos, _world);
+	XMMatrixDecompose(&scale, &rot, &pos, _wMat);
 
 	_rot.x = rot.m128_f32[0];
 	_rot.y = rot.m128_f32[1];
 	_rot.z = rot.m128_f32[2];
 
-	_dirty = false;
+	_wMatDirty = false;
 }
 
 
@@ -92,7 +109,7 @@ void Transform::MoveLocal(const XMFLOAT3 &movement)
 void Transform::SetPosition(const XMFLOAT3 &position)
 {
 	_pos = position;
-	_dirty = true;
+	_wMatDirty = true;
 }
 
 void Transform::SetRotation(const XMFLOAT3 &rotation)
@@ -108,13 +125,13 @@ void Transform::SetRotation(const XMFLOAT3 &rotation)
 	_rot.z = fmodf(_rot.z, XM_2PI);
 	if (_rot.z < 0.0f) _rot.z += XM_2PI;
 
-	_dirty = true;
+	_wMatDirty = true;
 }
 
 void Transform::SetScale(const XMFLOAT3 &scale)
 {
 	_scale = scale;
-	_dirty = true;
+	_wMatDirty = true;
 }
 
 
@@ -124,7 +141,7 @@ void Transform::SetWorldMatrix(const XMMATRIX &matrix)
 	ErrMsg("Transform::SetWorldMatrix() is incorrect, decomposition gives rotation in quaternion form, not euler angles");
 
 	XMVECTOR scale, rot, pos;
-	XMMatrixDecompose(&scale, &rot, &pos, _world);
+	XMMatrixDecompose(&scale, &rot, &pos, _wMat);
 
 	_scale.x = scale.m128_f32[0];
 	_scale.y = scale.m128_f32[1];
@@ -138,8 +155,8 @@ void Transform::SetWorldMatrix(const XMMATRIX &matrix)
 	_pos.y = pos.m128_f32[1];
 	_pos.z = pos.m128_f32[2];
 
-	_world = matrix;
-	_dirty = false;
+	_wMat = matrix;
+	_wMatDirty = false;
 }
 
 
@@ -161,12 +178,12 @@ XMFLOAT3 Transform::GetScale() const
 
 XMFLOAT3 Transform::GetRight()
 {
-	if (_dirty) UpdateMatrix();
+	if (_wMatDirty) UpdateMatrix();
 
 	XMVECTOR right = {
-		_world.r[0].m128_f32[0],
-		_world.r[0].m128_f32[1],
-		_world.r[0].m128_f32[2],
+		_wMat.r[0].m128_f32[0],
+		_wMat.r[0].m128_f32[1],
+		_wMat.r[0].m128_f32[2],
 		0.0f
 	};
 
@@ -177,12 +194,12 @@ XMFLOAT3 Transform::GetRight()
 
 XMFLOAT3 Transform::GetUp()
 {
-	if (_dirty) UpdateMatrix();
+	if (_wMatDirty) UpdateMatrix();
 
 	XMVECTOR up = {
-		_world.r[1].m128_f32[0],
-		_world.r[1].m128_f32[1],
-		_world.r[1].m128_f32[2],
+		_wMat.r[1].m128_f32[0],
+		_wMat.r[1].m128_f32[1],
+		_wMat.r[1].m128_f32[2],
 		0.0f
 	};
 
@@ -193,12 +210,12 @@ XMFLOAT3 Transform::GetUp()
 
 XMFLOAT3 Transform::GetForward()
 {
-	if (_dirty) UpdateMatrix();
+	if (_wMatDirty) UpdateMatrix();
 
 	XMVECTOR forward = {
-		_world.r[2].m128_f32[0],
-		_world.r[2].m128_f32[1],
-		_world.r[2].m128_f32[2],
+		_wMat.r[2].m128_f32[0],
+		_wMat.r[2].m128_f32[1],
+		_wMat.r[2].m128_f32[2],
 		0.0f
 	};
 
@@ -210,7 +227,7 @@ XMFLOAT3 Transform::GetForward()
 
 XMMATRIX Transform::GetWorldMatrix()
 {
-	if (_dirty) UpdateMatrix();
+	if (_wMatDirty) UpdateMatrix();
 
-	return _world;
-}
+	return _wMat;
+}*/
