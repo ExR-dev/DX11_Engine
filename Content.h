@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 
+#include "InputLayoutD3D11.h"
 #include "ShaderD3D11.h"
 #include "MeshD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
@@ -59,6 +60,22 @@ struct Texture
 	Texture &operator=(Texture &&other) = delete;
 };
 
+struct InputLayout
+{
+	std::string name;
+	UINT id;
+	InputLayoutD3D11 data;
+
+
+	InputLayout(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	~InputLayout() = default;
+
+	InputLayout(const InputLayout &other) = delete;
+	InputLayout &operator=(const InputLayout &other) = delete;
+	InputLayout(InputLayout &&other) = delete;
+	InputLayout &operator=(InputLayout &&other) = delete;
+};
+
 
 class Content
 {
@@ -67,7 +84,7 @@ private:
 	std::vector<Mesh *> _meshes; 
 	std::vector<Shader *> _shaders;
 	std::vector<Texture *> _textures;
-
+	std::vector<InputLayout *> _inputLayouts;
 
 public:
 	Content();
@@ -88,13 +105,20 @@ public:
 	UINT AddTexture(ID3D11Device *device, const std::string &name, UINT width, UINT height, const void *dataPtr);
 	UINT AddTexture(ID3D11Device *device, const std::string &name, const char *path);
 
+	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
+		const void *vsByteData, size_t vsByteSize);
+	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, UINT vShaderID);
+
 
 	[[nodiscard]] MeshD3D11 *GetMesh(const std::string &name) const;
-	[[nodiscard]] MeshD3D11 *GetMesh(const UINT id) const;
+	[[nodiscard]] MeshD3D11 *GetMesh(UINT id) const;
 
 	[[nodiscard]] ShaderD3D11 *GetShader(const std::string &name) const;
-	[[nodiscard]] ShaderD3D11 *GetShader(const UINT id) const;
+	[[nodiscard]] ShaderD3D11 *GetShader(UINT id) const;
 
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const std::string &name) const;
-	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const UINT id) const;
+	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
+
+	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(const std::string &name) const;
+	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(UINT id) const;
 };

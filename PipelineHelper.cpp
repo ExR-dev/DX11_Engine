@@ -92,164 +92,6 @@ bool LoadShaders(
 	return true;
 }
 
-
-bool CreateInputLayout(
-	ID3D11Device *device, 
-	ID3D11InputLayout *&inputLayout, 
-	const std::string &vShaderByteCode)
-{
-	constexpr D3D11_INPUT_ELEMENT_DESC inputDesc[4] = {
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
-	};
-
-	HRESULT hr = device->CreateInputLayout(
-		inputDesc, 3, 
-		vShaderByteCode.c_str(), 
-		vShaderByteCode.length(), 
-		&inputLayout
-	);
-
-	return !(FAILED(hr));
-}
-
-bool CreateVertexBuffer(
-	ID3D11Device *device, 
-	ID3D11Buffer *&vertexBuffer,
-	SimpleVertex *vertices, UINT vertexCount)
-{
-	D3D11_BUFFER_DESC vertexBufferDesc = { };
-	vertexBufferDesc.ByteWidth = sizeof(*vertices) * vertexCount;
-	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.CPUAccessFlags = 0;
-	vertexBufferDesc.MiscFlags = 0;
-	vertexBufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = vertices;
-	srData.SysMemPitch = 0;
-	srData.SysMemSlicePitch = 0;
-
-	HRESULT hr = device->CreateBuffer(&vertexBufferDesc, &srData, &vertexBuffer);
-	return !(FAILED(hr));
-}
-
-bool CreateWorldMatrixBuffer(
-	ID3D11Device *device, 
-	ID3D11Buffer *&worldMatrixBuffer)
-{
-	WorldMatrixBufferData bufferData = { };
-
-	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = sizeof(bufferData);
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = &bufferData;
-	srData.SysMemPitch = 0;
-	srData.SysMemSlicePitch = 0;
-
-	return SUCCEEDED(device->CreateBuffer(&bufferDesc, &srData, &worldMatrixBuffer));
-}
-
-bool UpdateWorldMatrixBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&worldMatrixBuffer,
-	WorldMatrixBufferData &worldMatrixBufferData)
-{
-	D3D11_MAPPED_SUBRESOURCE resource;
-	if (FAILED(immediateContext->Map(worldMatrixBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
-		return false;
-
-	memcpy(resource.pData, &worldMatrixBufferData, sizeof(WorldMatrixBufferData));
-	immediateContext->Unmap(worldMatrixBuffer, 0);
-	return true;
-}
-
-bool CreateViewProjMatrixBuffer(
-	ID3D11Device *device,
-	ID3D11Buffer *&viewProjMatrixBuffer)
-{
-	ViewProjMatrixBufferData bufferData = { };
-
-	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = sizeof(ViewProjMatrixBufferData);
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = &bufferData;
-	srData.SysMemPitch = 0;
-	srData.SysMemSlicePitch = 0;
-
-	return SUCCEEDED(device->CreateBuffer(&bufferDesc, &srData, &viewProjMatrixBuffer));
-}
-
-bool UpdateViewProjMatrixBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&viewProjMatrixBuffer,
-	ViewProjMatrixBufferData &viewProjMatrixBufferData)
-{
-	D3D11_MAPPED_SUBRESOURCE resource;
-	if (FAILED(immediateContext->Map(viewProjMatrixBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
-		return false;
-
-	memcpy(resource.pData, &viewProjMatrixBufferData, sizeof(ViewProjMatrixBufferData));
-	immediateContext->Unmap(viewProjMatrixBuffer, 0);
-	return true;
-}
-
-bool CreateLightingBuffer(
-	ID3D11Device *device,
-	ID3D11Buffer *&lightingBuffer)
-{
-	LightingBufferData lightingBufferData = {
-		{0,0,0,0},
-		{0,0,0,0},
-		{0,0,0,0},
-		{0,0,0,0},
-		{0,0,0,0},
-	};
-
-	D3D11_BUFFER_DESC lightingBufferDesc = { };
-	lightingBufferDesc.ByteWidth = sizeof(lightingBufferData);
-	lightingBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	lightingBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	lightingBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	lightingBufferDesc.MiscFlags = 0;
-	lightingBufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = &lightingBufferData;
-	srData.SysMemPitch = 0;
-	srData.SysMemSlicePitch = 0;
-
-	return SUCCEEDED(device->CreateBuffer(&lightingBufferDesc, &srData, &lightingBuffer));
-}
-
-bool UpdateLightingBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&lightingBuffer,
-	LightingBufferData &lightingBufferData)
-{
-	D3D11_MAPPED_SUBRESOURCE resource = { };
-	if (FAILED(immediateContext->Map(lightingBuffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &resource)))
-		return false;
-
-	memcpy(resource.pData, &lightingBufferData, sizeof(LightingBufferData));
-	immediateContext->Unmap(lightingBuffer, 0);
-	return true;
-}
-
 bool LoadTexture2D(
 	ID3D11Device *device,
 	ID3D11Texture2D *&texture2D,
@@ -312,56 +154,23 @@ bool LoadTexture2D(
 	return true;
 }
 
-
-bool SetupPipeline(
+bool CreateInputLayout(
 	ID3D11Device *device, 
-	ID3D11Buffer *&worldMatrixBuffer,
-	ID3D11Buffer *&viewProjMatrixBuffer,
-	ID3D11Buffer *&lightingBuffer,
-	ID3D11Texture2D *&texture2D,
-	ID3D11ShaderResourceView *&resourceView,
-	ID3D11SamplerState *&samplerState,
-	ID3D11VertexShader *&vShader,
-	ID3D11PixelShader *&pShader, 
-	ID3D11InputLayout *&inputLayout,
-	SimpleVertex *vertices, UINT vertexCount)
+	ID3D11InputLayout *&inputLayout, 
+	const std::string &vShaderByteCode)
 {
-	std::string vShaderByteCode;
-	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
-	{
-		ErrMsg("Error loading shaders!");
-		return false;
-	}
+	constexpr D3D11_INPUT_ELEMENT_DESC inputDesc[4] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
+	};
 
-	if (!CreateInputLayout(device, inputLayout, vShaderByteCode))
-	{
-		ErrMsg("Error creating input layout!");
-		return false;
-	}
+	HRESULT hr = device->CreateInputLayout(
+		inputDesc, 3, 
+		vShaderByteCode.c_str(), 
+		vShaderByteCode.length(), 
+		&inputLayout
+	);
 
-	if (!CreateWorldMatrixBuffer(device, worldMatrixBuffer))
-	{
-		ErrMsg("Error creating world matrix buffer!");
-		return false;
-	}
-
-	if (!CreateViewProjMatrixBuffer(device, viewProjMatrixBuffer))
-	{
-		ErrMsg("Error creating view projection matrix buffer!");
-		return false;
-	}
-
-	if (!CreateLightingBuffer(device, lightingBuffer))
-	{
-		ErrMsg("Error creating lighting buffer!");
-		return false;
-	}
-
-	if (!LoadTexture2D(device, texture2D, resourceView, samplerState))
-	{
-		ErrMsg("Error loading 2D texture!");
-		return false;
-	}
-
-	return true;
+	return !(FAILED(hr));
 }

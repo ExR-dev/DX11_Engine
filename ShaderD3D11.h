@@ -47,4 +47,5 @@ public:
 
 	[[nodiscard]] const void *GetShaderByteData() const;
 	[[nodiscard]] size_t GetShaderByteSize() const;
+	[[nodiscard]] ShaderType GetShaderType() const;
 };

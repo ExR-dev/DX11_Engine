@@ -11,6 +11,9 @@ Content::Content()
 
 Content::~Content()
 {
+	for (const InputLayout *inputLayout : _inputLayouts)
+		delete inputLayout;
+
 	for (const Mesh *mesh : _meshes)
 		delete mesh;
 
@@ -22,9 +25,10 @@ Content::~Content()
 }
 
 
+
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData)
 {
-	const UINT id = (UINT)_meshes.size();
+	const UINT id = _meshes.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i)->name == name)
@@ -45,7 +49,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshD
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char *path)
 {
-	const UINT id = static_cast<UINT>(_meshes.size());
+	const UINT id = _meshes.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i)->name == name)
@@ -115,9 +119,9 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 }
 
 
-UINT Content::AddTexture(ID3D11Device *device, const std::string &name, UINT width, UINT height, const void *dataPtr)
+UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const UINT width, const UINT height, const void *dataPtr)
 {
-	const UINT id = (UINT)_textures.size();
+	const UINT id = _textures.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_textures.at(i)->name == name)
@@ -167,9 +171,67 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 }
 
 
+UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
+	const void *vsByteData, const size_t vsByteSize)
+{
+	const UINT id = _inputLayouts.size();
+	for (UINT i = 0; i < id; i++)
+	{
+		if (_inputLayouts.at(i)->name == name)
+			return i;
+	}
+
+	InputLayout *addedInputLayout = new InputLayout(name, id);
+	for (const Semantic &semantic : semantics)
+	{
+		if (!addedInputLayout->data.AddInputElement(semantic))
+		{
+			ErrMsg(std::format("Failed to add element \"{}\" to input layout!", semantic.name));
+			delete addedInputLayout;
+			return CONTENT_LOAD_ERROR;
+		}
+	}
+
+	if (!addedInputLayout->data.FinalizeInputLayout(device, vsByteData, vsByteSize))
+	{
+		ErrMsg("Failed to finalize added input layout!");
+		delete addedInputLayout;
+		return CONTENT_LOAD_ERROR;
+	}
+	_inputLayouts.push_back(addedInputLayout);
+
+	return id;
+}
+
+UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, const UINT vShaderID)
+{
+	if (vShaderID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to get vertex shader byte code, shader ID was CONTENT_LOAD_ERROR!");
+		return CONTENT_LOAD_ERROR;
+	}
+
+	const ShaderD3D11 *vShader = GetShader(vShaderID);
+	if (vShader == nullptr)
+	{
+		ErrMsg("Failed to get vertex shader byte code, shader ID returned nullptr!");
+		return CONTENT_LOAD_ERROR;
+	}
+
+	if (vShader->GetShaderType() != ShaderType::VERTEX_SHADER)
+	{
+		ErrMsg(std::format("Failed to get vertex shader byte code, shader ID returned invalid type ({})!", vShader->GetShaderType()));
+		return CONTENT_LOAD_ERROR;
+	}
+	
+	return AddInputLayout(device, name, semantics, vShader->GetShaderByteData(), vShader->GetShaderByteSize());
+}
+
+
+
 MeshD3D11 *Content::GetMesh(const std::string &name) const
 {
-	const UINT count = (UINT)_meshes.size();
+	const UINT count = _meshes.size();
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -193,7 +255,7 @@ MeshD3D11 *Content::GetMesh(const UINT id) const
 
 ShaderD3D11 *Content::GetShader(const std::string &name) const
 {
-	const UINT count = (UINT)_shaders.size();
+	const UINT count = _shaders.size();
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -217,7 +279,7 @@ ShaderD3D11 *Content::GetShader(const UINT id) const
 
 ShaderResourceTextureD3D11 *Content::GetTexture(const std::string &name) const
 {
-	const UINT count = (UINT)_textures.size();
+	const UINT count = _textures.size();
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -236,4 +298,28 @@ ShaderResourceTextureD3D11 *Content::GetTexture(const UINT id) const
 		return nullptr;
 
 	return &_textures.at(id)->data;
+}
+
+
+InputLayoutD3D11 *Content::GetInputLayout(const std::string &name) const
+{
+	const UINT count = _inputLayouts.size();
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_inputLayouts.at(i)->name == name)
+			return &_inputLayouts.at(i)->data;
+	}
+
+	return nullptr;
+}
+
+InputLayoutD3D11 *Content::GetInputLayout(const UINT id) const
+{
+	if (id == CONTENT_LOAD_ERROR)
+		return nullptr;
+	if (_inputLayouts.size() <= id)
+		return nullptr;
+
+	return &_inputLayouts.at(id)->data;
 }

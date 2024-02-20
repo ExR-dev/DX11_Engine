@@ -76,7 +76,7 @@ D3D11_VIEWPORT &Graphics::GetViewport()
 }
 
 
-bool Graphics::BeginRender()
+bool Graphics::BeginRender(const Content &content)
 {
 	if (!_isSetup)
 		return false;
@@ -89,6 +89,10 @@ bool Graphics::BeginRender()
 
 	_context->RSSetViewports(1, &_viewport);
 	_context->OMSetRenderTargets(1, &_rtv, _dsView);
+
+	_context->IASetInputLayout(content.GetInputLayout(0)->GetInputLayout());
+	_context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_currInputLayoutID = 0;
 
 	_isRendering = true;
 	return true;
@@ -106,12 +110,17 @@ bool Graphics::EndRender()
 }
 
 
-bool Graphics::Render(Entity &entity)
+bool Graphics::Render(Entity &entity, const Content &content)
 {
 	if (!_isRendering)
 		return false;
 
 	// TODO
+	_currInputLayoutID = CONTENT_LOAD_ERROR;
+	_currMeshID = CONTENT_LOAD_ERROR;
+	_currVsID = CONTENT_LOAD_ERROR;
+	_currPsID = CONTENT_LOAD_ERROR;
+	_currTexID = CONTENT_LOAD_ERROR;
 
 	return true;
 }

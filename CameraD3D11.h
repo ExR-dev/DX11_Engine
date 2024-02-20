@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 
 #include "ConstantBufferD3D11.h"
+#include "PipelineHelper.h"
 #include "Transform.h"
 
 
@@ -22,12 +23,22 @@ private:
 	ProjectionInfo _projInfo;
 
 	ConstantBufferD3D11 _cameraBuffer;
+	bool _isDirty = true;
+
+
+	ConstantBufferD3D11 _lightingBuffer;
+	LightingBufferData _lightingBufferData = {
+		{0.0f, 0.0f, 0.0f, 1.0f}, // Camera position
+		{0.5f, 2.0f, 2.5f, 1.0f}, // Light position
+
+		{0.75f, 0.9f, 1.0f, 0.05f}, // Ambient
+		{1.0f, 1.0f, 1.0f, 5.0f}, // Diffuse
+		{10.0f, 10.0f, 10.0f, 128.0f}, // Specular
+	};
+
 
 	void Move(float amount, const XMFLOAT4A &direction);
 	void MoveLocal(float amount, const XMFLOAT4A &direction);
-
-	void RotatePitch(float amount);
-	void RotateYaw(float amount);
 
 public:
 	CameraD3D11() = default;
@@ -36,8 +47,8 @@ public:
 	~CameraD3D11() = default;
 	CameraD3D11(const CameraD3D11 &other) = delete;
 	CameraD3D11 &operator=(const CameraD3D11 &other) = delete;
-	CameraD3D11(CameraD3D11 &&other) = default;
-	CameraD3D11 &operator=(CameraD3D11 &&other) = default;
+	CameraD3D11(CameraD3D11 &&other) = delete;
+	CameraD3D11 &operator=(CameraD3D11 &&other) = delete;
 
 	bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
 		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f));
@@ -54,9 +65,9 @@ public:
 	[[nodiscard]] const XMFLOAT4A &GetForward() const;
 	[[nodiscard]] const XMFLOAT4A &GetRight() const;
 	[[nodiscard]] const XMFLOAT4A &GetUp() const;
+	[[nodiscard]] const XMFLOAT4X4 &GetViewProjectionMatrix() const;
 
-	bool UpdateInternalConstantBuffer(ID3D11DeviceContext *context) const;
-	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
-
-	[[nodiscard]] XMFLOAT4X4 GetViewProjectionMatrix() const;
+	bool UpdateConstantBuffers(ID3D11DeviceContext *context);
+	[[nodiscard]] ID3D11Buffer *GetCameraBuffer() const;
+	[[nodiscard]] ID3D11Buffer *GetLightingBuffer() const;
 };

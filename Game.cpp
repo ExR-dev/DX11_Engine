@@ -106,7 +106,7 @@ bool Game::Render(const Time &time)
 	/// v==========================================v ///
 
 	if (_scene != nullptr)
-		if (!_scene->Render(_immediateContext))
+		if (!_scene->Render(_immediateContext, _content))
 		{
 			ErrMsg("Failed to render scene!");
 			return false;

@@ -28,11 +28,16 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	if (_initialized)
 		return false;
 
+	_camera.Initialize(
+		device,
+		{ 60.0f, 1.0f, 0.1f, 10.0f }
+	);
+
 	for (int i = 0; i < _debugObjects.size(); i++)
 	{
 		DebugObject *dObj = &_debugObjects.at(i);
 
-		if (!dObj->Initialize(device, content->GetMesh(i)))
+		if (!dObj->Initialize(device, i, 0, 0, 0))
 		{
 			ErrMsg("Failed to initialize debug object!");
 			return false;
@@ -92,7 +97,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 			return false;
 		}
 
-		if (!dObj->SetWM(context, objPos, objRot, objScale))
+		if (!dObj->SetWM(context))
 		{
 			ErrMsg("Failed to update debug object world matrix!");
 			return false;
@@ -108,7 +113,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 	return true;
 }
 
-bool Scene::Render(ID3D11DeviceContext *context)
+bool Scene::Render(ID3D11DeviceContext *context, const Content &content)
 {
 	if (!_initialized)
 		return false;
@@ -117,7 +122,7 @@ bool Scene::Render(ID3D11DeviceContext *context)
 	{
 		DebugObject *dObj = &_debugObjects.at(i);
 
-		if (!dObj->Render(context))
+		if (!dObj->Render(context, content))
 		{
 			ErrMsg("Failed to render debug object!");
 			return false;

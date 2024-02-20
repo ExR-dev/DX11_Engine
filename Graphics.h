@@ -19,6 +19,12 @@ private:
 	bool _isSetup;
 	bool _isRendering;
 
+	UINT _currInputLayoutID = CONTENT_LOAD_ERROR;
+	UINT _currMeshID = CONTENT_LOAD_ERROR;
+	UINT _currVsID = CONTENT_LOAD_ERROR;
+	UINT _currPsID = CONTENT_LOAD_ERROR;
+	UINT _currTexID = CONTENT_LOAD_ERROR;
+
 public:
 	Graphics();
 	~Graphics();
@@ -32,8 +38,8 @@ public:
 	ID3D11DepthStencilView *GetDsView();
 	D3D11_VIEWPORT &GetViewport();
 
-	bool BeginRender();
+	bool BeginRender(const Content &content);
 	bool EndRender();
 
-	bool Render(Entity &entity);
+	bool Render(Entity &entity, const Content &content);
 };

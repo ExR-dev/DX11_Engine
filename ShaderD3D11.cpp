@@ -189,3 +189,8 @@ size_t ShaderD3D11::GetShaderByteSize() const
 {
 	return _shaderBlob->GetBufferSize();
 }
+
+ShaderType ShaderD3D11::GetShaderType() const
+{
+	return _type;
+}

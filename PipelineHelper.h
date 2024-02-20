@@ -3,6 +3,7 @@
 #include <array>
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <string>
 
 using namespace DirectX;
 
@@ -71,34 +72,24 @@ struct LightingBufferData
 	}
 };
 
-bool UpdateWorldMatrixBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&worldMatrixBuffer,
-	WorldMatrixBufferData &worldMatrixBufferData
-);
-bool UpdateViewProjMatrixBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&viewProjMatrixBuffer,
-	ViewProjMatrixBufferData &viewProjMatrixBufferData
-);
 
-bool UpdateLightingBuffer(
-	ID3D11DeviceContext *immediateContext,
-	ID3D11Buffer *&lightingBuffer,
-	LightingBufferData &lightingBufferData
-);
-
-bool SetupPipeline(
+bool LoadShaders(
 	ID3D11Device *device,
-	//ID3D11Buffer *&vertexBuffer, 
-	ID3D11Buffer *&worldMatrixBuffer,
-	ID3D11Buffer *&viewProjMatrixBuffer,
-	ID3D11Buffer *&lightingBuffer,
+	ID3D11VertexShader *&vShader,
+	ID3D11PixelShader *&pShader,
+	std::string &vShaderByteCode
+);
+
+bool LoadTexture2D(
+	ID3D11Device *device,
 	ID3D11Texture2D *&texture2D,
 	ID3D11ShaderResourceView *&resourceView,
-	ID3D11SamplerState *&samplerState,
-	ID3D11VertexShader *&vShader, 
-	ID3D11PixelShader *&pShader, 
+	ID3D11SamplerState *&samplerState
+);
+
+
+bool CreateInputLayout(
+	ID3D11Device *device,
 	ID3D11InputLayout *&inputLayout,
-	SimpleVertex *vertices, UINT vertexCount
+	const std::string &vShaderByteCode
 );

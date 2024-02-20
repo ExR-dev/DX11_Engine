@@ -11,6 +11,7 @@ void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
 		direction.z * amount,
 		0.0f
 	});
+	_isDirty = true;
 }
 
 void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
@@ -21,17 +22,7 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 		direction.z * amount,
 		0.0f
 	});
-}
-
-
-void CameraD3D11::RotatePitch(const float amount)
-{
-	_transform.RotatePitch(amount);
-}
-
-void CameraD3D11::RotateYaw(const float amount)
-{
-	_transform.RotateYaw(amount);
+	_isDirty = true;
 }
 
 
@@ -40,7 +31,6 @@ CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionI
 	if (!Initialize(device, projectionInfo, initialPosition))
 		ErrMsg("Failed to initialize camera buffer in camera constructor!");
 }
-
 
 bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition)
 {
@@ -54,71 +44,61 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 		return false;
 	}
 
-	return true;
-}
-
-void CameraD3D11::MoveForward(float amount)
-{
-}
-
-void CameraD3D11::MoveRight(float amount)
-{
-}
-
-void CameraD3D11::MoveUp(float amount)
-{
-}
-
-void CameraD3D11::RotateForward(float amount)
-{
-}
-
-void CameraD3D11::RotateRight(float amount)
-{
-}
-
-void CameraD3D11::RotateUp(float amount)
-{
-}
-
-const XMFLOAT4A &CameraD3D11::GetPosition() const
-{
-	// TODO: insert return statement here
-}
-
-const XMFLOAT4A &CameraD3D11::GetForward() const
-{
-	// TODO: insert return statement here
-}
-
-const XMFLOAT4A &CameraD3D11::GetRight() const
-{
-	// TODO: insert return statement here
-}
-
-const XMFLOAT4A &CameraD3D11::GetUp() const
-{
-	// TODO: insert return statement here
-}
-
-bool CameraD3D11::UpdateInternalConstantBuffer(ID3D11DeviceContext *context) const
-{
-	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
-	if (_cameraBuffer.UpdateBuffer(context, &viewProjMatrix))
+	std::memcpy(&_lightingBufferData.camPos[0], &initialPosition.x, sizeof(float) * 3);
+	if (!_lightingBuffer.Initialize(device, sizeof(LightingBufferData), &_lightingBufferData))
 	{
-		ErrMsg("Failed to update camera buffer!");
+		ErrMsg("Failed to initialize lighting buffer!");
 		return false;
 	}
 
 	return true;
 }
 
-ID3D11Buffer *CameraD3D11::GetConstantBuffer() const
+
+void CameraD3D11::MoveForward(const float amount)
 {
-	return _cameraBuffer.GetBuffer();
+	MoveLocal(amount, _transform.GetForward());
+	_isDirty = true;
 }
 
-XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
+void CameraD3D11::MoveRight(const float amount)
+{
+	MoveLocal(amount, _transform.GetRight());
+	_isDirty = true;
+}
+
+void CameraD3D11::MoveUp(const float amount)
+{
+	MoveLocal(amount, _transform.GetUp());
+	_isDirty = true;
+}
+
+
+void CameraD3D11::RotateForward(const float amount)
+{
+	_transform.RotatePitch(amount);
+	_isDirty = true;
+}
+
+void CameraD3D11::RotateRight(const float amount)
+{
+	_transform.RotateYaw(amount);
+	_isDirty = true;
+}
+
+void CameraD3D11::RotateUp(const float amount)
+{
+	_transform.RotateRoll(amount);
+	_isDirty = true;
+}
+
+
+const XMFLOAT4A &CameraD3D11::GetRight() const		{ return _transform.GetRight();		}
+const XMFLOAT4A &CameraD3D11::GetUp() const			{ return _transform.GetUp();		}
+const XMFLOAT4A &CameraD3D11::GetForward() const	{ return _transform.GetForward();	}
+const XMFLOAT4A &CameraD3D11::GetPosition() const	{ return _transform.GetPosition();	}
+
+const XMFLOAT4X4 &CameraD3D11::GetViewProjectionMatrix() const
 {
 	XMFLOAT4A
 		cPos = _transform.GetPosition(),
@@ -128,21 +108,56 @@ XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 	XMFLOAT4X4 vpMatrix;
 
 	XMStoreFloat4x4(
-		&vpMatrix, 
+		&vpMatrix,
 		XMMatrixTranspose(
 			XMMatrixLookAtLH(
-				*reinterpret_cast<XMVECTOR *>(&cPos), 
-				*reinterpret_cast<XMVECTOR *>(&cPos) + *reinterpret_cast<XMVECTOR *>(&cFwd), 
+				*reinterpret_cast<XMVECTOR *>(&cPos),
+				*reinterpret_cast<XMVECTOR *>(&cPos) + *reinterpret_cast<XMVECTOR *>(&cFwd),
 				*reinterpret_cast<XMVECTOR *>(&cUp)
 			) *
 			XMMatrixPerspectiveFovLH(
-				_projInfo.fovAngleY * (XM_PI / 180.0f), 
-				_projInfo.aspectRatio, 
-				_projInfo.nearZ, 
+				_projInfo.fovAngleY * (XM_PI / 180.0f),
+				_projInfo.aspectRatio,
+				_projInfo.nearZ,
 				_projInfo.farZ
 			)
 		)
 	);
 
 	return vpMatrix;
+}
+
+
+bool CameraD3D11::UpdateConstantBuffers(ID3D11DeviceContext *context)
+{
+	if (!_isDirty)
+		return true;
+
+	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
+	if (_cameraBuffer.UpdateBuffer(context, &viewProjMatrix))
+	{
+		ErrMsg("Failed to update camera buffer!");
+		return false;
+	}
+
+	const XMFLOAT4A camPos = _transform.GetPosition();
+	std::memcpy(&_lightingBufferData.camPos[0], &camPos.x, sizeof(float) * 3);
+	if (!_lightingBuffer.UpdateBuffer(context, &_lightingBufferData))
+	{
+		ErrMsg("Failed to update lighting buffer!");
+		return false;
+	}
+
+	_isDirty = false;
+	return true;
+}
+
+ID3D11Buffer *CameraD3D11::GetCameraBuffer() const
+{
+	return _cameraBuffer.GetBuffer();
+}
+
+ID3D11Buffer *CameraD3D11::GetLightingBuffer() const
+{
+	return _lightingBuffer.GetBuffer();
 }
