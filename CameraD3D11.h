@@ -25,7 +25,6 @@ private:
 	ConstantBufferD3D11 _cameraBuffer;
 	bool _isDirty = true;
 
-
 	ConstantBufferD3D11 _lightingBuffer;
 	LightingBufferData _lightingBufferData = {
 		{0.0f, 0.0f, 0.0f, 1.0f}, // Camera position
@@ -67,7 +66,9 @@ public:
 	[[nodiscard]] const XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const XMFLOAT4X4 &GetViewProjectionMatrix() const;
 
-	bool UpdateConstantBuffers(ID3D11DeviceContext *context);
+	bool UpdateBuffers(ID3D11DeviceContext *context);
+	bool BindBuffers(ID3D11DeviceContext *context) const;
+
 	[[nodiscard]] ID3D11Buffer *GetCameraBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetLightingBuffer() const;
 };

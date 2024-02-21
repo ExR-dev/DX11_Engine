@@ -7,7 +7,7 @@ Scene::Scene()
 {
 	_initialized = false;
 
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		_entities.push_back(new Entity());
 	}
@@ -39,7 +39,7 @@ bool Scene::Initialize(ID3D11Device *device)
 	{
 		Entity *ent = _entities.at(i);
 
-		if (!ent->Initialize(device, 0, 0, 0, 0, 0))
+		if (!ent->Initialize(device, 0, 0, 0, 1, 0))
 		{
 			ErrMsg(std::format("Failed to initialize entity #{}!", i));
 			return false;
@@ -56,7 +56,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time)
 	if (!_initialized)
 		return false;
 
-	if (!_camera->UpdateConstantBuffers(context))
+	if (!_camera->UpdateBuffers(context))
 	{
 		ErrMsg("Failed to update camera buffers!");
 		return false;
@@ -80,6 +80,8 @@ bool Scene::Render(Graphics *graphics)
 {
 	if (!_initialized)
 		return false;
+
+	graphics->SetCamera(_camera);
 
 	for (int i = 0; i < _entities.size(); i++)
 	{

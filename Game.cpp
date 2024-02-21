@@ -58,6 +58,13 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	const UINT fallbackSamplerID = _content.AddSampler(_device, "FallbackSampler", D3D11_TEXTURE_ADDRESS_BORDER);
+	if (fallbackSamplerID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add fallback sampler!");
+		return false;
+	}
+
 	const std::vector<Semantic> fallbackInputLayout{
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
 		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },

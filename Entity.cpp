@@ -54,14 +54,23 @@ bool Entity::Update(ID3D11DeviceContext *context, const Time &time)
 	return true;
 }
 
+bool Entity::BindBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const wmBuffer = _transform.GetConstantBuffer();
+	context->VSSetConstantBuffers(0, 1, &wmBuffer);
+
+	return true;
+}
+
 bool Entity::Render(Graphics *graphics)
 {
 	const RenderInstance instance = {
-		_inputLayoutID,
 		_meshID,
 		_vsID,
 		_psID,
 		_texID,
+		0,
+		_inputLayoutID,
 		this,
 		sizeof(Entity)
 	};

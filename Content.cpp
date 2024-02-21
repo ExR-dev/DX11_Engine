@@ -171,6 +171,28 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 }
 
 
+UINT Content::AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode, const std::optional<std::array<float, 4>> &borderColors)
+{
+	const UINT id = _samplers.size();
+	for (UINT i = 0; i < id; i++)
+	{
+		if (_samplers.at(i)->name == name)
+			return i;
+	}
+
+	Sampler *addedSampler = new Sampler(name, id);
+	if (!addedSampler->data.Initialize(device, adressMode, borderColors))
+	{
+		ErrMsg("Failed to initialize added texture!");
+		delete addedSampler;
+		return CONTENT_LOAD_ERROR;
+	}
+	_samplers.push_back(addedSampler);
+
+	return id;
+}
+
+
 UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
 	const void *vsByteData, const size_t vsByteSize)
 {
@@ -298,6 +320,30 @@ ShaderResourceTextureD3D11 *Content::GetTexture(const UINT id) const
 		return nullptr;
 
 	return &_textures.at(id)->data;
+}
+
+
+SamplerD3D11 *Content::GetSampler(const std::string &name) const
+{
+	const UINT count = _samplers.size();
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_samplers.at(i)->name == name)
+			return &_samplers.at(i)->data;
+	}
+
+	return nullptr;
+}
+
+SamplerD3D11 *Content::GetSampler(const UINT id) const
+{
+	if (id == CONTENT_LOAD_ERROR)
+		return nullptr;
+	if (_samplers.size() <= id)
+		return nullptr;
+
+	return &_samplers.at(id)->data;
 }
 
 

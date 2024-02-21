@@ -128,7 +128,7 @@ const XMFLOAT4X4 &CameraD3D11::GetViewProjectionMatrix() const
 }
 
 
-bool CameraD3D11::UpdateConstantBuffers(ID3D11DeviceContext *context)
+bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 {
 	if (!_isDirty)
 		return true;
@@ -151,6 +151,18 @@ bool CameraD3D11::UpdateConstantBuffers(ID3D11DeviceContext *context)
 	_isDirty = false;
 	return true;
 }
+
+bool CameraD3D11::BindBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const vpmBuffer = GetCameraBuffer();
+	context->VSSetConstantBuffers(1, 1, &vpmBuffer);
+
+	ID3D11Buffer *const lightingBuffer = GetLightingBuffer();
+	context->PSSetConstantBuffers(0, 1, &lightingBuffer);
+
+	return true;
+}
+
 
 ID3D11Buffer *CameraD3D11::GetCameraBuffer() const
 {

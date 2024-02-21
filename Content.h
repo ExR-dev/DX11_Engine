@@ -6,6 +6,7 @@
 #include "InputLayoutD3D11.h"
 #include "ShaderD3D11.h"
 #include "MeshD3D11.h"
+#include "SamplerD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
 
 
@@ -60,6 +61,22 @@ struct Texture
 	Texture &operator=(Texture &&other) = delete;
 };
 
+struct Sampler
+{
+	std::string name;
+	UINT id;
+	SamplerD3D11 data;
+
+
+	Sampler(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	~Sampler() = default;
+
+	Sampler(const Sampler &other) = delete;
+	Sampler &operator=(const Sampler &other) = delete;
+	Sampler(Sampler &&other) = delete;
+	Sampler &operator=(Sampler &&other) = delete;
+};
+
 struct InputLayout
 {
 	std::string name;
@@ -84,6 +101,7 @@ private:
 	std::vector<Mesh *> _meshes; 
 	std::vector<Shader *> _shaders;
 	std::vector<Texture *> _textures;
+	std::vector<Sampler *> _samplers;
 	std::vector<InputLayout *> _inputLayouts;
 
 public:
@@ -105,6 +123,9 @@ public:
 	UINT AddTexture(ID3D11Device *device, const std::string &name, UINT width, UINT height, const void *dataPtr);
 	UINT AddTexture(ID3D11Device *device, const std::string &name, const char *path);
 
+	UINT AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode,
+		const std::optional<std::array<float, 4>> &borderColors = std::nullopt);
+
 	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
 		const void *vsByteData, size_t vsByteSize);
 	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, UINT vShaderID);
@@ -118,6 +139,9 @@ public:
 
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
+
+	[[nodiscard]] SamplerD3D11 *GetSampler(const std::string &name) const;
+	[[nodiscard]] SamplerD3D11 *GetSampler(UINT id) const;
 
 	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(const std::string &name) const;
 	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(UINT id) const;

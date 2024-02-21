@@ -44,13 +44,14 @@ bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 {
 	// TODO: Bind submesh data
 
-	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
-
 	const UINT stride = _vertexBuffer.GetVertexSize();
 	const UINT offset = 0;
 
+	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
+	ID3D11Buffer *const indexBuffer = _indexBuffer.GetBuffer();
+
 	context->IASetVertexBuffers(0, 1, &vertxBuffer, &stride, &offset);
-	context->IASetIndexBuffer(_indexBuffer.GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	return true;
 }
@@ -59,7 +60,7 @@ bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_
 {
 	if (!_subMeshes.at(subMeshIndex).PerformDrawCall(context))
 	{
-		ErrMsg(std::format("Failed to perform draw call on sub mesh #{}!", subMeshIndex));
+		ErrMsg(std::format("Failed to perform draw call for sub mesh #{}!", subMeshIndex));
 		return false;
 	}
 	return true;

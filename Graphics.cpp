@@ -14,32 +14,92 @@ bool Graphics::FlushRenderQueue()
 
 	// TODO: Draw sorted entities in batches to reduce state changes.
 
-	size_t numInstances = _renderInstances.size();
+
+	// TODO: Deprecate
+
+	// Bind camera data
+	 if (!_currCamera->BindBuffers(_context))
+	 {
+		 ErrMsg("Failed to bind camera buffers!");
+		 return false;
+	 }
+
+	// Bind shared entity data
+	const MeshD3D11 *loadedMesh = nullptr;
+
+	const size_t numInstances = _renderInstances.size();
 	for (size_t i = 0; i < numInstances; i++)
 	{
 		const RenderInstance &instance = _renderInstances[i];
 
-		_context->IASetInputLayout(_content->GetInputLayout(instance.inputLayoutID)->GetInputLayout());
+		if (_currInputLayoutID != instance.inputLayoutID)
+		{
+			_context->IASetInputLayout(_content->GetInputLayout(instance.inputLayoutID)->GetInputLayout());
+			_currInputLayoutID = instance.inputLayoutID;
+		}
 
-		// Set the vertex and index buffers
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-		_context->IASetVertexBuffers(0, 1, &instance.vertexBuffer, &stride, &offset);
-		_context->IASetIndexBuffer(instance.indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+		if (_currMeshID != instance.meshID)
+		{
+			loadedMesh = _content->GetMesh(instance.meshID);
+			if (!loadedMesh->BindMeshBuffers(_context))
+			{
+				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", i));
+				return false;
+			}
+			_currMeshID = instance.meshID;
+		}
 
-		// Set the shader
-		_context->VSSetShader(instance.vertexShader, nullptr, 0);
-		_context->PSSetShader(instance.pixelShader, nullptr, 0);
+		if (_currVsID != instance.vsID)
+		{
+			if (!_content->GetShader(instance.vsID)->BindShader(_context))
+			{
+				ErrMsg(std::format("Failed to bind vertex shader for instance #{}!", i));
+				return false;
+			}
+			_currVsID = instance.vsID;
+		}
 
-		// Set the texture
-		_context->PSSetShaderResources(0, 1, &instance.texture);
-		_context->PSSetSamplers(0, 1, &instance.sampler);
+		if (_currPsID != instance.psID)
+		{
+			if (!_content->GetShader(instance.psID)->BindShader(_context))
+			{
+				ErrMsg(std::format("Failed to bind pixel shader for instance #{}!", i));
+				return false;
+			}
+			_currPsID = instance.psID;
+		}
 
-		// Set the constant buffer
-		_context->VSSetConstantBuffers(0, 1, &instance.constantBuffer);
+		if (_currTexID != instance.texID)
+		{
+			ID3D11ShaderResourceView *const srv = _content->GetTexture(instance.texID)->GetSRV();
+			_context->PSSetShaderResources(0, 1, &srv);
+			_currTexID = instance.texID;
+		}
 
-		// Draw the instance
-		_context->DrawIndexed(instance.numIndices, 0, 0);
+		if (_currSamplerID != instance.samplerID)
+		{
+			ID3D11SamplerState *const ss = _content->GetSampler(instance.samplerID)->GetSamplerState();
+			_context->PSSetSamplers(0, 1, &ss);
+			_currSamplerID = instance.samplerID;
+		}
+
+		// Bind private entity data
+		if (!((Entity *)instance.subject)->BindBuffers(_context))
+		{
+			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", i));
+			return false;
+		}
+
+		// Perform draw calls
+		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
+		for (size_t j = 0; j < subMeshCount; j++)
+		{
+			if (!loadedMesh->PerformSubMeshDrawCall(_context, j))
+			{
+				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", i, j));
+				return false;
+			}
+		}
 	}
 
 	return true;
@@ -48,6 +108,13 @@ bool Graphics::FlushRenderQueue()
 bool Graphics::ResetRenderState()
 {
 	_renderInstances.clear();
+
+	_currInputLayoutID	= CONTENT_LOAD_ERROR;
+	_currMeshID			= CONTENT_LOAD_ERROR;
+	_currVsID			= CONTENT_LOAD_ERROR;
+	_currPsID			= CONTENT_LOAD_ERROR;
+	_currTexID			= CONTENT_LOAD_ERROR;
+
 	_isRendering = false;
 
 	return true;
@@ -129,6 +196,13 @@ ID3D11DepthStencilView *Graphics::GetDsView() const
 D3D11_VIEWPORT &Graphics::GetViewport()
 {
 	return _viewport;
+}
+
+
+bool Graphics::SetCamera(CameraD3D11 *camera)
+{
+	_currCamera = camera;
+	return true;
 }
 
 

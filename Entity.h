@@ -29,5 +29,6 @@ public:
 	bool IsInitialized() const;
 
 	bool Update(ID3D11DeviceContext *context, const Time &time);
+	bool BindBuffers(ID3D11DeviceContext *context) const;
 	bool Render(Graphics *graphics);
 };
