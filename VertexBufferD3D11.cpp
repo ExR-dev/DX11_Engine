@@ -14,7 +14,7 @@ bool VertexBufferD3D11::Initialize(ID3D11Device *device, const size_t sizeOfVert
 {
 	if (_buffer != nullptr)
 	{
-		ErrMsg("Vertex buffer is not nullptr!");
+		ErrMsg("Vertex buffer is already initialized!");
 		return false;
 	}
 

@@ -24,8 +24,8 @@ public:
 	Scene(Scene &&other) = delete;
 	Scene &operator=(Scene &&other) = delete;
 
-	bool Initialize(ID3D11Device *device);
+	[[nodiscard]] bool Initialize(ID3D11Device *device);
 
-	bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
-	bool Render(Graphics *graphics);
+	[[nodiscard]] bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
+	[[nodiscard]] bool Render(Graphics *graphics);
 };

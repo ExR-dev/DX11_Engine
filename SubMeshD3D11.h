@@ -22,11 +22,11 @@ public:
 	SubMeshD3D11(SubMeshD3D11 &&other) = default;
 	SubMeshD3D11 &operator=(SubMeshD3D11 &&other) = default;
 
-	bool Initialize(size_t startIndexValue, size_t nrOfIndicesInSubMesh,
+	[[nodiscard]] bool Initialize(size_t startIndexValue, size_t nrOfIndicesInSubMesh,
 		ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV,
 		ID3D11ShaderResourceView *specularTextureSRV);
 
-	bool PerformDrawCall(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool PerformDrawCall(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] ID3D11ShaderResourceView *GetAmbientSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetDiffuseSRV() const;

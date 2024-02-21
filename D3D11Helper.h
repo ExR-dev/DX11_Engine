@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-bool SetupD3D11(
+[[nodiscard]] bool SetupD3D11(
 	UINT width, UINT height, HWND window, 
 	ID3D11Device *&device, 
 	ID3D11DeviceContext *&immediateContext, 

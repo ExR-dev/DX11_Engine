@@ -74,19 +74,19 @@ void CameraD3D11::MoveUp(const float amount)
 }
 
 
-void CameraD3D11::RotateForward(const float amount)
+void CameraD3D11::RotateRoll(const float amount)
 {
 	_transform.RotateLocal({ 0, 0, amount, 0 });
 	_isDirty = true;
 }
 
-void CameraD3D11::RotateRight(const float amount)
+void CameraD3D11::RotatePitch(const float amount)
 {
 	_transform.RotateLocal({ amount, 0, 0, 0 });
 	_isDirty = true;
 }
 
-void CameraD3D11::RotateUp(const float amount)
+void CameraD3D11::RotateYaw(const float amount)
 {
 	_transform.RotateLocal({ 0, amount, 0, 0 });
 	_isDirty = true;

@@ -17,6 +17,9 @@ ConstantBufferD3D11::~ConstantBufferD3D11()
 
 ConstantBufferD3D11::ConstantBufferD3D11(ConstantBufferD3D11 &&other) noexcept
 {
+	if (_buffer != nullptr)
+		ErrMsg("Constant buffer is already initialized!");
+
 	// TODO: Validate
 	_buffer = other._buffer;
 	_bufferSize = other._bufferSize;
@@ -27,6 +30,9 @@ ConstantBufferD3D11::ConstantBufferD3D11(ConstantBufferD3D11 &&other) noexcept
 
 ConstantBufferD3D11 &ConstantBufferD3D11::operator=(ConstantBufferD3D11 &&other) noexcept
 {
+	if (_buffer != nullptr)
+		ErrMsg("Constant buffer is already initialized!");
+
 	// TODO: Validate
 	if (this != &other)
 	{
@@ -43,6 +49,12 @@ ConstantBufferD3D11 &ConstantBufferD3D11::operator=(ConstantBufferD3D11 &&other)
 
 bool ConstantBufferD3D11::Initialize(ID3D11Device *device, const size_t byteSize, const void *initialData)
 {
+	if (_buffer != nullptr)
+	{
+		ErrMsg("Vertex buffer is already initialized!");
+		return false;
+	}
+
 	_bufferSize = byteSize;
 
 	D3D11_BUFFER_DESC bufferDesc = { };
@@ -86,6 +98,12 @@ ID3D11Buffer *ConstantBufferD3D11::GetBuffer() const
 
 bool ConstantBufferD3D11::UpdateBuffer(ID3D11DeviceContext *context, const void *data) const
 {
+	if (_buffer == nullptr)
+	{
+		ErrMsg("Constant buffer is not initialized!");
+		return false;
+	}
+
 	D3D11_MAPPED_SUBRESOURCE resource;
 	if (FAILED(context->Map(_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource)))
 	{

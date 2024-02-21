@@ -11,9 +11,6 @@ Content::Content()
 
 Content::~Content()
 {
-	for (const InputLayout *inputLayout : _inputLayouts)
-		delete inputLayout;
-
 	for (const Mesh *mesh : _meshes)
 		delete mesh;
 
@@ -22,6 +19,12 @@ Content::~Content()
 
 	for (const Texture *texture : _textures)
 		delete texture;
+
+	for (const Sampler *sampler : _samplers)
+		delete sampler;
+
+	for (const InputLayout *inputLayout : _inputLayouts)
+		delete inputLayout;
 }
 
 

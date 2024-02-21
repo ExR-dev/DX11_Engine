@@ -99,6 +99,7 @@ StyleCopReport.xml
 *.scc
 
 !Content/
+!Content/*.obj
 !Content/*/
 
 # Chutzpah Test files

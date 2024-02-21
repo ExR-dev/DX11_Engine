@@ -8,6 +8,22 @@ bool SubMeshD3D11::Initialize(
 	ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV,
 	ID3D11ShaderResourceView *specularTextureSRV)
 {
+	if (_ambientTexture != nullptr)
+	{
+		ErrMsg("Ambient texture is not nullptr!");
+		return false;
+	}
+	if (_diffuseTexture != nullptr)
+	{
+		ErrMsg("Diffuse texture is not nullptr!");
+		return false;
+	}
+	if (_specularTexture != nullptr)
+	{
+		ErrMsg("Specular texture is not nullptr!");
+		return false;
+	}
+
 	_startIndex = startIndexValue;
 	_nrOfIndices = nrOfIndicesInSubMesh;
 

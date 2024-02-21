@@ -18,7 +18,7 @@ public:
 	ShaderResourceTextureD3D11(ShaderResourceTextureD3D11 &&other) = delete;
 	ShaderResourceTextureD3D11 &operator=(ShaderResourceTextureD3D11 &&other) = delete;
 
-	bool Initialize(ID3D11Device *device, UINT width, UINT height, const void *textureData);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT width, UINT height, const void *textureData);
 
 	[[nodiscard]] ID3D11ShaderResourceView *GetSRV() const;
 };

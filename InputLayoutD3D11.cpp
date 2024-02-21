@@ -30,6 +30,12 @@ bool InputLayoutD3D11::AddInputElement(const Semantic &semantic)
 
 bool InputLayoutD3D11::FinalizeInputLayout(ID3D11Device *device, const void *vsDataPtr, const size_t vsDataSize)
 {
+	if (_inputLayout != nullptr)
+	{
+		ErrMsg("Input layout is already finalized!");
+		return false;
+	}
+
 	if (FAILED(device->CreateInputLayout(
 		_elements.data(), _elements.size(),
 		vsDataPtr,

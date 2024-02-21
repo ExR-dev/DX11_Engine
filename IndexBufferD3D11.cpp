@@ -3,6 +3,12 @@
 #include "ErrMsg.h"
 
 
+IndexBufferD3D11::IndexBufferD3D11(ID3D11Device *device, const size_t nrOfIndicesInBuffer, const uint32_t *indexData)
+{
+	if (!Initialize(device, nrOfIndicesInBuffer, indexData))
+		ErrMsg("Failed to initialize index buffer!");
+}
+
 IndexBufferD3D11::~IndexBufferD3D11()
 {
 	if (_buffer != nullptr)

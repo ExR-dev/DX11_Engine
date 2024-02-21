@@ -48,14 +48,14 @@ private:
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
 
-	bool FlushRenderQueue();
-	bool ResetRenderState();
+	[[nodiscard]] bool FlushRenderQueue();
+	[[nodiscard]] bool ResetRenderState();
 
 public:
 	Graphics();
 	~Graphics();
 
-	bool Setup(UINT width, UINT height, HWND window, 
+	[[nodiscard]] bool Setup(UINT width, UINT height, HWND window,
 		ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content);
 
 	[[nodiscard]] ID3D11RenderTargetView *GetRTV() const;
@@ -63,9 +63,9 @@ public:
 	[[nodiscard]] ID3D11DepthStencilView *GetDsView() const;
 	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
-	bool SetCamera(CameraD3D11 *camera);
+	[[nodiscard]] bool SetCamera(CameraD3D11 *camera);
 
-	bool BeginRender();
-	bool QueueRender(const RenderInstance &instance);
-	bool EndRender();
+	[[nodiscard]] bool BeginRender();
+	[[nodiscard]] bool QueueRender(const RenderInstance &instance);
+	[[nodiscard]] bool EndRender();
 };

@@ -3,22 +3,16 @@
 #include "ErrMsg.h"
 
 
-Entity::Entity()
+Entity::Entity(const UINT id)
 {
-
+	_entityID = id;
 }
-
-Entity::~Entity()
-{
-
-}
-
 
 bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UINT meshID, const UINT vsID, const UINT psID, const UINT texID)
 {
 	if (_isInitialized)
 	{
-		ErrMsg("Entity already initialized!");
+		ErrMsg("Entity is already initialized!");
 		return false;
 	}
 
@@ -34,24 +28,29 @@ bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UI
 	_psID = psID;
 	_texID = texID;
 
-
-	// TODO: DELETE
-	_transform.Move({ 0, 0, 1.5f, 0 });
-
+	_isInitialized = true;
 	return true;
 }
 
-bool Entity::IsInitialized() const
-{
-	return _isInitialized;
-}
+bool Entity::IsInitialized() const { return _isInitialized; }
+
+
+void Entity::SetInputLayout(const UINT id)	{ _inputLayoutID = id;	}
+void Entity::SetMesh(const UINT id)			{ _meshID = id;			}
+void Entity::SetVertexShader(const UINT id)	{ _vsID = id;			}
+void Entity::SetPixelShader(const UINT id)	{ _psID = id;			}
+void Entity::SetTexture(const UINT id)		{ _texID = id;			}
+
+Transform *Entity::GetTransform() { return &_transform; }
 
 
 bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input &input)
 {
-	// TODO: DELETE
-	//_transform.RotateLocal({ 0, 2.0f * time.deltaTime, 0, 0 });
-	//_transform.MoveLocal({ 0, 0, 1.0f * time.deltaTime, 0 });
+	if (!_isInitialized)
+	{
+		ErrMsg("Entity is not initialized!");
+		return false;
+	}
 
 
 	if (!_transform.UpdateConstantBuffer(context))
@@ -65,6 +64,12 @@ bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input 
 
 bool Entity::BindBuffers(ID3D11DeviceContext *context) const
 {
+	if (!_isInitialized)
+	{
+		ErrMsg("Entity is not initialized!");
+		return false;
+	}
+
 	ID3D11Buffer *const wmBuffer = _transform.GetConstantBuffer();
 	context->VSSetConstantBuffers(0, 1, &wmBuffer);
 
@@ -73,6 +78,12 @@ bool Entity::BindBuffers(ID3D11DeviceContext *context) const
 
 bool Entity::Render(Graphics *graphics)
 {
+	if (!_isInitialized)
+	{
+		ErrMsg("Entity is not initialized!");
+		return false;
+	}
+
 	const RenderInstance instance = {
 		_meshID,
 		_vsID,

@@ -18,10 +18,10 @@ public:
 	ConstantBufferD3D11(ConstantBufferD3D11 &&other) noexcept; // Move constructor
 	ConstantBufferD3D11 &operator=(ConstantBufferD3D11 &&other) noexcept; // Move assignment operator
 
-	bool Initialize(ID3D11Device *device, size_t byteSize, const void *initialData = nullptr);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, size_t byteSize, const void *initialData = nullptr);
 
 	[[nodiscard]] size_t GetSize() const;
 	[[nodiscard]] ID3D11Buffer *GetBuffer() const;
 
-	bool UpdateBuffer(ID3D11DeviceContext *context, const void *data) const;
+	[[nodiscard]] bool UpdateBuffer(ID3D11DeviceContext *context, const void *data) const;
 };

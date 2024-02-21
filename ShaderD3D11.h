@@ -40,10 +40,10 @@ public:
 	ShaderD3D11(ShaderD3D11 &&other) = delete;
 	ShaderD3D11 &operator=(ShaderD3D11 &&other) = delete;
 
-	bool Initialize(ID3D11Device *device, ShaderType shaderType, const void *dataPtr, size_t dataSize);
-	bool Initialize(ID3D11Device *device, ShaderType shaderType, const char *csoPath);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, ShaderType shaderType, const void *dataPtr, size_t dataSize);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, ShaderType shaderType, const char *csoPath);
 
-	bool BindShader(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindShader(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] const void *GetShaderByteData() const;
 	[[nodiscard]] size_t GetShaderByteSize() const;

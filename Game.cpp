@@ -30,12 +30,28 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+
 	const UINT fallbackMeshID = _content.AddMesh(_device, "FallbackMesh", "Content\\Fallback.obj");
 	if (fallbackMeshID == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback mesh!");
 		return false;
 	}
+
+	const UINT shapeMeshID = _content.AddMesh(_device, "ShapeMesh", "Content\\ShapeTri.obj");
+	if (shapeMeshID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add shape mesh!");
+		return false;
+	}
+
+	const UINT simpleSubMeshID = _content.AddMesh(_device, "SimpleSubMesh", "Content\\SimpleSubmesh.obj");
+	if (simpleSubMeshID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add simpleSubmesh mesh!");
+		return false;
+	}
+
 
 	const UINT fallbackVShaderID = _content.AddShader(_device, "FallbackVShader", ShaderType::VERTEX_SHADER, "Content\\VertexShader.cso");
 	if (fallbackVShaderID == CONTENT_LOAD_ERROR)
@@ -51,6 +67,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+
 	const UINT fallbackTextureID = _content.AddTexture(_device, "FallbackTexture", "Content\\texture.png");
 	if (fallbackTextureID == CONTENT_LOAD_ERROR)
 	{
@@ -58,12 +75,14 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+
 	const UINT fallbackSamplerID = _content.AddSampler(_device, "FallbackSampler", D3D11_TEXTURE_ADDRESS_BORDER);
 	if (fallbackSamplerID == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback sampler!");
 		return false;
 	}
+
 
 	const std::vector<Semantic> fallbackInputLayout{
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
@@ -78,19 +97,6 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
-	/*const UINT ShapeMeshID = _content.AddMesh(_device, "Shape", "Content\\ShapeTri.obj");
-	if (ShapeMeshID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add shape mesh!");
-		return false;
-	}
-
-	const UINT SubMeshID = _content.AddMesh(_device, "Submesh", "Content\\SimpleSubmesh.obj");
-	if (SubMeshID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add simpleSubmesh mesh!");
-		return false;
-	}*/
 
 	return true;
 }

@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 
-bool SetupWindow(
+[[nodiscard]] bool SetupWindow(
 	HINSTANCE instance, 
 	UINT width, UINT height, 
 	int nCmdShow, HWND& window

@@ -28,8 +28,8 @@ public:
 	InputLayoutD3D11(InputLayoutD3D11 &&other) = delete;
 	InputLayoutD3D11 &operator=(InputLayoutD3D11 &&other) = delete;
 
-	bool AddInputElement(const Semantic &semantic);
-	bool FinalizeInputLayout(ID3D11Device *device, const void *vsDataPtr, size_t vsDataSize);
+	[[nodiscard]] bool AddInputElement(const Semantic &semantic);
+	[[nodiscard]] bool FinalizeInputLayout(ID3D11Device *device, const void *vsDataPtr, size_t vsDataSize);
 
 	[[nodiscard]] ID3D11InputLayout *GetInputLayout() const;
 };

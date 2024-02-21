@@ -17,7 +17,7 @@ public:
 	VertexBufferD3D11(VertexBufferD3D11 &&other) = delete;
 	VertexBufferD3D11 &operator=(VertexBufferD3D11 &&other) = delete;
 
-	bool Initialize(ID3D11Device *device, size_t sizeOfVertex,
+	[[nodiscard]] bool Initialize(ID3D11Device *device, size_t sizeOfVertex,
 		size_t nrOfVerticesInBuffer, const void *vertexData);
 
 	[[nodiscard]] size_t GetNrOfVertices() const;

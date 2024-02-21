@@ -2,12 +2,11 @@
 #include <Windows.h>
 #include <d3d11.h>
 
+#include "ErrMsg.h"
 #include "WindowHelper.h"
-#include "ContentLoader.h"
 #include "Game.h"
 #include "Time.h"
 #include "Input.h"
-#include "ErrMsg.h"
 
 
 int APIENTRY wWinMain(
@@ -18,16 +17,8 @@ int APIENTRY wWinMain(
 {
 	OutputDebugString(L"\n=======| Start |===========================================================================\n");
 
-	/*MeshData meshData = { };
-
-	LoadMeshFromFile("Models\\Fallback.obj", meshData);
-	WriteMeshToFile("Models\\Fallback.txt", meshData);
-
-	OutputDebugString(L"========| End |============================================================================\n\n");
-	return 0;*/
-
-	constexpr UINT WIDTH = 900;
-	constexpr UINT HEIGHT = 900;
+	constexpr UINT WIDTH = 1280;
+	constexpr UINT HEIGHT = 720;
 	HWND window;
 
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))

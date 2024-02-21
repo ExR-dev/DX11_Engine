@@ -32,8 +32,8 @@ public:
 	Transform(Transform &&other) = delete;
 	Transform &operator=(Transform &&other) = delete;
 
-	bool Initialize(ID3D11Device *device);
-	bool Initialize(ID3D11Device *device, XMMATRIX worldMatrix);
+	[[nodiscard]] bool Initialize(ID3D11Device *device);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, XMMATRIX worldMatrix);
 
 	void Move(const XMFLOAT4A &movement);
 	void Rotate(const XMFLOAT4A &rotation);
@@ -51,7 +51,7 @@ public:
 	[[nodiscard]] XMFLOAT4A GetUp() const;
 	[[nodiscard]] XMFLOAT4A GetForward() const;
 
-	bool UpdateConstantBuffer(ID3D11DeviceContext *context);
+	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
 	[[nodiscard]] XMMATRIX GetWorldMatrix() const;
 };
