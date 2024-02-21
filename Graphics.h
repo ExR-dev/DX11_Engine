@@ -2,7 +2,20 @@
 
 #include <d3d11.h>
 
-#include "Entity.h"
+#include "Content.h"
+
+
+struct RenderInstance
+{
+	UINT inputLayoutID = CONTENT_LOAD_ERROR;
+	UINT meshID = CONTENT_LOAD_ERROR;
+	UINT vsID = CONTENT_LOAD_ERROR;
+	UINT psID = CONTENT_LOAD_ERROR;
+	UINT texID = CONTENT_LOAD_ERROR;
+
+	void *subject;
+	size_t subjectSize;
+};
 
 
 class Graphics
@@ -15,31 +28,30 @@ private:
 	D3D11_VIEWPORT			 _viewport;
 
 	ID3D11DeviceContext		*_context;
+	Content					*_content;
 
 	bool _isSetup;
 	bool _isRendering;
 
-	UINT _currInputLayoutID = CONTENT_LOAD_ERROR;
-	UINT _currMeshID = CONTENT_LOAD_ERROR;
-	UINT _currVsID = CONTENT_LOAD_ERROR;
-	UINT _currPsID = CONTENT_LOAD_ERROR;
-	UINT _currTexID = CONTENT_LOAD_ERROR;
+	std::vector<RenderInstance> _renderInstances;
+
+
+	bool FlushRenderQueue();
+	bool ResetRenderState();
 
 public:
 	Graphics();
 	~Graphics();
 
-	bool Setup(
-		UINT width, UINT height, HWND window, 
-		ID3D11Device *&device, ID3D11DeviceContext *&immediateContext);
+	bool Setup(UINT width, UINT height, HWND window, 
+		ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content);
 
-	ID3D11RenderTargetView *GetRTV();
-	ID3D11Texture2D *GetDsTexture();
-	ID3D11DepthStencilView *GetDsView();
-	D3D11_VIEWPORT &GetViewport();
+	[[nodiscard]] ID3D11RenderTargetView *GetRTV() const;
+	[[nodiscard]] ID3D11Texture2D *GetDsTexture() const;
+	[[nodiscard]] ID3D11DepthStencilView *GetDsView() const;
+	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
-	bool BeginRender(const Content &content);
+	bool BeginRender();
+	bool QueueRender(const RenderInstance &instance);
 	bool EndRender();
-
-	bool Render(Entity &entity, const Content &content);
 };

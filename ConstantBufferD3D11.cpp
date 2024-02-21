@@ -5,7 +5,8 @@
 
 ConstantBufferD3D11::ConstantBufferD3D11(ID3D11Device *device, const size_t byteSize, const void *initialData)
 {
-	Initialize(device, byteSize, initialData);
+	if (!Initialize(device, byteSize, initialData))
+		ErrMsg("Failed to create constant buffer in constructor!");
 }
 
 ConstantBufferD3D11::~ConstantBufferD3D11()
@@ -16,6 +17,7 @@ ConstantBufferD3D11::~ConstantBufferD3D11()
 
 ConstantBufferD3D11::ConstantBufferD3D11(ConstantBufferD3D11 &&other) noexcept
 {
+	// TODO: Validate
 	_buffer = other._buffer;
 	_bufferSize = other._bufferSize;
 
@@ -25,7 +27,7 @@ ConstantBufferD3D11::ConstantBufferD3D11(ConstantBufferD3D11 &&other) noexcept
 
 ConstantBufferD3D11 &ConstantBufferD3D11::operator=(ConstantBufferD3D11 &&other) noexcept
 {
-	// TODO
+	// TODO: Validate
 	if (this != &other)
 	{
 		_buffer = other._buffer;

@@ -7,7 +7,6 @@ VertexBufferD3D11::~VertexBufferD3D11()
 {
 	if (_buffer != nullptr)
 		_buffer->Release();
-	_buffer = nullptr;
 }
 
 

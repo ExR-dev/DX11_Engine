@@ -134,7 +134,7 @@ bool CameraD3D11::UpdateConstantBuffers(ID3D11DeviceContext *context)
 		return true;
 
 	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
-	if (_cameraBuffer.UpdateBuffer(context, &viewProjMatrix))
+	if (!_cameraBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
 		ErrMsg("Failed to update camera buffer!");
 		return false;

@@ -30,7 +30,7 @@ bool Transform::Initialize(ID3D11Device *device, XMMATRIX worldMatrix)
 bool Transform::Initialize(ID3D11Device *device)
 {
 	const XMMATRIX worldMatrix = GetWorldMatrix();
-	if (Initialize(device, worldMatrix))
+	if (!Initialize(device, worldMatrix))
 	{
 		ErrMsg("Failed to initialize world matrix buffer!");
 		return false;
@@ -206,7 +206,7 @@ bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)
 	XMFLOAT4X4 worldMatrix;
 	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(GetWorldMatrix()));
 
-	if (_worldMatrixBuffer.UpdateBuffer(context, &worldMatrix))
+	if (!_worldMatrixBuffer.UpdateBuffer(context, &worldMatrix))
 	{
 		ErrMsg("Failed to update world matrix buffer!");
 		return false;

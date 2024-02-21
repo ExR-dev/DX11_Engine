@@ -2,13 +2,9 @@
 
 #include <vector>
 #include <d3d11.h>
-#include <DirectXMath.h>
 
 #include "CameraD3D11.h"
 #include "Entity.h"
-#include "DebugObject.h"
-
-using namespace DirectX;
 
 
 class Scene
@@ -16,17 +12,19 @@ class Scene
 private:
 	bool _initialized;
 
-	CameraD3D11 _camera;
-	std::vector<Entity> _entities;
-	std::vector<DebugObject> _debugObjects;
+	CameraD3D11 *_camera;
+	std::vector<Entity *> _entities;
 
 public:
 	Scene();
 	~Scene();
+	Scene(const Scene &other) = delete;
+	Scene &operator=(const Scene &other) = delete;
+	Scene(Scene &&other) = delete;
+	Scene &operator=(Scene &&other) = delete;
 
-	bool Initialize(ID3D11Device *device, Content *content);
-	bool Uninitialize();
+	bool Initialize(ID3D11Device *device);
 
 	bool Update(ID3D11DeviceContext *context, const Time &time);
-	bool Render(ID3D11DeviceContext *context, const Content &content);
+	bool Render(Graphics *graphics);
 };

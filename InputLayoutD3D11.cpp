@@ -25,7 +25,7 @@ bool InputLayoutD3D11::AddInputElement(const Semantic &semantic)
 		0
 	});
 
-	return false;
+	return true;
 }
 
 bool InputLayoutD3D11::FinalizeInputLayout(ID3D11Device *device, const void *vsDataPtr, const size_t vsDataSize)

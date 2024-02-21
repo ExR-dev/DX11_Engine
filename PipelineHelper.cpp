@@ -155,8 +155,8 @@ bool LoadTexture2D(
 }
 
 bool CreateInputLayout(
-	ID3D11Device *device, 
-	ID3D11InputLayout *&inputLayout, 
+	ID3D11Device *device,
+	ID3D11InputLayout *&inputLayout,
 	const std::string &vShaderByteCode)
 {
 	constexpr D3D11_INPUT_ELEMENT_DESC inputDesc[4] = {

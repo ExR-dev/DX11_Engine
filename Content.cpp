@@ -78,7 +78,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
-	const UINT id = (UINT)_shaders.size();
+	const UINT id = _shaders.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i)->name == name)
@@ -99,7 +99,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const char *path)
 {
-	const UINT id = (UINT)_shaders.size();
+	const UINT id = _shaders.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i)->name == name)
@@ -142,7 +142,7 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const UI
 
 UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const char *path)
 {
-	const UINT id = (UINT)_textures.size();
+	const UINT id = _textures.size();
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_textures.at(i)->name == name)
@@ -220,7 +220,7 @@ UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, cons
 
 	if (vShader->GetShaderType() != ShaderType::VERTEX_SHADER)
 	{
-		ErrMsg(std::format("Failed to get vertex shader byte code, shader ID returned invalid type ({})!", vShader->GetShaderType()));
+		ErrMsg(std::format("Failed to get vertex shader byte code, shader ID returned invalid type ({})!", (UINT)vShader->GetShaderType()));
 		return CONTENT_LOAD_ERROR;
 	}
 	

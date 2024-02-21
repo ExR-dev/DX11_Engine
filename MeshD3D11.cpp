@@ -57,7 +57,11 @@ bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
 
 bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_t subMeshIndex) const
 {
-	_subMeshes.at(subMeshIndex).PerformDrawCall(context);
+	if (!_subMeshes.at(subMeshIndex).PerformDrawCall(context))
+	{
+		ErrMsg(std::format("Failed to perform draw call on sub mesh #{}!", subMeshIndex));
+		return false;
+	}
 	return true;
 }
 
@@ -69,24 +73,15 @@ size_t MeshD3D11::GetNrOfSubMeshes() const
 
 ID3D11ShaderResourceView *MeshD3D11::GetAmbientSRV(const size_t subMeshIndex) const
 {
-	if (GetNrOfSubMeshes() <= subMeshIndex)
-		return nullptr;
-
 	return _subMeshes.at(subMeshIndex).GetAmbientSRV();
 }
 
 ID3D11ShaderResourceView *MeshD3D11::GetDiffuseSRV(const size_t subMeshIndex) const
 {
-	if (GetNrOfSubMeshes() <= subMeshIndex)
-		return nullptr;
-
 	return _subMeshes.at(subMeshIndex).GetDiffuseSRV();
 }
 
 ID3D11ShaderResourceView *MeshD3D11::GetSpecularSRV(const size_t subMeshIndex) const
 {
-	if (GetNrOfSubMeshes() <= subMeshIndex)
-		return nullptr;
-
 	return _subMeshes.at(subMeshIndex).GetSpecularSRV();
 }

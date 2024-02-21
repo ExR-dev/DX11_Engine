@@ -14,7 +14,7 @@ DebugObject::~DebugObject()
 }
 
 
-bool DebugObject::Initialize(ID3D11Device *device, UINT inputLayoutID, const UINT meshID, const UINT vsID, const UINT psID, const UINT texID)
+bool DebugObject::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UINT meshID, const UINT vsID, const UINT psID, const UINT texID)
 {
 	if (_initialized)
 		return false;
@@ -44,7 +44,7 @@ bool DebugObject::Update(ID3D11DeviceContext *context, const Time &time)
 	return true;
 }
 
-bool DebugObject::Render(ID3D11DeviceContext *context, const Graphics &graphics, const Content &content)
+bool DebugObject::Render(const Graphics &graphics)
 {
 	const MeshD3D11 *mesh = content.GetMesh(_meshID);
 	if (mesh == nullptr)
