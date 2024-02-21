@@ -1,12 +1,12 @@
 
 #include <Windows.h>
-#include <iostream>
 #include <d3d11.h>
 
 #include "WindowHelper.h"
 #include "ContentLoader.h"
 #include "Game.h"
 #include "Time.h"
+#include "Input.h"
 #include "ErrMsg.h"
 
 
@@ -51,6 +51,7 @@ int APIENTRY wWinMain(
 	}
 	
 	Time time = { };
+	Input input = { };
 	MSG msg = { };
 
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -62,8 +63,9 @@ int APIENTRY wWinMain(
 		}
 
 		time.Update();
+		input.Update();
 
-		if (!game.Update(time))
+		if (!game.Update(time, input))
 		{
 			ErrMsg("Failed to update game logic!");
 			return -1;

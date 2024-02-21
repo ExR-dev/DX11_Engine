@@ -10,7 +10,7 @@
 
 struct ProjectionInfo
 {
-	float fovAngleY = 60.0f;
+	float fovAngleY = 80.0f;
 	float aspectRatio = 1.0f;
 	float nearZ = 0.1f;
 	float farZ = 50.0f;
@@ -28,7 +28,7 @@ private:
 	ConstantBufferD3D11 _lightingBuffer;
 	LightingBufferData _lightingBufferData = {
 		{0.0f, 0.0f, 0.0f, 1.0f}, // Camera position
-		{0.5f, 2.0f, 2.5f, 1.0f}, // Light position
+		{0.5f, 2.0f, -2.5f, 1.0f}, // Light position
 
 		{0.75f, 0.9f, 1.0f, 0.05f}, // Ambient
 		{1.0f, 1.0f, 1.0f, 5.0f}, // Diffuse
@@ -59,6 +59,9 @@ public:
 	void RotateForward(float amount);
 	void RotateRight(float amount);
 	void RotateUp(float amount);
+
+	void LookX(float amount);
+	void LookY(float amount);
 
 	[[nodiscard]] const XMFLOAT4A &GetPosition() const;
 	[[nodiscard]] const XMFLOAT4A &GetForward() const;

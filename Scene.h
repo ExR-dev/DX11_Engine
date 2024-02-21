@@ -5,6 +5,7 @@
 
 #include "CameraD3D11.h"
 #include "Entity.h"
+#include "Input.h"
 
 
 class Scene
@@ -25,6 +26,6 @@ public:
 
 	bool Initialize(ID3D11Device *device);
 
-	bool Update(ID3D11DeviceContext *context, const Time &time);
+	bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
 	bool Render(Graphics *graphics);
 };

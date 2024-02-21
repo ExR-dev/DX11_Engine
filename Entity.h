@@ -2,6 +2,7 @@
 
 #include "Transform.h"
 #include "Time.h"
+#include "Input.h"
 #include "Graphics.h"
 
 
@@ -28,7 +29,7 @@ public:
 	bool Initialize(ID3D11Device *device, UINT inputLayoutID, UINT meshID, UINT vsID, UINT psID, UINT texID);
 	bool IsInitialized() const;
 
-	bool Update(ID3D11DeviceContext *context, const Time &time);
+	bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
 	bool BindBuffers(ID3D11DeviceContext *context) const;
 	bool Render(Graphics *graphics);
 };

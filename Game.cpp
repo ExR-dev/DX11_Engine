@@ -112,14 +112,14 @@ bool Game::SetScene(Scene *scene)
 }
 
 
-bool Game::Update(const Time &time)
+bool Game::Update(const Time &time, const Input &input)
 {
 	/// v==========================================v ///
 	/// v        Update game logic here...         v ///
 	/// v==========================================v ///
 
 	if (_scene != nullptr)
-		if (!_scene->Update(_immediateContext, time))
+		if (!_scene->Update(_immediateContext, time, input))
 		{
 			ErrMsg("Failed to update scene!");
 			return false;

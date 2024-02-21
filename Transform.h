@@ -19,6 +19,10 @@ private:
 	ConstantBufferD3D11 _worldMatrixBuffer;
 	bool _isDirty = true;
 
+
+	void NormalizeBases();
+	void OrthogonalizeBases();
+
 public:
 	Transform() = default;
 	explicit Transform(ID3D11Device *device, const XMMATRIX &worldMatrix = XMMatrixIdentity());
@@ -33,21 +37,14 @@ public:
 
 	void Move(const XMFLOAT4A &movement);
 	void Rotate(const XMFLOAT4A &rotation);
-	void Scale(const XMFLOAT4A &scaling);
 
 	void MoveLocal(const XMFLOAT4A &movement);
 	void RotateLocal(const XMFLOAT4A &rotation);
-	void ScaleLocal(const XMFLOAT4A &scaling);
-
-	void RotateRoll(float rotation);
-	void RotatePitch(float rotation);
-	void RotateYaw(float rotation);
 
 	void RotateByQuaternion(const XMVECTOR &quaternion);
 
 	void SetPosition(const XMFLOAT4A &position);
 	void SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward);
-	void SetScale(const XMFLOAT4A &scale);
 
 	[[nodiscard]] XMFLOAT4A GetPosition() const;
 	[[nodiscard]] XMFLOAT4A GetRight() const;

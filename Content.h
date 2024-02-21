@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <wrl.h>
 
 #include "InputLayoutD3D11.h"
 #include "ShaderD3D11.h"
@@ -9,6 +10,8 @@
 #include "SamplerD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
 
+
+using Microsoft::WRL::ComPtr;
 
 constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
 

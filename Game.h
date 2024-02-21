@@ -6,6 +6,7 @@
 #include "Graphics.h"
 #include "Content.h"
 #include "Time.h"
+#include "Input.h"
 
 
 class Game
@@ -23,9 +24,8 @@ public:
 	~Game();
 
 	bool Setup(UINT width, UINT height, HWND window);
-
 	bool SetScene(Scene *scene);
 
-	bool Update(const Time &time);
+	bool Update(const Time &time, const Input &input);
 	bool Render(const Time &time);
 };

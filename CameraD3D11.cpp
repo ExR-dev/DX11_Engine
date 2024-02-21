@@ -57,38 +57,51 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 
 void CameraD3D11::MoveForward(const float amount)
 {
-	MoveLocal(amount, _transform.GetForward());
+	MoveLocal(amount, { 0, 0, 1, 0 });
 	_isDirty = true;
 }
 
 void CameraD3D11::MoveRight(const float amount)
 {
-	MoveLocal(amount, _transform.GetRight());
+	MoveLocal(amount, { 1, 0, 0, 0 });
 	_isDirty = true;
 }
 
 void CameraD3D11::MoveUp(const float amount)
 {
-	MoveLocal(amount, _transform.GetUp());
+	MoveLocal(amount, { 0, 1, 0, 0 });
 	_isDirty = true;
 }
 
 
 void CameraD3D11::RotateForward(const float amount)
 {
-	_transform.RotatePitch(amount);
+	_transform.RotateLocal({ 0, 0, amount, 0 });
 	_isDirty = true;
 }
 
 void CameraD3D11::RotateRight(const float amount)
 {
-	_transform.RotateYaw(amount);
+	_transform.RotateLocal({ amount, 0, 0, 0 });
 	_isDirty = true;
 }
 
 void CameraD3D11::RotateUp(const float amount)
 {
-	_transform.RotateRoll(amount);
+	_transform.RotateLocal({ 0, amount, 0, 0 });
+	_isDirty = true;
+}
+
+
+void CameraD3D11::LookX(const float amount)
+{
+	_transform.Rotate({ 0, amount, 0, 0 });
+	_isDirty = true;
+}
+
+void CameraD3D11::LookY(const float amount)
+{
+	_transform.RotateLocal({ -amount, 0, 0, 0 });
 	_isDirty = true;
 }
 

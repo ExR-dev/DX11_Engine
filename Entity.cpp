@@ -34,6 +34,10 @@ bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UI
 	_psID = psID;
 	_texID = texID;
 
+
+	// TODO: DELETE
+	_transform.Move({ 0, 0, 1.5f, 0 });
+
 	return true;
 }
 
@@ -43,8 +47,13 @@ bool Entity::IsInitialized() const
 }
 
 
-bool Entity::Update(ID3D11DeviceContext *context, const Time &time)
+bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input &input)
 {
+	// TODO: DELETE
+	//_transform.RotateLocal({ 0, 2.0f * time.deltaTime, 0, 0 });
+	//_transform.MoveLocal({ 0, 0, 1.0f * time.deltaTime, 0 });
+
+
 	if (!_transform.UpdateConstantBuffer(context))
 	{
 		ErrMsg("Failed to set world matrix buffer!");
