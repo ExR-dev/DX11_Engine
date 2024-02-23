@@ -49,11 +49,11 @@ private:
 
 	DepthBufferD3D11 _shadowMaps;
 	StructuredBufferD3D11 _lightBuffer;
-	std::vector<CameraD3D11> _shadowCameras;
+	std::vector<CameraD3D11*> _shadowCameras;
 
 public:
 	SpotLightCollectionD3D11() = default;
-	~SpotLightCollectionD3D11() = default;
+	~SpotLightCollectionD3D11();
 	SpotLightCollectionD3D11(const SpotLightCollectionD3D11 &other) = delete;
 	SpotLightCollectionD3D11 &operator=(const SpotLightCollectionD3D11 &other) = delete;
 	SpotLightCollectionD3D11(SpotLightCollectionD3D11 &&other) = delete;

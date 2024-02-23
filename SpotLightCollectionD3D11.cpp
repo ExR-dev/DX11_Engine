@@ -3,11 +3,17 @@
 #include "ErrMsg.h"
 
 
+SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
+{
+	for (const CameraD3D11 *camera : _shadowCameras)
+		delete camera;
+}
+
 bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightData &lightInfo)
 {
 	const UINT lightCount = lightInfo.perLightInfo.size();
-
 	_bufferData.reserve(lightCount);
+
 	for (UINT i = 0; i < lightCount; i++)
 	{
 		const SpotLightData::PerLightInfo iLightInfo = lightInfo.perLightInfo.at(i);
@@ -19,16 +25,22 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		XMVECTOR
 			pos = XMLoadFloat3(&lightBuffer.position),
-			lookDir;
+			rightDir = XMVectorSet(1, 0, 0, 0),
+			upDir = XMVectorSet(0, 1, 0, 0),
+			lookDir = XMVectorSet(0, 0, 1, 0);
+
+		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0, iLightInfo.rotationX, 0);
+		rightDir = XMVector3Transform(rightDir, rotationMatrix);
+		lookDir = XMVector3Transform(lookDir, rotationMatrix);
+
+		rotationMatrix = XMMatrixRotationNormal(rightDir, -iLightInfo.rotationY);
+		upDir = XMVector3Normalize(XMVector3Transform(upDir, rotationMatrix));
+		lookDir = XMVector3Normalize(XMVector3Transform(lookDir, rotationMatrix));
 
 		XMStoreFloat4x4(
 			&lightBuffer.vpMatrix,
 			XMMatrixTranspose(
-				XMMatrixLookAtLH(
-					pos,
-					pos + lookDir,
-					XMLoadFloat3({0, 1, 0})
-				) *
+				XMMatrixLookAtLH(pos, pos + lookDir, upDir) *
 				XMMatrixPerspectiveFovLH(
 					iLightInfo.angle * (XM_PI / 180.0f),
 					1.0f,
@@ -38,10 +50,26 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 			)
 		);
 
+		XMStoreFloat3(&lightBuffer.direction, lookDir);
+
 		_bufferData.push_back(lightBuffer);
+
+		_shadowCameras.push_back(new CameraD3D11(
+			device, 
+			{ iLightInfo.angle, 1.0f, iLight. },
+			//float fovAngleY = 80.0f;
+			//float aspectRatio = 1.0f;
+			//float nearZ = 0.1f;
+			//float farZ = 50.0f;
+		));
+
+		_shadowCameras.back()
 	}
 
-	return false;
+	_shadowMaps.Initialize(device, lightInfo.shadowMapInfo.textureDimension, lightInfo.shadowMapInfo.textureDimension, true, lightCount);
+	_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount, _bufferData.data(), true);
+
+	return true;
 }
 
 bool SpotLightCollectionD3D11::UpdateLightBuffers(ID3D11DeviceContext *context) const
