@@ -12,8 +12,9 @@ class Scene
 {
 private:
 	bool _initialized;
+	ID3D11Device *_device = nullptr;
 
-	CameraD3D11 *_camera;
+	CameraD3D11 *_camera = nullptr;
 	std::vector<Entity *> _entities;
 
 public:

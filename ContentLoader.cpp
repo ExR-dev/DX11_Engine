@@ -220,7 +220,7 @@ static void FormatRawMesh(
 			const RawTexCoord rT = vertexTexCoords.at(rI.t);
 			const RawNormal rN = vertexNormals.at(rI.n);
 
-			formattedGroup->emplace_back((uint32_t)formattedVertices.size());
+			formattedGroup->emplace_back(static_cast<uint32_t>(formattedVertices.size()));
 			formattedVertices.emplace_back(
 				rP.x, rP.y, rP.z,
 				rN.x, rN.y, rN.z,
@@ -235,7 +235,7 @@ static void ResolveDuplicateVertices(
 	std::vector<std::vector<uint32_t>> &formattedIndexGroups)
 {
 	const auto vertBegin = formattedVertices.begin();
-	uint32_t vertCount = (uint32_t)formattedVertices.size();
+	uint32_t vertCount = static_cast<uint32_t>(formattedVertices.size());
 
 	std::vector<uint32_t> vertexMap(vertCount, 0);
 	for (uint32_t i = 0; i < vertCount; (vertexMap.at(i) = i++)) { }
@@ -258,13 +258,13 @@ static void ResolveDuplicateVertices(
 		}
 	}
 
-	const uint32_t groupCount = (uint32_t)formattedIndexGroups.size();
+	const uint32_t groupCount = static_cast<uint32_t>(formattedIndexGroups.size());
 
 	// Remap indices
 	for (uint32_t group_i = 0; group_i < groupCount; group_i++)
 	{
 		std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
-		const uint32_t groupSize = (uint32_t)currGroup->size();
+		const uint32_t groupSize = static_cast<uint32_t>(currGroup->size());
 
 		for (uint32_t i = 0; i < groupSize; i++)
 		{
@@ -371,46 +371,46 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 
 	std::ofstream fileStream(path);
 
-	fileStream << "Loaded Mesh:" << std::endl << std::endl;
+	fileStream << "Loaded Mesh:\n\n";
 
-	fileStream << "---------------- Vertex Data ----------------" << std::endl;
-	fileStream << "count = " << meshData.vertexInfo.nrOfVerticesInBuffer << std::endl;
-	fileStream << "size = " << meshData.vertexInfo.sizeOfVertex << std::endl << std::endl;
+	fileStream << "---------------- Vertex Data ----------------" << '\n';
+	fileStream << "count = " << meshData.vertexInfo.nrOfVerticesInBuffer << '\n';
+	fileStream << "size = " << meshData.vertexInfo.sizeOfVertex << "\n\n";
 
 	for (size_t i = 0; i < meshData.vertexInfo.nrOfVerticesInBuffer; i++)
 	{
 		const FormattedVertex *vData = &reinterpret_cast<FormattedVertex*>(meshData.vertexInfo.vertexData)[i];
 
-		fileStream << "Vertex " << i << std::endl;
+		fileStream << "Vertex " << i << '\n';
 
-		fileStream << "\tPosition(" << vData->px << ", " << vData->py << ", " << vData->pz << ")" << std::endl;
-		fileStream << "\tNormal(" << vData->nx << ", " << vData->ny << ", " << vData->nz << ")" << std::endl;
-		fileStream << "\tTexCoord(" << vData->u << ", " << vData->v << ")" << std::endl;
+		fileStream << "\tPosition(" << vData->px << ", " << vData->py << ", " << vData->pz << ")\n";
+		fileStream << "\tNormal(" << vData->nx << ", " << vData->ny << ", " << vData->nz << ")\n";
+		fileStream << "\tTexCoord(" << vData->u << ", " << vData->v << ")\n";
 
-		fileStream << std::endl;
+		fileStream << '\n';
 	}
-	fileStream << "---------------------------------------------" << std::endl << std::endl;
+	fileStream << "---------------------------------------------\n\n";
 
-	fileStream << "---------------- Index Data ----------------" << std::endl;
-	fileStream << "count = " << meshData.indexInfo.nrOfIndicesInBuffer << std::endl;
+	fileStream << "---------------- Index Data ----------------\n";
+	fileStream << "count = " << meshData.indexInfo.nrOfIndicesInBuffer << '\n';
 
 	for (size_t i = 0; i < meshData.indexInfo.nrOfIndicesInBuffer / 3; i++)
 	{
 		const uint32_t *iData = &meshData.indexInfo.indexData[i*3];
 
-		fileStream << "indices " << i*3 << "-" << i*3+2 << "\t (" << iData[0] << "/" << iData[1] << "/" << iData[2] << ")" << std::endl;
+		fileStream << "indices " << i*3 << "-" << i*3+2 << "\t (" << iData[0] << "/" << iData[1] << "/" << iData[2] << ")\n";
 	}
-	fileStream << "--------------------------------------------" << std::endl << std::endl << std::endl;
+	fileStream << "--------------------------------------------\n\n\n";
 
-	fileStream << "---------------- Submesh Data ----------------" << std::endl;
+	fileStream << "---------------- Submesh Data ----------------\n";
 	for (size_t i = 0; i < meshData.subMeshInfo.size(); i++)
 	{
-		fileStream << "Submesh " << i << std::endl;
-		fileStream << "\tstart index = " << meshData.subMeshInfo.at(i).startIndexValue << std::endl;
-		fileStream << "\tlength = " << meshData.subMeshInfo.at(i).nrOfIndicesInSubMesh << std::endl;
-		fileStream << std::endl;
+		fileStream << "Submesh " << i << '\n';
+		fileStream << "\tstart index = " << meshData.subMeshInfo.at(i).startIndexValue << '\n';
+		fileStream << "\tlength = " << meshData.subMeshInfo.at(i).nrOfIndicesInSubMesh << '\n';
+		fileStream << '\n';
 	}
-	fileStream << "----------------------------------------------" << std::endl << std::endl;
+	fileStream << "----------------------------------------------\n\n";
 	
 	fileStream.close();
 	return true;
@@ -427,9 +427,9 @@ bool LoadTextureFromFile(const char *path, UINT &width, UINT &height, std::vecto
 		return false;
 	}
 
-	width = (UINT)w;
-	height = (UINT)h;
-	data = std::vector(imgData, imgData + (4ul * w * h));
+	width = static_cast<UINT>(w);
+	height = static_cast<UINT>(h);
+	data = std::vector(imgData, imgData + static_cast<size_t>(4ul * w * h));
 
 	stbi_image_free(imgData);
 	return true;

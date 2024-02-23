@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Windows.h>
+
 
 enum class KeyCode : unsigned char
 {
@@ -185,25 +187,52 @@ enum class KeyCode : unsigned char
     OemClear = 0xfe,
 };
 
+enum class KeyState
+{
+	None = 0,
+	Pressed = 1,
+	Held = 2,
+	Released = 3,
+};
+
+struct MouseState
+{
+    int x, y, dx, dy;
+};
 
 class Input
 {
 private:
-	bool _vKeys[256] = { };
-	bool _lvKeys[256] = { };
+    LPPOINT _mousePos = nullptr;
+    LPRECT  _windRect = nullptr;
 
-	//int _mouseX;
-	//int _mouseY;
+	bool
+		_vKeys[256] = { },
+		_lvKeys[256] = { };
 
+	int
+	    _mouseX = 0,
+	    _mouseY = 0,
+	    _lMouseX = 0,
+	    _lMouseY = 0;
+
+    bool
+		_cursorLocked = false,
+		_cursorVisible = true;
 
 public:
-	Input() = default;
-	~Input() = default;
+    Input();
+	~Input();
+    Input(const Input &other) = delete;
+    Input &operator=(const Input &other) = delete;
+    Input(Input &&other) = delete;
+    Input &operator=(Input &&other) = delete;
 
-	void Update();
+    [[nodiscard]] bool Update(HWND window);
 
-	[[nodiscard]] bool GetKey(KeyCode key) const;
+	[[nodiscard]] KeyState GetKey(KeyCode keyCode) const;
+    [[nodiscard]] MouseState GetMouse() const;
 
-	//int GetMouseX();
-	//int GetMouseY();
+    bool ToggleLockCursor();
+    bool ToggleShowCursor();
 };

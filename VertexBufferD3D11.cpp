@@ -22,7 +22,7 @@ bool VertexBufferD3D11::Initialize(ID3D11Device *device, const size_t sizeOfVert
 	_nrOfVertices = nrOfVerticesInBuffer;
 
 	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = (UINT)(_vertexSize * _nrOfVertices);
+	bufferDesc.ByteWidth = static_cast<UINT>(_vertexSize * _nrOfVertices);
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;

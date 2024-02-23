@@ -2,6 +2,7 @@
 
 #include <d3d11_4.h>
 
+
 class RenderTargetD3D11
 {
 private:
@@ -17,7 +18,7 @@ public:
 	RenderTargetD3D11(RenderTargetD3D11 &&other) = delete;
 	RenderTargetD3D11 &operator=(RenderTargetD3D11 &&other) = delete;
 
-	void Initialize(ID3D11Device *device, UINT width, UINT height,
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT width, UINT height,
 		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, bool hasSRV = false);
 
 	[[nodiscard]] ID3D11RenderTargetView *GetRTV() const;

@@ -159,6 +159,10 @@
     <ClCompile Include="ShaderResourceTextureD3D11.cpp" />
     <ClCompile Include="CameraD3D11.cpp" />
     <ClCompile Include="SamplerD3D11.cpp" />
+    <ClCompile Include="DepthBufferD3D11.cpp" />
+    <ClCompile Include="RenderTargetD3D11.cpp" />
+    <ClCompile Include="StructuredBufferD3D11.cpp" />
+    <ClCompile Include="SpotLightCollectionD3D11.cpp" />
     <ClCompile Include="VertexBufferD3D11.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WindowHelper.cpp" />
@@ -183,6 +187,10 @@
     <ClInclude Include="ShaderResourceTextureD3D11.h" />
     <ClInclude Include="CameraD3D11.h" />
     <ClInclude Include="SamplerD3D11.h" />
+    <ClInclude Include="DepthBufferD3D11.h" />
+    <ClInclude Include="RenderTargetD3D11.h" />
+    <ClInclude Include="StructuredBufferD3D11.h" />
+    <ClInclude Include="SpotLightCollectionD3D11.h" />
     <ClInclude Include="VertexBufferD3D11.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="WindowHelper.h" />

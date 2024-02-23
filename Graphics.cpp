@@ -84,13 +84,19 @@ bool Graphics::FlushRenderQueue()
 		}
 
 		// Bind private entity data
-		if (!((Entity *)instance.subject)->BindBuffers(_context))
+		if (!static_cast<Entity*>(instance.subject)->BindBuffers(_context))
 		{
 			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", i));
 			return false;
 		}
 
 		// Perform draw calls
+		if (loadedMesh == nullptr)
+		{
+			ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", i));
+			return false;
+		}
+
 		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
 		for (size_t j = 0; j < subMeshCount; j++)
 		{

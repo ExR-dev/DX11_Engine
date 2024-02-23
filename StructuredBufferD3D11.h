@@ -2,6 +2,7 @@
 
 #include <d3d11_4.h>
 
+
 class StructuredBufferD3D11
 {
 private:
@@ -20,10 +21,10 @@ public:
 	StructuredBufferD3D11(StructuredBufferD3D11 &&other) = delete;
 	StructuredBufferD3D11 operator=(StructuredBufferD3D11 &&other) = delete;
 
-	void Initialize(ID3D11Device *device, UINT sizeOfElement,
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT sizeOfElement,
 		size_t nrOfElementsInBuffer, void *bufferData = nullptr, bool dynamic = true);
 
-	void UpdateBuffer(ID3D11DeviceContext *context, void *data);
+	[[nodiscard]] bool UpdateBuffer(ID3D11DeviceContext *context, const void *data) const;
 
 	[[nodiscard]] UINT GetElementSize() const;
 	[[nodiscard]] size_t GetNrOfElements() const;

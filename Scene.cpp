@@ -29,6 +29,8 @@ bool Scene::Initialize(ID3D11Device *device)
 	if (_initialized)
 		return false;
 
+	_device = device;
+
 	if (!_camera->Initialize(device, { 75.0f, 16.0f/9.0f, 0.1f, 10.0f }, {0.0f, 0.0f, -2.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize camera!");
@@ -56,68 +58,85 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (!_initialized)
 		return false;
 
-	bool manipulatingEntity = false;
+	if (input.GetKey(KeyCode::P) == KeyState::Pressed)
+	{ // Create new entity
+		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+		Entity *ent = _entities.back();
+
+		if (!ent->Initialize(_device, 0, 0, 0, 1, 0))
+		{
+			ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
+			return false;
+		}
+	}
+
+	static int currSelection = -1;
 	for (unsigned char i = 0; i < _entities.size(); i++)
 	{
-		if (!input.GetKey((KeyCode)((unsigned char)KeyCode::D1 + i)))
-			continue;
-		
-		manipulatingEntity = true;
+		if (i > 10)
+			break;
 
-		Transform *entityTransform = _entities.at(i)->GetTransform();
-		if (entityTransform == nullptr)
-			continue;
+		if (input.GetKey(static_cast<KeyCode>(static_cast<unsigned char>(KeyCode::D1) + i)) == KeyState::Pressed)
+		{
+			currSelection = (currSelection == i) ? -1 : i;
+			break;
+		}
+	}
+
+	if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
+		currSelection++;
+	if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
+		currSelection--;
+
+	if (currSelection == -1)
+	{ // Moving camera
+		if (input.GetKey(KeyCode::D) == KeyState::Held)
+			_camera->MoveRight(time.deltaTime * 2.0f);
+		else if (input.GetKey(KeyCode::A) == KeyState::Held)
+			_camera->MoveRight(-time.deltaTime * 2.0f);
+
+		if (input.GetKey(KeyCode::Space) == KeyState::Held)
+			_camera->MoveUp(time.deltaTime * 2.0f);
+		else if (input.GetKey(KeyCode::X) == KeyState::Held)
+			_camera->MoveUp(-time.deltaTime * 2.0f);
+
+		if (input.GetKey(KeyCode::W) == KeyState::Held)
+			_camera->MoveForward(time.deltaTime * 2.0f);
+		else if (input.GetKey(KeyCode::S) == KeyState::Held)
+			_camera->MoveForward(-time.deltaTime * 2.0f);
+
+		const MouseState mState = input.GetMouse();
+		_camera->LookX(static_cast<float>(mState.dx) / 360.0f);
+		_camera->LookY(static_cast<float>(-mState.dy) / 360.0f);
+	}
+	else
+	{ // Moving entity
+		static bool isRotating = false;
+		if (input.GetKey(KeyCode::R) == KeyState::Pressed)
+			isRotating = !isRotating;
+
+		Transform *entityTransform = _entities.at(currSelection)->GetTransform();
 
 		XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
-		if (input.GetKey(KeyCode::D))
+		if (input.GetKey(KeyCode::D) == KeyState::Held)
 			transformationVector.x += time.deltaTime;
-		else if (input.GetKey(KeyCode::A))
+		else if (input.GetKey(KeyCode::A) == KeyState::Held)
 			transformationVector.x -= time.deltaTime;
 
-		if (input.GetKey(KeyCode::E))
+		if (input.GetKey(KeyCode::Space) == KeyState::Held)
 			transformationVector.y += time.deltaTime;
-		else if (input.GetKey(KeyCode::Q))
+		else if (input.GetKey(KeyCode::X) == KeyState::Held)
 			transformationVector.y -= time.deltaTime;
 
-		if (input.GetKey(KeyCode::W))
+		if (input.GetKey(KeyCode::W) == KeyState::Held)
 			transformationVector.z += time.deltaTime;
-		else if (input.GetKey(KeyCode::S))
+		else if (input.GetKey(KeyCode::S) == KeyState::Held)
 			transformationVector.z -= time.deltaTime;
 
-
-		if (input.GetKey(KeyCode::R))
+		if (isRotating)
 			entityTransform->Rotate(transformationVector);
 		else
 			entityTransform->Move(transformationVector);
-	}
-
-	if (!manipulatingEntity)
-	{
-		if (input.GetKey(KeyCode::D))
-			_camera->MoveRight(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::A))
-			_camera->MoveRight(-time.deltaTime * 2.0f);
-
-		if (input.GetKey(KeyCode::E))
-			_camera->MoveUp(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::Q))
-			_camera->MoveUp(-time.deltaTime * 2.0f);
-
-		if (input.GetKey(KeyCode::W))
-			_camera->MoveForward(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::S))
-			_camera->MoveForward(-time.deltaTime * 2.0f);
-
-
-		if (input.GetKey(KeyCode::Right))
-			_camera->LookX(time.deltaTime);
-		else if (input.GetKey(KeyCode::Left))
-			_camera->LookX(-time.deltaTime);
-
-		if (input.GetKey(KeyCode::Up))
-			_camera->LookY(time.deltaTime);
-		else if (input.GetKey(KeyCode::Down))
-			_camera->LookY(-time.deltaTime);
 	}
 
 	if (!_camera->UpdateBuffers(context))

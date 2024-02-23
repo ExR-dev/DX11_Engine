@@ -9,6 +9,9 @@
 #include "DepthBufferD3D11.h"
 #include "CameraD3D11.h"
 
+using namespace DirectX;
+
+
 struct SpotLightData
 {
 	struct ShadowMapInfo
@@ -18,13 +21,13 @@ struct SpotLightData
 
 	struct PerLightInfo
 	{
-		DirectX::XMFLOAT3 colour;
+		XMFLOAT3 color;
 		float rotationX = 0.0f;
 		float rotationY = 0.0f;
 		float angle = 0.0f;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
-		DirectX::XMFLOAT3 initialPosition;
+		XMFLOAT3 initialPosition;
 	};
 
 	std::vector<PerLightInfo> perLightInfo;
@@ -35,11 +38,11 @@ class SpotLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		DirectX::XMFLOAT4X4 vpMatrix;
-		DirectX::XMFLOAT3 colour;
-		DirectX::XMFLOAT3 direction;
+		XMFLOAT4X4 vpMatrix;
+		XMFLOAT3 color;
+		XMFLOAT3 direction;
 		float angle = 0.0f;
-		DirectX::XMFLOAT3 position;
+		XMFLOAT3 position;
 	};
 
 	std::vector<LightBuffer> _bufferData;
@@ -54,11 +57,11 @@ public:
 	SpotLightCollectionD3D11(const SpotLightCollectionD3D11 &other) = delete;
 	SpotLightCollectionD3D11 &operator=(const SpotLightCollectionD3D11 &other) = delete;
 	SpotLightCollectionD3D11(SpotLightCollectionD3D11 &&other) = delete;
-	SpotLightCollectionD3D11 &operator=(DepthBufferD3D11  &&other) = delete;
+	SpotLightCollectionD3D11 &operator=(SpotLightCollectionD3D11 &&other) = delete;
 
-	void Initialize(ID3D11Device *device, const SpotLightData &lightInfo);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const SpotLightData &lightInfo);
 
-	void UpdateLightBuffers(ID3D11DeviceContext *context);
+	[[nodiscard]] bool UpdateLightBuffers(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] UINT GetNrOfLights() const;
 	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;

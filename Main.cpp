@@ -54,7 +54,17 @@ int APIENTRY wWinMain(
 		}
 
 		time.Update();
-		input.Update();
+		if (!input.Update(window))
+		{
+			ErrMsg("Failed to update input!");
+			return -1;
+		}
+
+		if (input.GetKey(KeyCode::Tab) == KeyState::Pressed)
+			input.ToggleLockCursor();
+
+		if (input.GetKey(KeyCode::CapsLock) == KeyState::Pressed)
+			input.ToggleShowCursor();
 
 		if (!game.Update(time, input))
 		{
