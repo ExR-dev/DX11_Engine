@@ -8,7 +8,7 @@ Game::Game()
 	_device				= nullptr;
 	_immediateContext	= nullptr;
 
-	_graphics	= { };
+	//_graphics	= { };
 
 	_scene		= nullptr;
 }
@@ -191,7 +191,7 @@ bool Game::Update(const Time &time, const Input &input)
 }
 
 
-bool Game::Render(const Time &time)
+bool Game::Render(const Time &time, const Input &input)
 {
 	if (!_graphics.BeginRender())
 	{
@@ -204,7 +204,7 @@ bool Game::Render(const Time &time)
 	/// v==========================================v ///
 
 	if (_scene != nullptr)
-		if (!_scene->Render(&_graphics))
+		if (!_scene->Render(&_graphics, time, input))
 		{
 			ErrMsg("Failed to render scene!");
 			return false;

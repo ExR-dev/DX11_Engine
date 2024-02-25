@@ -181,6 +181,18 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		return false;
 	}
 
+	if (!_geometryBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
+	{
+		ErrMsg("Failed to initialize geometry buffer!");
+		return false;
+	}
+	
+	if (!_lightBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
+	{
+		ErrMsg("Failed to initialize light buffer!");
+		return false;
+	}
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
@@ -239,14 +251,13 @@ bool Graphics::BeginRender()
 	}
 	_isRendering = true;
 
-	constexpr float clearColour[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	constexpr float clearColour[4] = { 0.03f, 0.03f, 0.03f, 1.0f };
 	_context->ClearRenderTargetView(_rtv, clearColour);
 	_context->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	_context->RSSetViewports(1, &_viewport);
 	_context->OMSetRenderTargets(1, &_rtv, _dsView);
-
-	_context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	return true;
 }

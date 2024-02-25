@@ -30,31 +30,34 @@ bool RenderTargetD3D11::Initialize(ID3D11Device *device, const UINT width, const
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = 0;
 
+	if (hasSRV)
+		textureDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
 	if (FAILED(device->CreateTexture2D(&textureDesc, nullptr, &_texture)))
 	{
 		ErrMsg("Failed to create render target texture!");
 		return false;
 	}
 
-	if (FAILED(device->CreateRenderTargetView(_texture, nullptr, &_rtv)))
-	{
-		ErrMsg("Failed to create render target view!");
-		return false;
-	}
-
 	if (hasSRV)
 	{
-		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+		/*D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 		srvDesc.Format = format;
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MipLevels = 1;*/
 
-		if (FAILED(device->CreateShaderResourceView(_texture, &srvDesc, &_srv)))
+		if (FAILED(device->CreateShaderResourceView(_texture, /*&srvDesc*/ nullptr, &_srv)))
 		{
 			ErrMsg("Failed to create shader resource view!");
 			return false;
 		}
+	}
+
+	if (FAILED(device->CreateRenderTargetView(_texture, nullptr, &_rtv)))
+	{
+		ErrMsg("Failed to create render target view!");
+		return false;
 	}
 
 	return true;

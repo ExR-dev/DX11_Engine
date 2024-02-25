@@ -67,5 +67,6 @@ public:
 	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetShadowMapsSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
+	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex) const;
 	[[nodiscard]] ID3D11Buffer *GetLightCameraConstantBuffer(UINT lightIndex) const;
 };

@@ -73,7 +73,7 @@ int APIENTRY wWinMain(
 			return -1;
 		}
 
-		if (!game.Render(time))
+		if (!game.Render(time, input))
 		{
 			ErrMsg("Failed to render frame!");
 			return -1;

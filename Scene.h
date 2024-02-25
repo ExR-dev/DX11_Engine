@@ -6,6 +6,7 @@
 #include "CameraD3D11.h"
 #include "Entity.h"
 #include "Input.h"
+#include "SpotLightCollectionD3D11.h"
 
 
 class Scene
@@ -16,6 +17,7 @@ private:
 
 	CameraD3D11 *_camera = nullptr;
 	std::vector<Entity *> _entities;
+	SpotLightCollectionD3D11 *_spotLights;
 
 public:
 	Scene();
@@ -28,5 +30,5 @@ public:
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
 
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
-	[[nodiscard]] bool Render(Graphics *graphics);
+	[[nodiscard]] bool Render(Graphics *graphics, const Time &time, const Input &input);
 };

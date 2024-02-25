@@ -1,6 +1,6 @@
 #include "Scene.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "ErrMsg.h"
 
@@ -9,12 +9,8 @@ Scene::Scene()
 {
 	_initialized = false;
 
-	/*for (UINT i = 0; i < 3; i++)
-	{
-		_entities.push_back(new Entity(i));
-	}*/
-
 	_camera = new CameraD3D11();
+	_spotLights = new SpotLightCollectionD3D11();
 }
 
 Scene::~Scene()
@@ -23,6 +19,7 @@ Scene::~Scene()
 	for (size_t i = 0; i < entityCount; i++)
 		delete _entities.at(i);
 
+	delete _spotLights;
 	delete _camera;
 }
 
@@ -39,42 +36,22 @@ bool Scene::Initialize(ID3D11Device *device)
 		return false;
 	}
 
-	/*for (int i = 0; i < _entities.size(); i++)
+	SpotLightData lightInfo = { };
+	lightInfo.shadowMapInfo.textureDimension = 1024;
+	lightInfo.perLightInfo.push_back({
+		{ 1.0f, 1.0f, 1.0f },
+		0.0f,
+		0.0f,
+		90.0f,
+		0.1f,
+		50.0f,
+		{ 0.0f, 0.0f, 0.0f }
+	});
+
+	if (!_spotLights->Initialize(device, lightInfo))
 	{
-		Entity *ent = _entities.at(i);
-
-		if (!ent->Initialize(device, 0, i % 3, 0, 1, i % 6))
-		{
-			ErrMsg(std::format("Failed to initialize entity #{}!", i));
-			return false;
-		}
-	}*/
-
-	for (size_t i = 0; i < 50; i++)
-	{
-		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-		Entity *ent = _entities.back();
-
-		//if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
-		if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, 6))
-		{
-			ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
-			return false;
-		}
-
-		ent->GetTransform()->Move({
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			0
-		});
-
-		ent->GetTransform()->Rotate({
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			(float)((rand() % 2000) - 1000) / 50.0f,
-			0
-		});
+		ErrMsg("Failed to initialize camera!");
+		return false;
 	}
 
 	_initialized = true;
@@ -205,15 +182,45 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	return true;
 }
 
-bool Scene::Render(Graphics *graphics)
+bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
 
-	if (!graphics->SetCamera(_camera))
+	static bool hasSetCamera = false;
+	if (!hasSetCamera)
 	{
-		ErrMsg("Failed to set camera!");
-		return false;
+		if (!graphics->SetCamera(_camera))
+		{
+			ErrMsg("Failed to set camera!");
+			return false;
+		}
+		hasSetCamera = true;
+	}
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed)
+	{ // Change camera
+		static bool isMain = true;
+
+		if (isMain)
+		{
+			if (!graphics->SetCamera(_spotLights->GetLightCamera(0)))
+			{
+				ErrMsg("Failed to set camera to spotlight view!");
+				return false;
+			}
+
+			isMain = false;
+		}
+		else
+		{
+			if (!graphics->SetCamera(_camera))
+			{
+				ErrMsg("Failed to set camera to !");
+				return false;
+			}
+
+			isMain = true;
+		}
 	}
 
 	for (int i = 0; i < _entities.size(); i++)

@@ -13,15 +13,15 @@ private:
 	bool _isInitialized = false;
 	Transform _transform;
 
-
-	UINT _inputLayoutID = CONTENT_LOAD_ERROR;
-	UINT _meshID		= CONTENT_LOAD_ERROR;
-	UINT _vsID			= CONTENT_LOAD_ERROR;
-	UINT _psID			= CONTENT_LOAD_ERROR;
-	UINT _texID			= CONTENT_LOAD_ERROR;
+	UINT
+		_inputLayoutID	= CONTENT_LOAD_ERROR,
+		_meshID			= CONTENT_LOAD_ERROR,
+		_vsID			= CONTENT_LOAD_ERROR,
+		_psID			= CONTENT_LOAD_ERROR,
+		_texID			= CONTENT_LOAD_ERROR;
 
 public:
-	Entity(UINT id);
+	explicit Entity(UINT id);
 	~Entity() = default;
 	Entity(const Entity &other) = delete;
 	Entity &operator=(const Entity &other) = delete;

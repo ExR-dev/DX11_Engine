@@ -16,60 +16,53 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 	for (UINT i = 0; i < lightCount; i++)
 	{
+		// TODO: Very unsure if this implementation is correct
+
 		const SpotLightData::PerLightInfo iLightInfo = lightInfo.perLightInfo.at(i);
 
+		CameraD3D11 *lightCamera = new CameraD3D11(
+			device,
+			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f }
+		);
+
+		lightCamera->LookY(iLightInfo.rotationY);
+		lightCamera->LookX(iLightInfo.rotationX);
+
+		_shadowCameras.push_back(lightCamera);
+
+
+		XMFLOAT4A dir = lightCamera->GetForward();
+
 		LightBuffer lightBuffer;
+		lightBuffer.vpMatrix = lightCamera->GetViewProjectionMatrix();
 		lightBuffer.color = iLightInfo.color;
 		lightBuffer.position = iLightInfo.initialPosition;
 		lightBuffer.angle = iLightInfo.angle;
-
-		XMVECTOR
-			pos = XMLoadFloat3(&lightBuffer.position),
-			rightDir = XMVectorSet(1, 0, 0, 0),
-			upDir = XMVectorSet(0, 1, 0, 0),
-			lookDir = XMVectorSet(0, 0, 1, 0);
-
-		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0, iLightInfo.rotationX, 0);
-		rightDir = XMVector3Transform(rightDir, rotationMatrix);
-		lookDir = XMVector3Transform(lookDir, rotationMatrix);
-
-		rotationMatrix = XMMatrixRotationNormal(rightDir, -iLightInfo.rotationY);
-		upDir = XMVector3Normalize(XMVector3Transform(upDir, rotationMatrix));
-		lookDir = XMVector3Normalize(XMVector3Transform(lookDir, rotationMatrix));
-
-		XMStoreFloat4x4(
-			&lightBuffer.vpMatrix,
-			XMMatrixTranspose(
-				XMMatrixLookAtLH(pos, pos + lookDir, upDir) *
-				XMMatrixPerspectiveFovLH(
-					iLightInfo.angle * (XM_PI / 180.0f),
-					1.0f,
-					iLightInfo.projectionNearZ,
-					iLightInfo.projectionFarZ
-				)
-			)
-		);
-
-		XMStoreFloat3(&lightBuffer.direction, lookDir);
+		lightBuffer.direction = { dir.x, dir.y, dir.z };
 
 		_bufferData.push_back(lightBuffer);
-
-		// TODO
-
-		/*_shadowCameras.push_back(new CameraD3D11(
-			device, 
-			{ iLightInfo.angle, 1.0f, iLight. },
-			//float fovAngleY = 80.0f;
-			//float aspectRatio = 1.0f;
-			//float nearZ = 0.1f;
-			//float farZ = 50.0f;
-		));
-
-		_shadowCameras.back()*/
 	}
 
-	_shadowMaps.Initialize(device, lightInfo.shadowMapInfo.textureDimension, lightInfo.shadowMapInfo.textureDimension, true, lightCount);
-	_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount, _bufferData.data(), true);
+	if (!_shadowMaps.Initialize(device, 
+		lightInfo.shadowMapInfo.textureDimension, 
+		lightInfo.shadowMapInfo.textureDimension, 
+		true, 
+		lightCount))
+	{
+		ErrMsg("Failed to initialize shadow maps!");
+		return false;
+	}
+
+	if (!_lightBuffer.Initialize(device, 
+		sizeof(LightBuffer), 
+		lightCount, 
+		_bufferData.data(), 
+		true))
+	{
+		ErrMsg("Failed to initialize light buffer!");
+		return false;
+	}
 
 	return true;
 }
@@ -110,6 +103,11 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetShadowMapsSRV() const
 ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 {
 	return _lightBuffer.GetSRV();
+}
+
+CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const
+{
+	return _shadowCameras.at(lightIndex);
 }
 
 ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraConstantBuffer(const UINT lightIndex) const

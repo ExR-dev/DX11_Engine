@@ -27,5 +27,5 @@ public:
 	[[nodiscard]] bool SetScene(Scene *scene);
 
 	[[nodiscard]] bool Update(const Time &time, const Input &input);
-	[[nodiscard]] bool Render(const Time &time);
+	[[nodiscard]] bool Render(const Time &time, const Input &input);
 };
