@@ -1,86 +1,82 @@
 #include "Graphics.h"
 
+#include <algorithm>
+
 #include "ErrMsg.h"
 #include "Entity.h"
 #include "D3D11Helper.h"
+
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_win32.h"
+#include "ImGui/imgui_impl_dx11.h"
 
 
 // private:
 
 bool Graphics::FlushRenderQueue()
 {
-	// TODO: Sort render instances by shader, texture, etc. 
-
-
-	// TODO: Draw sorted entities in batches to reduce state changes.
-
-
-	// TODO: Deprecate
-
 	// Bind camera data
-	 if (!_currCamera->BindBuffers(_context))
-	 {
-		 ErrMsg("Failed to bind camera buffers!");
-		 return false;
-	 }
+	if (!_currCamera->BindBuffers(_context))
+	{
+		ErrMsg("Failed to bind camera buffers!");
+		return false;
+	}
 
 	// Bind shared entity data
 	const MeshD3D11 *loadedMesh = nullptr;
 
-	const size_t numInstances = _renderInstances.size();
-	for (size_t i = 0; i < numInstances; i++)
+	UINT i = 0;
+	for (const auto &[resources, instance] : _renderInstances)
 	{
-		const RenderInstance &instance = _renderInstances[i];
-
-		if (_currInputLayoutID != instance.inputLayoutID)
+		if (_currInputLayoutID != resources.inputLayoutID)
 		{
-			_context->IASetInputLayout(_content->GetInputLayout(instance.inputLayoutID)->GetInputLayout());
-			_currInputLayoutID = instance.inputLayoutID;
+			_context->IASetInputLayout(_content->GetInputLayout(resources.inputLayoutID)->GetInputLayout());
+			_currInputLayoutID = resources.inputLayoutID;
 		}
 
-		if (_currMeshID != instance.meshID)
+		if (_currMeshID != resources.meshID)
 		{
-			loadedMesh = _content->GetMesh(instance.meshID);
+			loadedMesh = _content->GetMesh(resources.meshID);
 			if (!loadedMesh->BindMeshBuffers(_context))
 			{
 				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", i));
 				return false;
 			}
-			_currMeshID = instance.meshID;
+			_currMeshID = resources.meshID;
 		}
 
-		if (_currVsID != instance.vsID)
+		if (_currVsID != resources.vsID)
 		{
-			if (!_content->GetShader(instance.vsID)->BindShader(_context))
+			if (!_content->GetShader(resources.vsID)->BindShader(_context))
 			{
 				ErrMsg(std::format("Failed to bind vertex shader for instance #{}!", i));
 				return false;
 			}
-			_currVsID = instance.vsID;
+			_currVsID = resources.vsID;
 		}
 
-		if (_currPsID != instance.psID)
+		if (_currPsID != resources.psID)
 		{
-			if (!_content->GetShader(instance.psID)->BindShader(_context))
+			if (!_content->GetShader(resources.psID)->BindShader(_context))
 			{
 				ErrMsg(std::format("Failed to bind pixel shader for instance #{}!", i));
 				return false;
 			}
-			_currPsID = instance.psID;
+			_currPsID = resources.psID;
 		}
 
-		if (_currTexID != instance.texID)
+		if (_currTexID != resources.texID)
 		{
-			ID3D11ShaderResourceView *const srv = _content->GetTexture(instance.texID)->GetSRV();
+			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
 			_context->PSSetShaderResources(0, 1, &srv);
-			_currTexID = instance.texID;
+			_currTexID = resources.texID;
 		}
 
-		if (_currSamplerID != instance.samplerID)
+		if (_currSamplerID != resources.samplerID)
 		{
-			ID3D11SamplerState *const ss = _content->GetSampler(instance.samplerID)->GetSamplerState();
+			ID3D11SamplerState *const ss = _content->GetSampler(resources.samplerID)->GetSamplerState();
 			_context->PSSetSamplers(0, 1, &ss);
-			_currSamplerID = instance.samplerID;
+			_currSamplerID = resources.samplerID;
 		}
 
 		// Bind private entity data
@@ -106,6 +102,8 @@ bool Graphics::FlushRenderQueue()
 				return false;
 			}
 		}
+
+		i++;
 	}
 
 	return true;
@@ -157,6 +155,13 @@ Graphics::~Graphics()
 
 	if (_swapChain != nullptr)
 		_swapChain->Release();
+
+	if (_isSetup)
+	{
+		ImGui_ImplDX11_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
+	}
 }
 
 
@@ -175,6 +180,13 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		ErrMsg("Failed to setup d3d11!");
 		return false;
 	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	ImGui_ImplWin32_Init(window);
+	ImGui_ImplDX11_Init(device, immediateContext);
+	ImGui::StyleColorsDark();
 
 	_context = immediateContext;
 	_content = content;
@@ -239,7 +251,7 @@ bool Graphics::BeginRender()
 	return true;
 }
 
-bool Graphics::QueueRender(const RenderInstance& instance)
+bool Graphics::QueueRender(const ResourceGroup &resources, const RenderInstance &instance)
 {
 	if (!_isRendering)
 	{
@@ -247,12 +259,11 @@ bool Graphics::QueueRender(const RenderInstance& instance)
 		return false;
 	}
 
-	_renderInstances.push_back(instance);
-
+	_renderInstances.insert({ resources, instance });
 	return true;
 }
 
-bool Graphics::EndRender()
+bool Graphics::EndRender(const Time &time)
 {
 	if (!_isRendering)
 	{
@@ -271,6 +282,19 @@ bool Graphics::EndRender()
 		ErrMsg("Failed to reset render state!");
 		return false;
 	}
+
+	// ImGui
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+	ImGui::Begin("Debug");
+
+	ImGui::Text(std::format("ms: {}", time.deltaTime).c_str());
+	ImGui::Text(std::format("fps: {}", 1.0f / time.deltaTime).c_str());
+
+	ImGui::End();
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	return SUCCEEDED(_swapChain->Present(1, 0));
 }

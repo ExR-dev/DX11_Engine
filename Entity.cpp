@@ -84,18 +84,21 @@ bool Entity::Render(Graphics *graphics)
 		return false;
 	}
 
-	const RenderInstance instance = {
+	const ResourceGroup resources = {
 		_meshID,
 		_vsID,
 		_psID,
 		_texID,
 		0,
-		_inputLayoutID,
+		_inputLayoutID
+	};
+
+	const RenderInstance instance = {
 		this,
 		sizeof(Entity)
 	};
 
-	if (!graphics->QueueRender(instance))
+	if (!graphics->QueueRender(resources, instance))
 	{
 		ErrMsg("Failed to queue entity for rendering!");
 		return false;

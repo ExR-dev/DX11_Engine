@@ -1,12 +1,14 @@
 #pragma once
 
 #include <d3d11.h>
+#include <map>
 
 #include "CameraD3D11.h"
 #include "Content.h"
+#include "Time.h"
 
 
-struct RenderInstance
+struct ResourceGroup
 {
 	UINT
 		meshID = CONTENT_LOAD_ERROR,
@@ -16,6 +18,29 @@ struct RenderInstance
 		samplerID = CONTENT_LOAD_ERROR,
 		inputLayoutID = CONTENT_LOAD_ERROR;
 
+    bool operator<(const ResourceGroup& other) const
+    {
+        if (meshID != other.meshID)
+            return meshID < other.meshID;
+
+        if (vsID != other.vsID)
+            return vsID < other.vsID;
+
+        if (psID != other.psID)
+            return psID < other.psID;
+
+        if (texID != other.texID)
+            return texID < other.texID;
+
+        if (samplerID != other.samplerID)
+            return samplerID < other.samplerID;
+
+        return inputLayoutID < other.inputLayoutID;
+    }
+};
+
+struct RenderInstance
+{
 	void *subject;
 	size_t subjectSize;
 };
@@ -37,7 +62,7 @@ private:
 	D3D11_VIEWPORT			 _viewport;
 
 	CameraD3D11 *_currCamera = nullptr;
-	std::vector<RenderInstance> _renderInstances;
+	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handelled by multimap
 
 	UINT
 		_currMeshID			= CONTENT_LOAD_ERROR,
@@ -66,6 +91,6 @@ public:
 	[[nodiscard]] bool SetCamera(CameraD3D11 *camera);
 
 	[[nodiscard]] bool BeginRender();
-	[[nodiscard]] bool QueueRender(const RenderInstance &instance);
-	[[nodiscard]] bool EndRender();
+	[[nodiscard]] bool QueueRender(const ResourceGroup &resources, const RenderInstance &instance);
+	[[nodiscard]] bool EndRender(const Time &time);
 };

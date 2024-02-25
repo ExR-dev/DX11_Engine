@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+#include <stdlib.h>
+
 #include "ErrMsg.h"
 
 
@@ -7,10 +9,10 @@ Scene::Scene()
 {
 	_initialized = false;
 
-	for (UINT i = 0; i < 3; i++)
+	/*for (UINT i = 0; i < 3; i++)
 	{
 		_entities.push_back(new Entity(i));
-	}
+	}*/
 
 	_camera = new CameraD3D11();
 }
@@ -31,21 +33,48 @@ bool Scene::Initialize(ID3D11Device *device)
 
 	_device = device;
 
-	if (!_camera->Initialize(device, { 75.0f, 16.0f/9.0f, 0.1f, 10.0f }, {0.0f, 0.0f, -2.0f, 0.0f}))
+	if (!_camera->Initialize(device, { 75.0f, 16.0f/9.0f, 0.1f, 50.0f }, {0.0f, 0.0f, -2.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
 	}
 
-	for (int i = 0; i < _entities.size(); i++)
+	/*for (int i = 0; i < _entities.size(); i++)
 	{
 		Entity *ent = _entities.at(i);
 
-		if (!ent->Initialize(device, 0, i, 0, 1, 0))
+		if (!ent->Initialize(device, 0, i % 3, 0, 1, i % 6))
 		{
 			ErrMsg(std::format("Failed to initialize entity #{}!", i));
 			return false;
 		}
+	}*/
+
+	for (size_t i = 0; i < 50; i++)
+	{
+		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+		Entity *ent = _entities.back();
+
+		//if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
+		if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, 6))
+		{
+			ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
+			return false;
+		}
+
+		ent->GetTransform()->Move({
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			0
+		});
+
+		ent->GetTransform()->Rotate({
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			(float)((rand() % 2000) - 1000) / 50.0f,
+			0
+		});
 	}
 
 	_initialized = true;
@@ -58,85 +87,102 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (!_initialized)
 		return false;
 
-	if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-	{ // Create new entity
-		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-		Entity *ent = _entities.back();
-
-		if (!ent->Initialize(_device, 0, 0, 0, 1, 0))
-		{
-			ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
-			return false;
-		}
-	}
-
-	static int currSelection = -1;
-	for (unsigned char i = 0; i < _entities.size(); i++)
+	if (input.IsCursorLocked()) // Handle user input
 	{
-		if (i > 10)
-			break;
+		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
+		{ // Create new entity
+			_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+			Entity *ent = _entities.back();
 
-		if (input.GetKey(static_cast<KeyCode>(static_cast<unsigned char>(KeyCode::D1) + i)) == KeyState::Pressed)
-		{
-			currSelection = (currSelection == i) ? -1 : i;
-			break;
+			if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
+			{
+				ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
+				return false;
+			}
+
+			ent->GetTransform()->Move({
+				(float)((rand() % 2000) - 1000) / 50.0f, 
+				(float)((rand() % 2000) - 1000) / 50.0f, 
+				(float)((rand() % 2000) - 1000) / 50.0f, 
+				0
+			});
+
+			ent->GetTransform()->Rotate({
+				(float)((rand() % 2000) - 1000) / 50.0f,
+				(float)((rand() % 2000) - 1000) / 50.0f,
+				(float)((rand() % 2000) - 1000) / 50.0f,
+				0
+				});
 		}
-	}
 
-	if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
-		currSelection++;
-	if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
-		currSelection--;
+		static int currSelection = -1;
+		for (unsigned char i = 0; i < _entities.size(); i++)
+		{
+			if (i > 10)
+				break;
 
-	if (currSelection == -1)
-	{ // Moving camera
-		if (input.GetKey(KeyCode::D) == KeyState::Held)
-			_camera->MoveRight(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::A) == KeyState::Held)
-			_camera->MoveRight(-time.deltaTime * 2.0f);
+			if (input.GetKey(static_cast<KeyCode>(static_cast<unsigned char>(KeyCode::D1) + i)) == KeyState::Pressed)
+			{
+				currSelection = (currSelection == i) ? -1 : i;
+				break;
+			}
+		}
 
-		if (input.GetKey(KeyCode::Space) == KeyState::Held)
-			_camera->MoveUp(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::X) == KeyState::Held)
-			_camera->MoveUp(-time.deltaTime * 2.0f);
+		if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
+			currSelection++;
+		if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
+			currSelection--;
 
-		if (input.GetKey(KeyCode::W) == KeyState::Held)
-			_camera->MoveForward(time.deltaTime * 2.0f);
-		else if (input.GetKey(KeyCode::S) == KeyState::Held)
-			_camera->MoveForward(-time.deltaTime * 2.0f);
+		if (currSelection == -1)
+		{ // Move camera
+			if (input.GetKey(KeyCode::D) == KeyState::Held)
+				_camera->MoveRight(time.deltaTime * 2.0f);
+			else if (input.GetKey(KeyCode::A) == KeyState::Held)
+				_camera->MoveRight(-time.deltaTime * 2.0f);
 
-		const MouseState mState = input.GetMouse();
-		_camera->LookX(static_cast<float>(mState.dx) / 360.0f);
-		_camera->LookY(static_cast<float>(-mState.dy) / 360.0f);
-	}
-	else
-	{ // Moving entity
-		static bool isRotating = false;
-		if (input.GetKey(KeyCode::R) == KeyState::Pressed)
-			isRotating = !isRotating;
+			if (input.GetKey(KeyCode::Space) == KeyState::Held)
+				_camera->MoveUp(time.deltaTime * 2.0f);
+			else if (input.GetKey(KeyCode::X) == KeyState::Held)
+				_camera->MoveUp(-time.deltaTime * 2.0f);
 
-		Transform *entityTransform = _entities.at(currSelection)->GetTransform();
+			if (input.GetKey(KeyCode::W) == KeyState::Held)
+				_camera->MoveForward(time.deltaTime * 2.0f);
+			else if (input.GetKey(KeyCode::S) == KeyState::Held)
+				_camera->MoveForward(-time.deltaTime * 2.0f);
 
-		XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
-		if (input.GetKey(KeyCode::D) == KeyState::Held)
-			transformationVector.x += time.deltaTime;
-		else if (input.GetKey(KeyCode::A) == KeyState::Held)
-			transformationVector.x -= time.deltaTime;
-
-		if (input.GetKey(KeyCode::Space) == KeyState::Held)
-			transformationVector.y += time.deltaTime;
-		else if (input.GetKey(KeyCode::X) == KeyState::Held)
-			transformationVector.y -= time.deltaTime;
-
-		if (input.GetKey(KeyCode::W) == KeyState::Held)
-			transformationVector.z += time.deltaTime;
-		else if (input.GetKey(KeyCode::S) == KeyState::Held)
-			transformationVector.z -= time.deltaTime;
-
-		if (isRotating)
-			entityTransform->Rotate(transformationVector);
+			const MouseState mState = input.GetMouse();
+			_camera->LookX(static_cast<float>(mState.dx) / 360.0f);
+			_camera->LookY(static_cast<float>(-mState.dy) / 360.0f);
+		}
 		else
-			entityTransform->Move(transformationVector);
+		{ // Move selected entity
+			static bool isRotating = false;
+			if (input.GetKey(KeyCode::R) == KeyState::Pressed)
+				isRotating = !isRotating;
+
+			Transform *entityTransform = _entities.at(currSelection)->GetTransform();
+
+			XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
+			if (input.GetKey(KeyCode::D) == KeyState::Held)
+				transformationVector.x += time.deltaTime;
+			else if (input.GetKey(KeyCode::A) == KeyState::Held)
+				transformationVector.x -= time.deltaTime;
+
+			if (input.GetKey(KeyCode::Space) == KeyState::Held)
+				transformationVector.y += time.deltaTime;
+			else if (input.GetKey(KeyCode::X) == KeyState::Held)
+				transformationVector.y -= time.deltaTime;
+
+			if (input.GetKey(KeyCode::W) == KeyState::Held)
+				transformationVector.z += time.deltaTime;
+			else if (input.GetKey(KeyCode::S) == KeyState::Held)
+				transformationVector.z -= time.deltaTime;
+
+			if (isRotating)
+				entityTransform->Rotate(transformationVector);
+			else
+				entityTransform->Move(transformationVector);
+		}
 	}
 
 	if (!_camera->UpdateBuffers(context))

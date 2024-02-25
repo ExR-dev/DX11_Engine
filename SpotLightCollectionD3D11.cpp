@@ -54,7 +54,9 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		_bufferData.push_back(lightBuffer);
 
-		_shadowCameras.push_back(new CameraD3D11(
+		// TODO
+
+		/*_shadowCameras.push_back(new CameraD3D11(
 			device, 
 			{ iLightInfo.angle, 1.0f, iLight. },
 			//float fovAngleY = 80.0f;
@@ -63,7 +65,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 			//float farZ = 50.0f;
 		));
 
-		_shadowCameras.back()
+		_shadowCameras.back()*/
 	}
 
 	_shadowMaps.Initialize(device, lightInfo.shadowMapInfo.textureDimension, lightInfo.shadowMapInfo.textureDimension, true, lightCount);
@@ -112,5 +114,5 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 
 ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraConstantBuffer(const UINT lightIndex) const
 {
-	return _shadowCameras.at(lightIndex).GetCameraBuffer();
+	return _shadowCameras.at(lightIndex)->GetCameraBuffer();
 }

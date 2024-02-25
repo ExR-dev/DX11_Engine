@@ -233,6 +233,9 @@ public:
 	[[nodiscard]] KeyState GetKey(KeyCode keyCode) const;
     [[nodiscard]] MouseState GetMouse() const;
 
+    [[nodiscard]] bool IsCursorLocked() const;
+    [[nodiscard]] bool IsCursorVisible() const;
+
     bool ToggleLockCursor();
     bool ToggleShowCursor();
 };

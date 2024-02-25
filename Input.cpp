@@ -99,6 +99,10 @@ MouseState Input::GetMouse() const
 	};
 }
 
+
+bool Input::IsCursorLocked() const { return _cursorLocked; }
+bool Input::IsCursorVisible() const { return _cursorVisible; }
+
 bool Input::ToggleLockCursor()
 {
 	_cursorLocked = !_cursorLocked;

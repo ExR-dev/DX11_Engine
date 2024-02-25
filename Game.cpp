@@ -31,27 +31,47 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	const UINT fallbackMeshID = _content.AddMesh(_device, "FallbackMesh", "Content\\Fallback.obj");
-	if (fallbackMeshID == CONTENT_LOAD_ERROR)
+	if (_content.AddMesh(_device, "FallbackMesh", "Content\\Fallback.obj") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback mesh!");
 		return false;
 	}
 
-	const UINT shapeMeshID = _content.AddMesh(_device, "ShapeMesh", "Content\\ShapeTri.obj");
-	if (shapeMeshID == CONTENT_LOAD_ERROR)
+	if (_content.AddMesh(_device, "ShapeMesh", "Content\\ShapeTri.obj") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add shape mesh!");
 		return false;
 	}
 
-	const UINT simpleSubMeshID = _content.AddMesh(_device, "SimpleSubMesh", "Content\\SimpleSubmesh.obj");
-	if (simpleSubMeshID == CONTENT_LOAD_ERROR)
+	if (_content.AddMesh(_device, "SimpleSubMesh", "Content\\SimpleSubmesh.obj") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add simpleSubmesh mesh!");
 		return false;
 	}
 
+	if (_content.AddMesh(_device, "ControlChairMesh", "Content\\ControlChair.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add controlChair mesh!");
+		return false;
+	}
+
+	if (_content.AddMesh(_device, "ControlDeskMesh", "Content\\ControlDesk.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add controlDesk mesh!");
+		return false;
+	}
+
+	if (_content.AddMesh(_device, "RoomCorridorMesh", "Content\\RoomCorridor.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add roomCorridor mesh!");
+		return false;
+	}
+
+	if (_content.AddMesh(_device, "CharacterSculptMesh", "Content\\CharacterSculpt.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculpt mesh!");
+		return false;
+	}
 
 	const UINT fallbackVShaderID = _content.AddShader(_device, "FallbackVShader", ShaderType::VERTEX_SHADER, "Content\\VertexShader.cso");
 	if (fallbackVShaderID == CONTENT_LOAD_ERROR)
@@ -60,24 +80,57 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
-	const UINT fallbackPShaderID = _content.AddShader(_device, "FallbackPShader", ShaderType::PIXEL_SHADER, "Content\\PixelShader.cso");
-	if (fallbackPShaderID == CONTENT_LOAD_ERROR)
+	if (_content.AddShader(_device, "FallbackPShader", ShaderType::PIXEL_SHADER, "Content\\PixelShader.cso") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback pixel shader!");
 		return false;
 	}
 
 
-	const UINT fallbackTextureID = _content.AddTexture(_device, "FallbackTexture", "Content\\texture.png");
-	if (fallbackTextureID == CONTENT_LOAD_ERROR)
+	if (_content.AddTexture(_device, "FallbackTexture", "Content\\texture1.png") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback texture!");
 		return false;
 	}
 
+	if (_content.AddTexture(_device, "Texture2", "Content\\texture2.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add texture2!");
+		return false;
+	}
 
-	const UINT fallbackSamplerID = _content.AddSampler(_device, "FallbackSampler", D3D11_TEXTURE_ADDRESS_BORDER);
-	if (fallbackSamplerID == CONTENT_LOAD_ERROR)
+	if (_content.AddTexture(_device, "Texture3", "Content\\texture3.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add texture3!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "Texture4", "Content\\texture4.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add texture4!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "Texture5", "Content\\texture5.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add texture5!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "Texture6", "Content\\texture6.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add texture6!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "CharacterSculptTexture", "Content\\CharacterSculptTexture.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptTexture!");
+		return false;
+	}
+
+
+	if (_content.AddSampler(_device, "FallbackSampler", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback sampler!");
 		return false;
@@ -90,8 +143,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
-	const UINT fallbackInputLayoutID = _content.AddInputLayout(_device, "FallbackInputLayout", fallbackInputLayout, fallbackVShaderID);
-	if (fallbackInputLayoutID == CONTENT_LOAD_ERROR)
+	if (_content.AddInputLayout(_device, "FallbackInputLayout", fallbackInputLayout, fallbackVShaderID) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback input layout!");
 		return false;
@@ -162,7 +214,7 @@ bool Game::Render(const Time &time)
 	/// ^        Render scene here...              ^ ///
 	/// ^==========================================^ ///
 
-	if (!_graphics.EndRender())
+	if (!_graphics.EndRender(time))
 	{
 		ErrMsg("Failed to end rendering!\n");
 		return false;

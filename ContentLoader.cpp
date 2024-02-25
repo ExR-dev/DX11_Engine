@@ -65,7 +65,6 @@ static bool ReadWavefrontFile(const char *path,
 	std::string line;
 
 	bool begunReadingSubMesh = false;
-	int endOfLastSubMesh = 0;
 
 	while (std::getline(fileStream, line))
 	{
@@ -107,11 +106,25 @@ static bool ReadWavefrontFile(const char *path,
 		}
 		else if (dataType == "g")
 		{ // Mesh Group
+			if (!begunReadingSubMesh)
+			{ // First submesh
+				begunReadingSubMesh = true;
+				indexGroups.emplace_back();
+				continue;
+			}
 
+			indexGroups.emplace_back();
 		}
 		else if (dataType == "o")
 		{ // Mesh Object
+			if (!begunReadingSubMesh)
+			{ // First submesh
+				begunReadingSubMesh = true;
+				indexGroups.emplace_back();
+				continue;
+			}
 
+			indexGroups.emplace_back();
 		}
 		else if (dataType == "v")
 		{ // Vertex Position

@@ -17,8 +17,8 @@ int APIENTRY wWinMain(
 {
 	OutputDebugString(L"\n=======| Start |===========================================================================\n");
 
-	constexpr UINT WIDTH = 1280;
-	constexpr UINT HEIGHT = 720;
+	constexpr UINT WIDTH = 1920;
+	constexpr UINT HEIGHT = 1080;
 	HWND window;
 
 	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
@@ -54,6 +54,7 @@ int APIENTRY wWinMain(
 		}
 
 		time.Update();
+
 		if (!input.Update(window))
 		{
 			ErrMsg("Failed to update input!");
