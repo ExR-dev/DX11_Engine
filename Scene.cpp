@@ -35,6 +35,12 @@ bool Scene::Initialize(ID3D11Device *device)
 		ErrMsg("Failed to initialize camera!");
 		return false;
 	}
+	
+	if (!_cubemap.Initialize(device, 0.1f, 50.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
+	{
+		ErrMsg("Failed to initialize cubemap!");
+		return false;
+	}
 
 	SpotLightData lightInfo = { };
 	lightInfo.shadowMapInfo.textureDimension = 1024;
@@ -67,29 +73,32 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (input.IsCursorLocked()) // Handle user input
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create new entity
-			_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-			Entity *ent = _entities.back();
-
-			if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
+		{ // Create 5 random entities
+			for (size_t i = 0; i < 5; i++)
 			{
-				ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
-				return false;
-			}
+				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+				Entity *ent = _entities.back();
 
-			ent->GetTransform()->Move({
-				(float)((rand() % 2000) - 1000) / 50.0f, 
-				(float)((rand() % 2000) - 1000) / 50.0f, 
-				(float)((rand() % 2000) - 1000) / 50.0f, 
-				0
-			});
+				if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
+				{
+					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
+					return false;
+				}
 
-			ent->GetTransform()->Rotate({
-				(float)((rand() % 2000) - 1000) / 50.0f,
-				(float)((rand() % 2000) - 1000) / 50.0f,
-				(float)((rand() % 2000) - 1000) / 50.0f,
-				0
+				ent->GetTransform()->Move({
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					0
 				});
+
+				ent->GetTransform()->Rotate({
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					(float)((rand() % 2000) - 1000) / 50.0f,
+					0
+				});
+			}
 		}
 
 		static int currSelection = -1;
@@ -168,6 +177,18 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		return false;
 	}
 
+	if (!_spotLights->GetLightCamera(0)->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update spotlight #0 camera buffers!");
+		return false;
+	}
+
+	if (!_cubemap.UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update cubemap buffers!");
+		return false;
+	}
+
 	for (int i = 0; i < _entities.size(); i++)
 	{
 		Entity *ent = _entities.at(i);
@@ -188,6 +209,11 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 		return false;
 
 	static bool hasSetCamera = false;
+
+	static int currCamera = -1;
+	if (input.GetKey(KeyCode::V) == KeyState::Pressed)
+		currCamera = 6;
+
 	if (!hasSetCamera)
 	{
 		if (!graphics->SetCamera(_camera))
@@ -197,29 +223,28 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 		}
 		hasSetCamera = true;
 	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed)
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed ||
+			 input.GetKey(KeyCode::V) == KeyState::Pressed)
 	{ // Change camera
-		static bool isMain = true;
+		currCamera++;
 
-		if (isMain)
-		{
-			if (!graphics->SetCamera(_spotLights->GetLightCamera(0)))
-			{
-				ErrMsg("Failed to set camera to spotlight view!");
-				return false;
-			}
-
-			isMain = false;
-		}
-		else
+		if (currCamera >= 6)
 		{
 			if (!graphics->SetCamera(_camera))
 			{
-				ErrMsg("Failed to set camera to !");
+				ErrMsg("Failed to set camera to main!");
 				return false;
 			}
 
-			isMain = true;
+			currCamera = -1;
+		}
+		else
+		{
+			if (!graphics->SetCamera(_cubemap.GetCamera(currCamera)))
+			{
+				ErrMsg(std::format("Failed to set camera to cubemap view #{}!", currCamera));
+				return false;
+			}
 		}
 	}
 

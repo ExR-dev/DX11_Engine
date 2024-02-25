@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Content.cpp" />
+    <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="D3D11Helper.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="ErrMsg.cpp" />
@@ -176,6 +177,7 @@
   <ItemGroup>
     <ClInclude Include="Content.h" />
     <ClInclude Include="ContentLoader.h" />
+    <ClInclude Include="Cubemap.h" />
     <ClInclude Include="D3D11Helper.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="ErrMsg.h" />
@@ -190,6 +192,7 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="PointLightCollectionD3D11.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Time.h" />

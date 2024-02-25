@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "Input.h"
 #include "SpotLightCollectionD3D11.h"
+#include "Cubemap.h"
 
 
 class Scene
@@ -18,6 +19,8 @@ private:
 	CameraD3D11 *_camera = nullptr;
 	std::vector<Entity *> _entities;
 	SpotLightCollectionD3D11 *_spotLights;
+
+	Cubemap _cubemap;
 
 public:
 	Scene();

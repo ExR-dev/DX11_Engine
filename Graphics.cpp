@@ -181,7 +181,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		return false;
 	}
 
-	if (!_geometryBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
+	/*if (!_geometryBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
 	{
 		ErrMsg("Failed to initialize geometry buffer!");
 		return false;
@@ -191,7 +191,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	{
 		ErrMsg("Failed to initialize light buffer!");
 		return false;
-	}
+	}*/
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -231,6 +231,12 @@ D3D11_VIEWPORT &Graphics::GetViewport()
 
 bool Graphics::SetCamera(CameraD3D11 *camera)
 {
+	if (camera == nullptr)
+	{
+		ErrMsg("Failed to set camera, camera is nullptr!");
+		return false;
+	}
+
 	_currCamera = camera;
 	return true;
 }
