@@ -55,7 +55,7 @@ struct FormattedVertex {
 };
 
 
-static bool ReadWavefrontFile(const char *path, 
+static bool ReadWavefront(const char *path, 
 	std::vector<RawPosition> &vertexPositions, 
 	std::vector<RawTexCoord> &vertexTexCoords,
 	std::vector<RawNormal> &vertexNormals,
@@ -311,6 +311,30 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		MeshData::SubMeshInfo subMeshInfo = { };
 		const std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
 
+		DirectX::XMFLOAT4A
+			min = {  FLT_MAX,  FLT_MAX,  FLT_MAX, 0 },
+			max = { -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 };
+
+		for (const uint32_t index : *currGroup)
+		{
+			const FormattedVertex *vData = &formattedVertices.at(index);
+
+			if		(vData->px < min.x) min.x = vData->px;
+			else if (vData->px > max.x) max.x = vData->px;
+
+			if		(vData->py < min.y) min.y = vData->py;
+			else if (vData->py > max.y) max.y = vData->py;
+
+			if		(vData->pz < min.z) min.z = vData->pz;
+			else if (vData->pz > max.z) max.z = vData->pz;
+		}
+
+		DirectX::BoundingBox().CreateFromPoints(
+			subMeshInfo.boundingBox, 
+			*reinterpret_cast<DirectX::XMVECTOR *>(&min), 
+			*reinterpret_cast<DirectX::XMVECTOR *>(&max)
+		);
+
 		subMeshInfo.startIndexValue = inlineIndices.size();
 		subMeshInfo.nrOfIndicesInSubMesh = currGroup->size();
 
@@ -347,7 +371,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 
 	if (ext == "obj")
 	{
-		if (!ReadWavefrontFile(path, vertexPositions, vertexTexCoords, vertexNormals, indexGroups))
+		if (!ReadWavefront(path, vertexPositions, vertexTexCoords, vertexNormals, indexGroups))
 		{
 			ErrMsg("Failed to read wavefront file!");
 			return false;

@@ -27,7 +27,11 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 	for (size_t i = 0; i < subMeshCount; i++)
 	{
 		SubMeshD3D11 subMesh;
-		if (!subMesh.Initialize(meshInfo.subMeshInfo.at(i).startIndexValue, meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh, nullptr, nullptr, nullptr)) // TODO
+		if (!subMesh.Initialize(
+			meshInfo.subMeshInfo.at(i).startIndexValue, 
+			meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh,
+			meshInfo.subMeshInfo.at(i).boundingBox,
+			nullptr, nullptr, nullptr)) // TODO
 		{
 			ErrMsg("Failed to initialize sub mesh!");
 			return false;

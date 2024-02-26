@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-
 #include <d3d11_4.h>
+#include <vector>
+#include <DirectXCollision.h>
 
 #include "SubMeshD3D11.h"
 #include "VertexBufferD3D11.h"
@@ -41,6 +41,7 @@ struct MeshData
 		ID3D11ShaderResourceView *ambientTextureSRV = nullptr;
 		ID3D11ShaderResourceView *diffuseTextureSRV = nullptr;
 		ID3D11ShaderResourceView *specularTextureSRV = nullptr;
+		DirectX::BoundingBox boundingBox;
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
@@ -52,6 +53,7 @@ private:
 	std::vector<SubMeshD3D11> _subMeshes;
 	VertexBufferD3D11 _vertexBuffer;
 	IndexBufferD3D11 _indexBuffer;
+
 
 public:
 	MeshD3D11() = default;

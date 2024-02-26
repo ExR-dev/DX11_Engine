@@ -85,6 +85,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	if (_content.AddMesh(_device, "CursedMesh", "Content\\Cursed.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add cursedMesh mesh!");
+		return false;
+	}
+
 
 	const UINT fallbackVShaderID = _content.AddShader(_device, "FallbackVShader", ShaderType::VERTEX_SHADER, "Content\\VertexShader.cso");
 	if (fallbackVShaderID == CONTENT_LOAD_ERROR)
@@ -151,6 +157,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	if (_content.AddTexture(_device, "CharacterSculptLow2Texture", "Content\\CharacterSculptLow2Texture.png") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add characterSculptLow2Texture!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "CursedTexture", "Content\\Cursed.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add cursedTexture!");
 		return false;
 	}
 

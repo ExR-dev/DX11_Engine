@@ -79,7 +79,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
 
-				if (!ent->Initialize(_device, 0, rand() % 9, 0, 1, rand() % 9))
+				//if (!ent->Initialize(_device, 0, rand() % 9, 0, 1, rand() % 9))
+				if (!ent->Initialize(_device, 0, 9, 0, 1, 9))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
