@@ -79,23 +79,23 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
 
-				if (!ent->Initialize(_device, 0, rand() % 7, 0, 1, rand() % 7))
+				if (!ent->Initialize(_device, 0, rand() % 9, 0, 1, rand() % 9))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
 				}
 
 				ent->GetTransform()->Move({
-					(float)((rand() % 2000) - 1000) / 50.0f,
-					(float)((rand() % 2000) - 1000) / 50.0f,
-					(float)((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
 					0
 				});
 
 				ent->GetTransform()->Rotate({
-					(float)((rand() % 2000) - 1000) / 50.0f,
-					(float)((rand() % 2000) - 1000) / 50.0f,
-					(float)((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
 					0
 				});
 			}

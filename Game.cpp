@@ -73,6 +73,19 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	if (_content.AddMesh(_device, "CharacterSculptLow1Mesh", "Content\\CharacterSculptLow1.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptLow1 mesh!");
+		return false;
+	}
+
+	if (_content.AddMesh(_device, "CharacterSculptLow2Mesh", "Content\\CharacterSculptLow2.obj") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptLow2 mesh!");
+		return false;
+	}
+
+
 	const UINT fallbackVShaderID = _content.AddShader(_device, "FallbackVShader", ShaderType::VERTEX_SHADER, "Content\\VertexShader.cso");
 	if (fallbackVShaderID == CONTENT_LOAD_ERROR)
 	{
@@ -126,6 +139,18 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	if (_content.AddTexture(_device, "CharacterSculptTexture", "Content\\CharacterSculptTexture.png") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add characterSculptTexture!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "CharacterSculptLow1Texture", "Content\\CharacterSculptLow1Texture.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptLow1Texture!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "CharacterSculptLow2Texture", "Content\\CharacterSculptLow2Texture.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptLow2Texture!");
 		return false;
 	}
 

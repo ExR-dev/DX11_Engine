@@ -24,14 +24,14 @@ struct ResourceGroup
         if (meshID != other.meshID)
             return meshID < other.meshID;
 
+        if (texID != other.texID)
+            return texID < other.texID;
+
         if (vsID != other.vsID)
             return vsID < other.vsID;
 
         if (psID != other.psID)
             return psID < other.psID;
-
-        if (texID != other.texID)
-            return texID < other.texID;
 
         if (samplerID != other.samplerID)
             return samplerID < other.samplerID;
@@ -67,7 +67,7 @@ private:
 		_lightBuffer;
 
 	CameraD3D11 *_currCamera = nullptr;
-	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handelled by multimap
+	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 
 	UINT
 		_currMeshID			= CONTENT_LOAD_ERROR,

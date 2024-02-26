@@ -294,12 +294,6 @@ bool Graphics::EndRender(const Time &time)
 		return false;
 	}
 
-	if (!ResetRenderState())
-	{
-		ErrMsg("Failed to reset render state!");
-		return false;
-	}
-
 	// ImGui
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -309,9 +303,17 @@ bool Graphics::EndRender(const Time &time)
 	ImGui::Text(std::format("ms: {}", time.deltaTime).c_str());
 	ImGui::Text(std::format("fps: {}", 1.0f / time.deltaTime).c_str());
 
+	ImGui::Text(std::format("Objects: {}", _renderInstances.size()).c_str());
+
 	ImGui::End();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	if (!ResetRenderState())
+	{
+		ErrMsg("Failed to reset render state!");
+		return false;
+	}
 
 	return SUCCEEDED(_swapChain->Present(1, 0));
 }
