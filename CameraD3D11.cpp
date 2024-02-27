@@ -116,7 +116,7 @@ const XMFLOAT4A &CameraD3D11::GetUp() const			{ return _transform.GetUp();		}
 const XMFLOAT4A &CameraD3D11::GetForward() const	{ return _transform.GetForward();	}
 const XMFLOAT4A &CameraD3D11::GetPosition() const	{ return _transform.GetPosition();	}
 
-const XMFLOAT4X4 &CameraD3D11::GetViewProjectionMatrix() const
+XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 {
 	XMFLOAT4A
 		cPos = _transform.GetPosition(),

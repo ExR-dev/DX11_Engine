@@ -21,13 +21,13 @@ struct SpotLightData
 
 	struct PerLightInfo
 	{
-		XMFLOAT3 color;
-		float rotationX = 0.0f;
-		float rotationY = 0.0f;
-		float angle = 0.0f;
+		XMFLOAT3 color = { };
+		float rotationX	= 0.0f;
+		float rotationY	= 0.0f;
+		float angle	= 0.0f;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
-		XMFLOAT3 initialPosition;
+		XMFLOAT3 initialPosition = { };
 	};
 
 	std::vector<PerLightInfo> perLightInfo;
@@ -38,11 +38,11 @@ class SpotLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		XMFLOAT4X4 vpMatrix;
-		XMFLOAT3 color;
-		XMFLOAT3 direction;
+		XMFLOAT4X4 vpMatrix = { };
+		XMFLOAT3 color = { };
+		XMFLOAT3 direction = { };
 		float angle = 0.0f;
-		XMFLOAT3 position;
+		XMFLOAT3 position = { };
 	};
 
 	std::vector<LightBuffer> _bufferData;

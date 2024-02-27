@@ -36,8 +36,8 @@ class PointLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		XMFLOAT3 color;
-		XMFLOAT3 position;
+		XMFLOAT3 color = { };
+		XMFLOAT3 position = { };
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
 	};

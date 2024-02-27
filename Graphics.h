@@ -84,6 +84,7 @@ private:
 
 
 	[[nodiscard]] bool FlushRenderQueue();
+	[[nodiscard]] bool RenderLighting();
 	[[nodiscard]] bool ResetRenderState();
 
 public:

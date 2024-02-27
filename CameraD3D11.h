@@ -89,7 +89,7 @@ public:
 	[[nodiscard]] const XMFLOAT4A &GetForward() const;
 	[[nodiscard]] const XMFLOAT4A &GetRight() const;
 	[[nodiscard]] const XMFLOAT4A &GetUp() const;
-	[[nodiscard]] const XMFLOAT4X4 &GetViewProjectionMatrix() const;
+	[[nodiscard]] XMFLOAT4X4 GetViewProjectionMatrix() const;
 
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 

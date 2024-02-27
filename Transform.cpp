@@ -189,10 +189,10 @@ void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLO
 }
 
 
-XMFLOAT4A Transform::GetPosition() const { return _pos;		}
-XMFLOAT4A Transform::GetRight() const	 { return _right;	}
-XMFLOAT4A Transform::GetUp() const		 { return _up;		}
-XMFLOAT4A Transform::GetForward() const	 { return _forward; }
+const XMFLOAT4A &Transform::GetPosition() const	{ return _pos;		}
+const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
+const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
+const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
 
 
 bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)

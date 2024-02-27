@@ -38,7 +38,7 @@ bool SubMeshD3D11::Initialize(
 
 bool SubMeshD3D11::PerformDrawCall(ID3D11DeviceContext *context) const
 {
-	context->DrawIndexed(_nrOfIndices, _startIndex, 0);
+	context->DrawIndexed(static_cast<UINT>(_nrOfIndices), static_cast<UINT>(_startIndex), 0);
 	return true;
 }
 

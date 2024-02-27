@@ -11,7 +11,7 @@ SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
 
 bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightData &lightInfo)
 {
-	const UINT lightCount = lightInfo.perLightInfo.size();
+	const UINT lightCount = static_cast<UINT>(lightInfo.perLightInfo.size());
 	_bufferData.reserve(lightCount);
 
 	for (UINT i = 0; i < lightCount; i++)
@@ -69,7 +69,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 bool SpotLightCollectionD3D11::UpdateLightBuffers(ID3D11DeviceContext *context) const
 {
-	const UINT lightCount = _bufferData.size();
+	const UINT lightCount = static_cast<UINT>(_bufferData.size());
 	for (UINT i = 0; i < lightCount; i++)
 	{
 		const LightBuffer *lightBuffer = &_bufferData.at(i);
@@ -87,7 +87,7 @@ bool SpotLightCollectionD3D11::UpdateLightBuffers(ID3D11DeviceContext *context) 
 
 UINT SpotLightCollectionD3D11::GetNrOfLights() const
 {
-	return _bufferData.size();
+	return static_cast<UINT>(_bufferData.size());
 }
 
 ID3D11DepthStencilView *SpotLightCollectionD3D11::GetShadowMapDSV(const UINT lightIndex) const

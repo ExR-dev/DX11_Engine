@@ -31,7 +31,7 @@ Content::~Content()
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData)
 {
-	const UINT id = _meshes.size();
+	const UINT id = static_cast<UINT>(_meshes.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i)->name == name)
@@ -52,7 +52,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshD
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char *path)
 {
-	const UINT id = _meshes.size();
+	const UINT id = static_cast<UINT>(_meshes.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_meshes.at(i)->name == name)
@@ -81,7 +81,7 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const void *dataPtr, const size_t dataSize)
 {
-	const UINT id = _shaders.size();
+	const UINT id = static_cast<UINT>(_shaders.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i)->name == name)
@@ -102,7 +102,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 
 UINT Content::AddShader(ID3D11Device *device, const std::string &name, const ShaderType shaderType, const char *path)
 {
-	const UINT id = _shaders.size();
+	const UINT id = static_cast<UINT>(_shaders.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_shaders.at(i)->name == name)
@@ -124,7 +124,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 
 UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const UINT width, const UINT height, const void *dataPtr)
 {
-	const UINT id = _textures.size();
+	const UINT id = static_cast<UINT>(_textures.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_textures.at(i)->name == name)
@@ -145,7 +145,7 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const UI
 
 UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const char *path)
 {
-	const UINT id = _textures.size();
+	const UINT id = static_cast<UINT>(_textures.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_textures.at(i)->name == name)
@@ -176,7 +176,7 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 
 UINT Content::AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode, const std::optional<std::array<float, 4>> &borderColors)
 {
-	const UINT id = _samplers.size();
+	const UINT id = static_cast<UINT>(_samplers.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_samplers.at(i)->name == name)
@@ -199,7 +199,7 @@ UINT Content::AddSampler(ID3D11Device *device, const std::string &name, D3D11_TE
 UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
 	const void *vsByteData, const size_t vsByteSize)
 {
-	const UINT id = _inputLayouts.size();
+	const UINT id = static_cast<UINT>(_inputLayouts.size());
 	for (UINT i = 0; i < id; i++)
 	{
 		if (_inputLayouts.at(i)->name == name)
@@ -256,7 +256,7 @@ UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, cons
 
 MeshD3D11 *Content::GetMesh(const std::string &name) const
 {
-	const UINT count = _meshes.size();
+	const UINT count = static_cast<UINT>(_meshes.size());
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -280,7 +280,7 @@ MeshD3D11 *Content::GetMesh(const UINT id) const
 
 ShaderD3D11 *Content::GetShader(const std::string &name) const
 {
-	const UINT count = _shaders.size();
+	const UINT count = static_cast<UINT>(_shaders.size());
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -304,7 +304,7 @@ ShaderD3D11 *Content::GetShader(const UINT id) const
 
 ShaderResourceTextureD3D11 *Content::GetTexture(const std::string &name) const
 {
-	const UINT count = _textures.size();
+	const UINT count = static_cast<UINT>(_textures.size());
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -328,7 +328,7 @@ ShaderResourceTextureD3D11 *Content::GetTexture(const UINT id) const
 
 SamplerD3D11 *Content::GetSampler(const std::string &name) const
 {
-	const UINT count = _samplers.size();
+	const UINT count = static_cast<UINT>(_samplers.size());
 
 	for (UINT i = 0; i < count; i++)
 	{
@@ -352,7 +352,7 @@ SamplerD3D11 *Content::GetSampler(const UINT id) const
 
 InputLayoutD3D11 *Content::GetInputLayout(const std::string &name) const
 {
-	const UINT count = _inputLayouts.size();
+	const UINT count = static_cast<UINT>(_inputLayouts.size());
 
 	for (UINT i = 0; i < count; i++)
 	{

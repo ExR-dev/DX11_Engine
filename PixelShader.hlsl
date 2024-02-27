@@ -19,7 +19,7 @@ struct PixelShaderOutput
 };
 
 
-PixelShaderOutput main(PixelShaderInput input) : SV_TARGET
+PixelShaderOutput main(PixelShaderInput input)
 {	
 	PixelShaderOutput output;
 

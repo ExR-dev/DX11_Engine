@@ -37,7 +37,7 @@ bool InputLayoutD3D11::FinalizeInputLayout(ID3D11Device *device, const void *vsD
 	}
 
 	if (FAILED(device->CreateInputLayout(
-		_elements.data(), _elements.size(),
+		_elements.data(), static_cast<UINT>(_elements.size()),
 		vsDataPtr,
 		vsDataSize,
 		&_inputLayout)))

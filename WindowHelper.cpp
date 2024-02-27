@@ -4,11 +4,16 @@
 #include "ErrMsg.h"
 
 
+#ifdef _DEBUG
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#endif // _DEBUG
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+#ifdef _DEBUG
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;
+#endif // _DEBUG
 
 	// sort through and find what code to run for the message given
 	switch (message)

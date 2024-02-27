@@ -6,9 +6,11 @@
 #include "Entity.h"
 #include "D3D11Helper.h"
 
+#ifdef _DEBUG
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
+#endif // _DEBUG
 
 
 // private:
@@ -106,13 +108,46 @@ bool Graphics::FlushRenderQueue()
 		i++;
 	}
 
-	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT];
-	for (i = 0; i < G_BUFFER_COUNT; i++)
-		rtvs[i] = nullptr;
+
+	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT] = { };
 	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, _dsView);
 
 	return true;
 }
+
+bool Graphics::RenderLighting()
+{
+	if (!_content->GetShader("LightingCShader")->BindShader(_context))
+	{
+		ErrMsg(std::format("Failed to bind compute shader!"));
+		return false;
+	}
+
+	// Bind camera lighting data
+	if (!_currCamera->BindLightingBuffers(_context))
+	{
+		ErrMsg("Failed to bind camera buffers!");
+		return false;
+	}
+
+	// Bind compute shader resources
+	ID3D11ShaderResourceView *srvs[G_BUFFER_COUNT] = { };
+	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
+		srvs[i] = _gBuffers[i].GetSRV();
+
+	_context->CSSetShaderResources(0, 3, srvs);
+	_context->CSSetUnorderedAccessViews(0, 1, &_uav, nullptr);
+
+	// Draw
+	_context->Dispatch(static_cast<UINT>(_viewport.Width / 8), static_cast<UINT>(_viewport.Height / 8), 1);
+
+	// Unbind compute shader resources
+	memset(srvs, 0, sizeof(srvs));
+	_context->CSSetShaderResources(0, 3, srvs);
+
+	return true;
+}
+
 
 bool Graphics::ResetRenderState()
 {
@@ -164,17 +199,19 @@ Graphics::~Graphics()
 	if (_swapChain != nullptr)
 		_swapChain->Release();
 
+#ifdef _DEBUG
 	if (_isSetup)
 	{
 		ImGui_ImplDX11_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
 	}
+#endif // _DEBUG
 }
 
 
 bool Graphics::Setup(const UINT width, const UINT height, const HWND window, 
-                     ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content)
+	ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content)
 {
 	if (_isSetup)
 	{
@@ -198,12 +235,14 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		}
 	}
 
+#ifdef _DEBUG
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
 	ImGui_ImplWin32_Init(window);
 	ImGui_ImplDX11_Init(device, immediateContext);
 	ImGui::StyleColorsDark();
+#endif // _DEBUG
 
 	_context = immediateContext;
 	_content = content;
@@ -263,7 +302,7 @@ bool Graphics::BeginRender()
 	_isRendering = true;
 
 	constexpr float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT];
+	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT] = { };
 
 	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
 	{
@@ -305,38 +344,16 @@ bool Graphics::EndRender(const Time &time)
 		return false;
 	}
 
-
-
-
-
-	if (!_content->GetShader("LightingCShader")->BindShader(_context))
+	if (!RenderLighting())
 	{
-		ErrMsg(std::format("Failed to bind compute shader!"));
+		ErrMsg("Failed to render lighting!");
 		return false;
 	}
 
-	// Bind camera data
-	if (!_currCamera->BindLightingBuffers(_context))
-	{
-		ErrMsg("Failed to bind camera buffers!");
-		return false;
-	}
-
-	ID3D11ShaderResourceView *srvs[G_BUFFER_COUNT];
-	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
-		srvs[i] = _gBuffers[i].GetSRV();
-	_context->CSSetShaderResources(0, 3, srvs);
-
-	_context->CSSetUnorderedAccessViews(0, 1, &_uav, nullptr);
-
-	_context->Dispatch(_viewport.Width / 8, _viewport.Height / 8, 1);
-
-
-
-
-
-
+#ifdef _DEBUG
 	// ImGui
+	_context->OMSetRenderTargets(1, &_rtv, _dsView);
+
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -344,12 +361,12 @@ bool Graphics::EndRender(const Time &time)
 
 	ImGui::Text(std::format("ms: {}", time.deltaTime).c_str());
 	ImGui::Text(std::format("fps: {}", 1.0f / time.deltaTime).c_str());
-
 	ImGui::Text(std::format("Objects: {}", _renderInstances.size()).c_str());
 
 	ImGui::End();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+#endif // _DEBUG
 
 
 	if (FAILED(_swapChain->Present(1, 0)))
@@ -357,10 +374,6 @@ bool Graphics::EndRender(const Time &time)
 		ErrMsg("Failed to present geometry!");
 		return false;
 	}
-
-	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
-		srvs[i] = nullptr;
-	_context->CSSetShaderResources(0, 3, srvs);
 
 	if (!ResetRenderState())
 	{

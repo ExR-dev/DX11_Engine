@@ -77,7 +77,7 @@ bool CreateRenderTargetView(
 
 	if (FAILED(device->CreateUnorderedAccessView(backBuffer, &uavDesc, &uav)))
 	{
-		ErrMsg("Failed to create render target view!");
+		ErrMsg("Failed to create unordered access view!");
 		return false;
 	}
 

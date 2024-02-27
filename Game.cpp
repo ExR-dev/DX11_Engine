@@ -61,15 +61,9 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
-	if (_content.AddMesh(_device, "RoomCorridorMesh", "Content\\RoomCorridor.obj") == CONTENT_LOAD_ERROR)
+	if (_content.AddMesh(_device, "CharacterSculptLow0Mesh", "Content\\CharacterSculptLow0.obj") == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add roomCorridor mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "CharacterSculptMesh", "Content\\CharacterSculpt.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculpt mesh!");
+		ErrMsg("Failed to add characterSculptLow0 mesh!");
 		return false;
 	}
 
@@ -82,12 +76,6 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	if (_content.AddMesh(_device, "CharacterSculptLow2Mesh", "Content\\CharacterSculptLow2.obj") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add characterSculptLow2 mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "CursedMesh", "Content\\Cursed.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add cursedMesh mesh!");
 		return false;
 	}
 
@@ -148,9 +136,15 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
-	if (_content.AddTexture(_device, "CharacterSculptTexture", "Content\\CharacterSculptTexture.png") == CONTENT_LOAD_ERROR)
+	if (_content.AddTexture(_device, "CharacterSculptLow0Texture", "Content\\CharacterSculptLow0Texture.png") == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add characterSculptTexture!");
+		ErrMsg("Failed to add characterSculptLow0Texture!");
+		return false;
+	}
+
+	if (_content.AddTexture(_device, "CharacterSculptLow0Texture1", "Content\\CharacterSculptLow0Texture1.png") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add characterSculptLow0Texture1!");
 		return false;
 	}
 
@@ -163,12 +157,6 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	if (_content.AddTexture(_device, "CharacterSculptLow2Texture", "Content\\CharacterSculptLow2Texture.png") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add characterSculptLow2Texture!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "CursedTexture", "Content\\Cursed.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add cursedTexture!");
 		return false;
 	}
 
