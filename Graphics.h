@@ -2,11 +2,16 @@
 
 #include <d3d11.h>
 #include <map>
+#include <array>
 
 #include "CameraD3D11.h"
 #include "Content.h"
+//#include "PointLightCollectionD3D11.h"
 #include "RenderTargetD3D11.h"
 #include "Time.h"
+
+
+constexpr UINT G_BUFFER_COUNT = 3;
 
 
 struct ResourceGroup
@@ -56,17 +61,17 @@ private:
 	ID3D11DeviceContext		*_context;
 	Content					*_content;
 
-	IDXGISwapChain			*_swapChain;
-	ID3D11RenderTargetView	*_rtv;
-	ID3D11Texture2D			*_dsTexture;
-	ID3D11DepthStencilView	*_dsView;
-	D3D11_VIEWPORT			 _viewport;
+	IDXGISwapChain				*_swapChain;
+	ID3D11RenderTargetView		*_rtv;
+	ID3D11Texture2D				*_dsTexture;
+	ID3D11DepthStencilView		*_dsView;
+	ID3D11UnorderedAccessView	*_uav;
+	D3D11_VIEWPORT				_viewport;
 
-	RenderTargetD3D11
-		_geometryBuffer,
-		_lightBuffer;
+	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
 
 	CameraD3D11 *_currCamera = nullptr;
+	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 
 	UINT

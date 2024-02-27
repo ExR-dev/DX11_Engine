@@ -38,13 +38,18 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	_transform.SetPosition(initialPosition);
 
 	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
-	if (!_cameraBuffer.Initialize(device, sizeof(XMFLOAT4X4), &viewProjMatrix))
+	if (!_cameraVSBuffer.Initialize(device, sizeof(XMFLOAT4X4), &viewProjMatrix))
 	{
-		ErrMsg("Failed to initialize camera buffer!");
+		ErrMsg("Failed to initialize camera VS buffer!");
 		return false;
 	}
 
-	std::memcpy(&_lightingBufferData.camPos[0], &initialPosition.x, sizeof(float) * 3);
+	if (!_cameraCSBuffer.Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
+	{
+		ErrMsg("Failed to initialize camera CS buffer!");
+		return false;
+	}
+
 	if (!_lightingBuffer.Initialize(device, sizeof(LightingBufferData), &_lightingBufferData))
 	{
 		ErrMsg("Failed to initialize lighting buffer!");
@@ -147,14 +152,19 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 		return true;
 
 	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
-	if (!_cameraBuffer.UpdateBuffer(context, &viewProjMatrix))
+	if (!_cameraVSBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
-		ErrMsg("Failed to update camera buffer!");
+		ErrMsg("Failed to update camera VS buffer!");
 		return false;
 	}
 
 	const XMFLOAT4A camPos = _transform.GetPosition();
-	std::memcpy(&_lightingBufferData.camPos[0], &camPos.x, sizeof(float) * 3);
+	if (!_cameraCSBuffer.UpdateBuffer(context, &camPos))
+	{
+		ErrMsg("Failed to update camera CS buffer!");
+		return false;
+	}
+
 	if (!_lightingBuffer.UpdateBuffer(context, &_lightingBufferData))
 	{
 		ErrMsg("Failed to update lighting buffer!");
@@ -165,24 +175,33 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	return true;
 }
 
-bool CameraD3D11::BindBuffers(ID3D11DeviceContext *context) const
+
+bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 {
-	ID3D11Buffer *const vpmBuffer = GetCameraBuffer();
+	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
 	context->VSSetConstantBuffers(1, 1, &vpmBuffer);
 
-	ID3D11Buffer *const lightingBuffer = GetLightingBuffer();
-	context->PSSetConstantBuffers(0, 1, &lightingBuffer);
+	return true;
+}
+
+bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const lightingBuffer = _lightingBuffer.GetBuffer();
+	context->CSSetConstantBuffers(0, 1, &lightingBuffer);
+
+	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
+	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
 
 	return true;
 }
 
 
-ID3D11Buffer *CameraD3D11::GetCameraBuffer() const
+ID3D11Buffer *CameraD3D11::GetCameraVSBuffer() const
 {
-	return _cameraBuffer.GetBuffer();
+	return _cameraVSBuffer.GetBuffer();
 }
 
-ID3D11Buffer *CameraD3D11::GetLightingBuffer() const
+ID3D11Buffer *CameraD3D11::GetCameraCSBuffer() const
 {
-	return _lightingBuffer.GetBuffer();
+	return _cameraCSBuffer.GetBuffer();
 }

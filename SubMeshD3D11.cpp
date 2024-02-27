@@ -32,11 +32,6 @@ bool SubMeshD3D11::Initialize(
 	_diffuseTexture = diffuseTextureSRV;
 	_specularTexture = specularTextureSRV;
 
-	ErrMsg(std::format("Submesh created with center: ({}, {}, {}), extents: ({}, {}, {}).", 
-		boundingBox.Center.x, boundingBox.Center.y, boundingBox.Center.z,
-		boundingBox.Extents.x, boundingBox.Extents.y, boundingBox.Extents.z
-	));
-
 	return true;
 }
 

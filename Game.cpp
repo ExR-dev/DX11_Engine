@@ -105,6 +105,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	if (_content.AddShader(_device, "LightingCShader", ShaderType::COMPUTE_SHADER, "Content\\LightingCShader.cso") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add lighting compute shader!");
+		return false;
+	}
+
 
 	if (_content.AddTexture(_device, "FallbackTexture", "Content\\texture1.png") == CONTENT_LOAD_ERROR)
 	{

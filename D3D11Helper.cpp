@@ -23,7 +23,7 @@ bool CreateInterfaces(
 	swapChainDesc.SampleDesc.Count = 1;
 	swapChainDesc.SampleDesc.Quality = 0;
 
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS;
 	swapChainDesc.OutputWindow = window;
 	swapChainDesc.Windowed = true;
 	swapChainDesc.BufferCount = 2;
@@ -51,7 +51,8 @@ bool CreateInterfaces(
 bool CreateRenderTargetView(
 	ID3D11Device *device, 
 	IDXGISwapChain *swapChain, 
-	ID3D11RenderTargetView *&rtv)
+	ID3D11RenderTargetView *&rtv,
+	ID3D11UnorderedAccessView *&uav)
 {
 	// get the address of the back buffer
 	ID3D11Texture2D *backBuffer = nullptr;
@@ -63,9 +64,25 @@ bool CreateRenderTargetView(
 
 	// use the back buffer address to create the render target
 	// null as description to base it on the backbuffers values
-	HRESULT hr = device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
+	if (FAILED(device->CreateRenderTargetView(backBuffer, nullptr, &rtv)))
+	{
+		ErrMsg("Failed to create render target view!");
+		return false;
+	}
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = { };
+	uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+
+	if (FAILED(device->CreateUnorderedAccessView(backBuffer, &uavDesc, &uav)))
+	{
+		ErrMsg("Failed to create render target view!");
+		return false;
+	}
+
 	backBuffer->Release();
-	return !(FAILED(hr));
+	return true;
 }
 
 bool CreateDepthStencil(
@@ -117,6 +134,7 @@ bool SetupD3D11(
 	ID3D11RenderTargetView *&rtv,
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView, 
+	ID3D11UnorderedAccessView *&uav, 
 	D3D11_VIEWPORT &viewport)
 {
 	if (!CreateInterfaces(width, height, window, device, immediateContext, swapChain))
@@ -125,7 +143,7 @@ bool SetupD3D11(
 		return false;
 	}
 
-	if (!CreateRenderTargetView(device, swapChain, rtv))
+	if (!CreateRenderTargetView(device, swapChain, rtv, uav))
 	{
 		ErrMsg("Error creating rtv!");
 		return false;

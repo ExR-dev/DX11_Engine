@@ -2,7 +2,6 @@
 
 #include <Windows.h>
 #include <d3d11.h>
-#include <iostream>
 
 
 [[nodiscard]] bool SetupD3D11(
@@ -13,4 +12,5 @@
 	ID3D11RenderTargetView *&rtv,
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView,
+	ID3D11UnorderedAccessView *&uav,
 	D3D11_VIEWPORT &viewport);

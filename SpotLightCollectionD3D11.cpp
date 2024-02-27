@@ -110,7 +110,12 @@ CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) con
 	return _shadowCameras.at(lightIndex);
 }
 
-ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraConstantBuffer(const UINT lightIndex) const
+ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraVSBuffer(const UINT lightIndex) const
 {
-	return _shadowCameras.at(lightIndex)->GetCameraBuffer();
+	return _shadowCameras.at(lightIndex)->GetCameraVSBuffer();
+}
+
+ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraCSBuffer(const UINT lightIndex) const
+{
+	return _shadowCameras.at(lightIndex)->GetCameraCSBuffer();
 }

@@ -11,6 +11,7 @@ Scene::Scene()
 
 	_camera = new CameraD3D11();
 	_spotLights = new SpotLightCollectionD3D11();
+	_pointLights = new PointLightCollectionD3D11();
 }
 
 Scene::~Scene()
@@ -19,6 +20,7 @@ Scene::~Scene()
 	for (size_t i = 0; i < entityCount; i++)
 		delete _entities.at(i);
 
+	delete _pointLights;
 	delete _spotLights;
 	delete _camera;
 }
@@ -42,9 +44,9 @@ bool Scene::Initialize(ID3D11Device *device)
 		return false;
 	}
 
-	SpotLightData lightInfo = { };
-	lightInfo.shadowMapInfo.textureDimension = 1024;
-	lightInfo.perLightInfo.push_back({
+	SpotLightData spotLightInfo = { };
+	spotLightInfo.shadowMapInfo.textureDimension = 1024;
+	spotLightInfo.perLightInfo.push_back({
 		{ 1.0f, 1.0f, 1.0f },
 		0.0f,
 		0.0f,
@@ -54,9 +56,24 @@ bool Scene::Initialize(ID3D11Device *device)
 		{ 0.0f, 0.0f, 0.0f }
 	});
 
-	if (!_spotLights->Initialize(device, lightInfo))
+	if (!_spotLights->Initialize(device, spotLightInfo))
 	{
-		ErrMsg("Failed to initialize camera!");
+		ErrMsg("Failed to initialize spot light collection!");
+		return false;
+	}
+
+	PointLightData pointLightInfo = { };
+	pointLightInfo.shadowCubeMapInfo.textureDimension = 1024;
+	pointLightInfo.perLightInfo.push_back({
+		{ 1.0f, 1.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f },
+		0.1f,
+		50.0f
+	});
+
+	if (!_pointLights->Initialize(device, pointLightInfo))
+	{
+		ErrMsg("Failed to initialize point light collection!");
 		return false;
 	}
 
@@ -79,8 +96,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
 
-				//if (!ent->Initialize(_device, 0, rand() % 9, 0, 1, rand() % 9))
-				if (!ent->Initialize(_device, 0, 9, 0, 1, 9))
+				if (!ent->Initialize(_device, 0, rand() % 10, 0, 1, rand() % 10))
+				//if (!ent->Initialize(_device, 0, 9, 0, 1, 9))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
@@ -222,6 +239,12 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 			ErrMsg("Failed to set camera!");
 			return false;
 		}
+
+		/*if (!graphics->SetPointLightCollection(_pointLights))
+		{
+			ErrMsg("Failed to set point light collection!");
+			return false;
+		}*/
 		hasSetCamera = true;
 	}
 	else if (input.GetKey(KeyCode::C) == KeyState::Pressed ||

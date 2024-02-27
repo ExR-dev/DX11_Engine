@@ -16,18 +16,18 @@
 bool Graphics::FlushRenderQueue()
 {
 	// Bind camera data
-	if (!_currCamera->BindBuffers(_context))
+	if (!_currCamera->BindGeometryBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		return false;
 	}
 
-	// Bind shared entity data
 	const MeshD3D11 *loadedMesh = nullptr;
 
 	UINT i = 0;
 	for (const auto &[resources, instance] : _renderInstances)
 	{
+		// Bind shared entity data
 		if (_currInputLayoutID != resources.inputLayoutID)
 		{
 			_context->IASetInputLayout(_content->GetInputLayout(resources.inputLayoutID)->GetInputLayout());
@@ -106,6 +106,11 @@ bool Graphics::FlushRenderQueue()
 		i++;
 	}
 
+	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT];
+	for (i = 0; i < G_BUFFER_COUNT; i++)
+		rtvs[i] = nullptr;
+	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, _dsView);
+
 	return true;
 }
 
@@ -120,7 +125,6 @@ bool Graphics::ResetRenderState()
 	_currTexID			= CONTENT_LOAD_ERROR;
 
 	_isRendering = false;
-
 	return true;
 }
 
@@ -129,21 +133,25 @@ bool Graphics::ResetRenderState()
 
 Graphics::Graphics()
 {
-	_swapChain	= nullptr;
-	_rtv		= nullptr;
-	_dsTexture	= nullptr;
-	_dsView		= nullptr;
-	_viewport	= { };
+	_isSetup		= false;
+	_isRendering	= false;
 
 	_context	= nullptr;
 	_content	= nullptr;
 
-	_isSetup		= false;
-	_isRendering	= false;
+	_swapChain	= nullptr;
+	_rtv		= nullptr;
+	_dsTexture	= nullptr;
+	_dsView		= nullptr;
+	_uav		= nullptr;
+	_viewport	= { };
 }
 
 Graphics::~Graphics()
 {
+	if (_uav != nullptr)
+		_uav->Release();
+
 	if (_dsView != nullptr)
 		_dsView->Release();
 
@@ -175,23 +183,20 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	}
 
 	if (!SetupD3D11(width, height, window, device, immediateContext, 
-			_swapChain, _rtv, _dsTexture, _dsView, _viewport))
+			_swapChain, _rtv, _dsTexture, _dsView, _uav, _viewport))
 	{
 		ErrMsg("Failed to setup d3d11!");
 		return false;
 	}
 
-	/*if (!_geometryBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
+	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
 	{
-		ErrMsg("Failed to initialize geometry buffer!");
-		return false;
+		if (!_gBuffers[i].Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
+		{
+			ErrMsg(std::format("Failed to initialize g-buffer #{}!", i));
+			return false;
+		}
 	}
-	
-	if (!_lightBuffer.Initialize(device, width, height, DXGI_FORMAT_R32G32B32A32_FLOAT, true))
-	{
-		ErrMsg("Failed to initialize light buffer!");
-		return false;
-	}*/
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -257,13 +262,19 @@ bool Graphics::BeginRender()
 	}
 	_isRendering = true;
 
-	constexpr float clearColour[4] = { 0.03f, 0.03f, 0.03f, 1.0f };
-	_context->ClearRenderTargetView(_rtv, clearColour);
+	constexpr float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT];
+
+	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
+	{
+		rtvs[i] = _gBuffers[i].GetRTV();
+		_context->ClearRenderTargetView(rtvs[i], clearColor);
+	}
+	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, _dsView);
+
 	_context->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	_context->RSSetViewports(1, &_viewport);
-	_context->OMSetRenderTargets(1, &_rtv, _dsView);
 
 	return true;
 }
@@ -294,6 +305,37 @@ bool Graphics::EndRender(const Time &time)
 		return false;
 	}
 
+
+
+
+
+	if (!_content->GetShader("LightingCShader")->BindShader(_context))
+	{
+		ErrMsg(std::format("Failed to bind compute shader!"));
+		return false;
+	}
+
+	// Bind camera data
+	if (!_currCamera->BindLightingBuffers(_context))
+	{
+		ErrMsg("Failed to bind camera buffers!");
+		return false;
+	}
+
+	ID3D11ShaderResourceView *srvs[G_BUFFER_COUNT];
+	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
+		srvs[i] = _gBuffers[i].GetSRV();
+	_context->CSSetShaderResources(0, 3, srvs);
+
+	_context->CSSetUnorderedAccessViews(0, 1, &_uav, nullptr);
+
+	_context->Dispatch(_viewport.Width / 8, _viewport.Height / 8, 1);
+
+
+
+
+
+
 	// ImGui
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -309,11 +351,22 @@ bool Graphics::EndRender(const Time &time)
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
+
+	if (FAILED(_swapChain->Present(1, 0)))
+	{
+		ErrMsg("Failed to present geometry!");
+		return false;
+	}
+
+	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
+		srvs[i] = nullptr;
+	_context->CSSetShaderResources(0, 3, srvs);
+
 	if (!ResetRenderState())
 	{
 		ErrMsg("Failed to reset render state!");
 		return false;
 	}
 
-	return SUCCEEDED(_swapChain->Present(1, 0));
+	return true;
 }

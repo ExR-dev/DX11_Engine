@@ -18,21 +18,20 @@ struct ProjectionInfo
 
 struct LightingBufferData
 {
-	float camPos[4];
 	float lightPos[4];
-
 	float ambCol[4];
 	float diffCol[4];
 	float specCol[4];
 
-	LightingBufferData(const std::array<float, 4> &cameraPosition, const std::array<float, 4> &lightPosition,
-		const std::array<float, 4> &ambientColour, const std::array<float, 4> &diffuseColour, const std::array<float, 4> &specularColour)
+	LightingBufferData(
+		const std::array<float, 4> &lightPosition, 
+		const std::array<float, 4> &ambientColour, 
+		const std::array<float, 4> &diffuseColour, 
+		const std::array<float, 4> &specularColour)
 	{
 		for (int i = 0; i < 4; ++i)
 		{
-			camPos[i] = cameraPosition[i];
 			lightPos[i] = lightPosition[i];
-
 			ambCol[i] = ambientColour[i];
 			diffCol[i] = diffuseColour[i];
 			specCol[i] = specularColour[i];
@@ -46,14 +45,13 @@ private:
 	Transform _transform;
 	ProjectionInfo _projInfo;
 
-	ConstantBufferD3D11 _cameraBuffer;
+	ConstantBufferD3D11 _cameraVSBuffer;
+	ConstantBufferD3D11 _cameraCSBuffer;
 	bool _isDirty = true;
 
 	ConstantBufferD3D11 _lightingBuffer;
 	LightingBufferData _lightingBufferData = {
-		{0.0f, 0.0f, 0.0f, 1.0f}, // Camera position
 		{0.5f, 2.0f, -2.5f, 1.0f}, // Light position
-
 		{0.75f, 0.9f, 1.0f, 0.05f}, // Ambient
 		{1.0f, 1.0f, 1.0f, 5.0f}, // Diffuse
 		{10.0f, 10.0f, 10.0f, 128.0f}, // Specular
@@ -94,8 +92,10 @@ public:
 	[[nodiscard]] const XMFLOAT4X4 &GetViewProjectionMatrix() const;
 
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
-	[[nodiscard]] bool BindBuffers(ID3D11DeviceContext *context) const;
 
-	[[nodiscard]] ID3D11Buffer *GetCameraBuffer() const;
-	[[nodiscard]] ID3D11Buffer *GetLightingBuffer() const;
+	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
+
+	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;
+	[[nodiscard]] ID3D11Buffer *GetCameraCSBuffer() const;
 };
