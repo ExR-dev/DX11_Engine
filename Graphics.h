@@ -8,6 +8,7 @@
 #include "Content.h"
 //#include "PointLightCollectionD3D11.h"
 #include "RenderTargetD3D11.h"
+#include "SpotLightCollectionD3D11.h"
 #include "Time.h"
 
 
@@ -55,23 +56,24 @@ struct RenderInstance
 class Graphics
 {
 private:
-	bool _isSetup;
-	bool _isRendering;
+	bool _isSetup		= false;
+	bool _isRendering	= false;
 
-	ID3D11DeviceContext		*_context;
-	Content					*_content;
+	ID3D11DeviceContext	*_context	= nullptr;
+	Content	*_content				= nullptr;
 
-	IDXGISwapChain				*_swapChain;
-	ID3D11RenderTargetView		*_rtv;
-	ID3D11Texture2D				*_dsTexture;
-	ID3D11DepthStencilView		*_dsView;
-	ID3D11UnorderedAccessView	*_uav;
-	D3D11_VIEWPORT				_viewport;
+	IDXGISwapChain *_swapChain		= nullptr;
+	ID3D11RenderTargetView *_rtv	= nullptr;
+	ID3D11Texture2D	*_dsTexture		= nullptr;
+	ID3D11DepthStencilView *_dsView = nullptr;
+	ID3D11UnorderedAccessView *_uav = nullptr;
+	D3D11_VIEWPORT _viewport		= {};
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
 
 	CameraD3D11 *_currCamera = nullptr;
 	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
+	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
 	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 
 	UINT
@@ -83,12 +85,13 @@ private:
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
 
-	[[nodiscard]] bool FlushRenderQueue();
+	[[nodiscard]] bool RenderShadowCasters();
+	[[nodiscard]] bool RenderGeometry();
 	[[nodiscard]] bool RenderLighting();
+
 	[[nodiscard]] bool ResetRenderState();
 
 public:
-	Graphics();
 	~Graphics();
 
 	[[nodiscard]] bool Setup(UINT width, UINT height, HWND window,
@@ -100,6 +103,8 @@ public:
 	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
 	[[nodiscard]] bool SetCamera(CameraD3D11 *camera);
+	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
+	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
 	[[nodiscard]] bool BeginRender();
 	[[nodiscard]] bool QueueRender(const ResourceGroup &resources, const RenderInstance &instance);

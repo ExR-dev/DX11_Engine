@@ -23,41 +23,41 @@ bool StructuredBufferD3D11::Initialize(ID3D11Device *device, const UINT sizeOfEl
 	_elementSize = sizeOfElement;
 	_nrOfElements = nrOfElementsInBuffer;
 
-	D3D11_BUFFER_DESC bufferDesc = { };
-	bufferDesc.ByteWidth = _elementSize * static_cast<UINT>(_nrOfElements);
-	bufferDesc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-	bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	bufferDesc.CPUAccessFlags = dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
-	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	bufferDesc.StructureByteStride = _elementSize;
+	D3D11_BUFFER_DESC structuredBufferDesc;
+	structuredBufferDesc.ByteWidth = _elementSize * _nrOfElements;
+	structuredBufferDesc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE;
+	structuredBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	structuredBufferDesc.CPUAccessFlags = dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
+	structuredBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	structuredBufferDesc.StructureByteStride = _elementSize;
 
 	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = (bufferData == nullptr) ? new char[bufferDesc.ByteWidth] : bufferData;
-	srData.pSysMem = bufferData;
-	srData.SysMemPitch = 0;
-	srData.SysMemSlicePitch = 0;
+	const D3D11_SUBRESOURCE_DATA *srDataPtr = nullptr;
 
-	if (FAILED(device->CreateBuffer(&bufferDesc, &srData, &_buffer)))
+	if (bufferData != nullptr)
+	{
+		srData.pSysMem = bufferData;
+		srData.SysMemPitch = 0;
+		srData.SysMemSlicePitch = 0;
+
+		srDataPtr = &srData;
+	}
+
+	if (FAILED(device->CreateBuffer(&structuredBufferDesc, srDataPtr, &_buffer)))
 	{
 		ErrMsg("Failed to create structured buffer!");
-
-		if (bufferData == nullptr)
-			delete[] static_cast<const char *>(srData.pSysMem);
 		return false;
 	}
 
-	if (bufferData == nullptr)
-		delete[] static_cast<const char *>(srData.pSysMem);
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = { };
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	srvDesc.Buffer.FirstElement = 0;
-	srvDesc.Buffer.NumElements = static_cast<UINT>(_nrOfElements);
+	srvDesc.Buffer.NumElements = _nrOfElements;
 
 	if (FAILED(device->CreateShaderResourceView(_buffer, &srvDesc, &_srv)))
 	{
-		ErrMsg("Failed to create shader resource view!");
+		ErrMsg("Failed to create srv for structured buffer!");
 		return false;
 	}
 

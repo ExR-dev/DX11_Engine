@@ -186,11 +186,11 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 
 bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 {
-	ID3D11Buffer *const lightingBuffer = _lightingBuffer.GetBuffer();
-	context->CSSetConstantBuffers(0, 1, &lightingBuffer);
+	/*ID3D11Buffer *const lightingBuffer = _lightingBuffer.GetBuffer();
+	context->CSSetConstantBuffers(0, 1, &lightingBuffer);*/
 
 	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
-	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
+	context->CSSetConstantBuffers(0, 1, &camPosBuffer);
 
 	return true;
 }

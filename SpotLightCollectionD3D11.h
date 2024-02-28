@@ -50,6 +50,8 @@ private:
 	DepthBufferD3D11 _shadowMaps;
 	StructuredBufferD3D11 _lightBuffer;
 	std::vector<CameraD3D11*> _shadowCameras;
+	SpotLightData::ShadowMapInfo _shadowMapInfo;
+	D3D11_VIEWPORT _shadowViewport;
 
 public:
 	SpotLightCollectionD3D11() = default;
@@ -61,13 +63,13 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const SpotLightData &lightInfo);
 
-	[[nodiscard]] bool UpdateLightBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
+	[[nodiscard]] bool BindBuffers(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] UINT GetNrOfLights() const;
 	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetShadowMapsSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
 	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex) const;
-	[[nodiscard]] ID3D11Buffer *GetLightCameraVSBuffer(UINT lightIndex) const;
-	[[nodiscard]] ID3D11Buffer *GetLightCameraCSBuffer(UINT lightIndex) const;
+	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
 };

@@ -65,7 +65,7 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const MeshData &meshInfo);
 
-	[[nodiscard]] bool BindMeshBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindMeshBuffers(ID3D11DeviceContext *context, UINT stride = 0, UINT offset = 0) const;
 	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
 
 	[[nodiscard]] size_t GetNrOfSubMeshes() const;

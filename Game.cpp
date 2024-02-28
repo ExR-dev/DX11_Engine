@@ -31,132 +31,69 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	if (_content.AddMesh(_device, "FallbackMesh", "Content\\Fallback.obj") == CONTENT_LOAD_ERROR)
+	const std::vector<std::string> meshNames = {
+		"Error",
+		"Fallback",
+		"ShapeTri",
+		"SimpleSubmesh",
+		"ControlChair",
+		"ControlDesk",
+		"CharacterSculptLow0",
+		"CharacterSculptLow1",
+	};
+
+	for (const std::string &meshName : meshNames)
+		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add Mesh_{}!", meshName));
+			return false;
+		}
+
+
+	const std::vector<std::string> textureNames = {
+		"Error",
+		"Fallback",
+		"texture1",
+		"texture2",
+		"texture3",
+		"texture4",
+		"texture5",
+		"CharacterSculptLow0Texture",
+		"CharacterSculptLow0Texture1",
+		"CharacterSculptLow1Texture",
+	};
+
+	for (const std::string &textureName : textureNames)
+		if (_content.AddTexture(_device, std::format("Tex_{}", textureName), std::format("Content\\{}.png", textureName).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add Tex_{}!", textureName));
+			return false;
+		}
+
+
+	const UINT geometryVShaderID = _content.AddShader(_device, "VS_Geometry", ShaderType::VERTEX_SHADER, "Content\\VS_Geometry.cso");
+	if (geometryVShaderID == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add fallback mesh!");
+		ErrMsg("Failed to add VS_Geometry shader!");
 		return false;
 	}
 
-	if (_content.AddMesh(_device, "ShapeMesh", "Content\\ShapeTri.obj") == CONTENT_LOAD_ERROR)
+	const UINT depthVShaderID = _content.AddShader(_device, "VS_Depth", ShaderType::VERTEX_SHADER, "Content\\VS_Depth.cso");
+	if (geometryVShaderID == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add shape mesh!");
+		ErrMsg("Failed to add VS_Depth shader!");
 		return false;
 	}
 
-	if (_content.AddMesh(_device, "SimpleSubMesh", "Content\\SimpleSubmesh.obj") == CONTENT_LOAD_ERROR)
+	if (_content.AddShader(_device, "PS_Geometry", ShaderType::PIXEL_SHADER, "Content\\PS_Geometry.cso") == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add simpleSubmesh mesh!");
+		ErrMsg("Failed to add PS_Geometry shader!");
 		return false;
 	}
 
-	if (_content.AddMesh(_device, "ControlChairMesh", "Content\\ControlChair.obj") == CONTENT_LOAD_ERROR)
+	if (_content.AddShader(_device, "CS_Lighting", ShaderType::COMPUTE_SHADER, "Content\\CS_Lighting.cso") == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add controlChair mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "ControlDeskMesh", "Content\\ControlDesk.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add controlDesk mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "CharacterSculptLow0Mesh", "Content\\CharacterSculptLow0.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow0 mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "CharacterSculptLow1Mesh", "Content\\CharacterSculptLow1.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow1 mesh!");
-		return false;
-	}
-
-	if (_content.AddMesh(_device, "CharacterSculptLow2Mesh", "Content\\CharacterSculptLow2.obj") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow2 mesh!");
-		return false;
-	}
-
-
-	const UINT fallbackVShaderID = _content.AddShader(_device, "FallbackVShader", ShaderType::VERTEX_SHADER, "Content\\VertexShader.cso");
-	if (fallbackVShaderID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add fallback vertex shader!");
-		return false;
-	}
-
-	if (_content.AddShader(_device, "FallbackPShader", ShaderType::PIXEL_SHADER, "Content\\PixelShader.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add fallback pixel shader!");
-		return false;
-	}
-
-	if (_content.AddShader(_device, "LightingCShader", ShaderType::COMPUTE_SHADER, "Content\\LightingCShader.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add lighting compute shader!");
-		return false;
-	}
-
-
-	if (_content.AddTexture(_device, "FallbackTexture", "Content\\texture1.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add fallback texture!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "Texture2", "Content\\texture2.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add texture2!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "Texture3", "Content\\texture3.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add texture3!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "Texture4", "Content\\texture4.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add texture4!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "Texture5", "Content\\texture5.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add texture5!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "Texture6", "Content\\texture6.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add texture6!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "CharacterSculptLow0Texture", "Content\\CharacterSculptLow0Texture.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow0Texture!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "CharacterSculptLow0Texture1", "Content\\CharacterSculptLow0Texture1.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow0Texture1!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "CharacterSculptLow1Texture", "Content\\CharacterSculptLow1Texture.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow1Texture!");
-		return false;
-	}
-
-	if (_content.AddTexture(_device, "CharacterSculptLow2Texture", "Content\\CharacterSculptLow2Texture.png") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add characterSculptLow2Texture!");
+		ErrMsg("Failed to add CS_Lighting shader!");
 		return false;
 	}
 
@@ -174,12 +111,11 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
-	if (_content.AddInputLayout(_device, "FallbackInputLayout", fallbackInputLayout, fallbackVShaderID) == CONTENT_LOAD_ERROR)
+	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, geometryVShaderID) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback input layout!");
 		return false;
 	}
-
 
 	return true;
 }

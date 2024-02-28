@@ -253,6 +253,18 @@ UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, cons
 }
 
 
+UINT Content::GetMeshID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_meshes.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_meshes.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
 
 MeshD3D11 *Content::GetMesh(const std::string &name) const
 {
@@ -278,6 +290,19 @@ MeshD3D11 *Content::GetMesh(const UINT id) const
 }
 
 
+UINT Content::GetShaderID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_shaders.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_shaders.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
+
 ShaderD3D11 *Content::GetShader(const std::string &name) const
 {
 	const UINT count = static_cast<UINT>(_shaders.size());
@@ -301,6 +326,19 @@ ShaderD3D11 *Content::GetShader(const UINT id) const
 	return &_shaders.at(id)->data;
 }
 
+
+UINT Content::GetTextureID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_textures.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_textures.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
 
 ShaderResourceTextureD3D11 *Content::GetTexture(const std::string &name) const
 {
@@ -326,6 +364,19 @@ ShaderResourceTextureD3D11 *Content::GetTexture(const UINT id) const
 }
 
 
+UINT Content::GetSamplerID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_samplers.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_samplers.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
+
 SamplerD3D11 *Content::GetSampler(const std::string &name) const
 {
 	const UINT count = static_cast<UINT>(_samplers.size());
@@ -349,6 +400,19 @@ SamplerD3D11 *Content::GetSampler(const UINT id) const
 	return &_samplers.at(id)->data;
 }
 
+
+UINT Content::GetInputLayoutID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_inputLayouts.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_inputLayouts.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
 
 InputLayoutD3D11 *Content::GetInputLayout(const std::string &name) const
 {

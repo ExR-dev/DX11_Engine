@@ -44,21 +44,44 @@ bool Scene::Initialize(ID3D11Device *device)
 		return false;
 	}
 
-	SpotLightData spotLightInfo = { };
-	spotLightInfo.shadowMapInfo.textureDimension = 1024;
-	spotLightInfo.perLightInfo.push_back({
-		{ 1.0f, 1.0f, 1.0f },
-		0.0f,
-		0.0f,
-		90.0f,
-		0.1f,
-		50.0f,
-		{ 0.0f, 0.0f, 0.0f }
-	});
+	const SpotLightData spotLightInfo = {
+		1024, // Resolution
+		{ // Vector
+			{ // Light
+				{ 50.0f, 50.0f, 50.0f },	// color
+				0.0f,						// rotationX
+				0.0f,						// rotationY
+				90.0f,						// angle
+				0.1f,						// projectionNearZ
+				25.0f,						// projectionFarZ
+				{ 0.0f, 0.0f, 0.0f }		// initialPosition
+			},
+
+			/*{ // Light
+				{ 0.0f, 25.0f, 0.0f },	// color
+				45.0f,						// rotationX
+				35.0f,						// rotationY
+				90.0f,						// angle
+				0.1f,						// projectionNearZ
+				15.0f,						// projectionFarZ
+				{ 0.0f, 10.0f, -5.0f }	// initialPosition
+			},
+
+			{ // Light
+				{ 0.0f, 0.0f, 50.0f },	// color
+				100.0f,						// rotationX
+				1.2f,						// rotationY
+				30.0f,						// angle
+				0.1f,						// projectionNearZ
+				100.0f,						// projectionFarZ
+				{ 15.0f, 15.0f, 0.0f }	// initialPosition
+			},*/
+		}
+	};
 
 	if (!_spotLights->Initialize(device, spotLightInfo))
 	{
-		ErrMsg("Failed to initialize spot light collection!");
+		ErrMsg("Failed to initialize spotlight collection!");
 		return false;
 	}
 
@@ -96,7 +119,13 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
 
-				if (!ent->Initialize(_device, 0, rand() % 8, 0, 1, rand() % 10))
+				if (!ent->Initialize(
+					_device, 
+					0, 
+					rand() % 8, 
+					0, 
+					2, 
+					rand() % 10))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
@@ -194,9 +223,9 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		return false;
 	}
 
-	if (!_spotLights->GetLightCamera(0)->UpdateBuffers(context))
+	if (!_spotLights->UpdateBuffers(context))
 	{
-		ErrMsg("Failed to update spotlight #0 camera buffers!");
+		ErrMsg("Failed to update spotlight buffers!");
 		return false;
 	}
 
@@ -239,11 +268,18 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 			return false;
 		}
 
+		if (!graphics->SetSpotlightCollection(_spotLights))
+		{
+			ErrMsg("Failed to set spotlight collection!");
+			return false;
+		}
+
 		/*if (!graphics->SetPointLightCollection(_pointLights))
 		{
 			ErrMsg("Failed to set point light collection!");
 			return false;
 		}*/
+
 		hasSetCamera = true;
 	}
 	else if (input.GetKey(KeyCode::C) == KeyState::Pressed ||

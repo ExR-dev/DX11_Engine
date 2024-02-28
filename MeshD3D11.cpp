@@ -44,12 +44,10 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 }
 
 
-bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context) const
+bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context, UINT stride, const UINT offset) const
 {
-	// TODO: Bind submesh data
-
-	const UINT stride = static_cast<UINT>(_vertexBuffer.GetVertexSize());
-	const UINT offset = 0;
+	if (stride == 0)
+		stride = static_cast<UINT>(_vertexBuffer.GetVertexSize());
 
 	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
 	ID3D11Buffer *const indexBuffer = _indexBuffer.GetBuffer();

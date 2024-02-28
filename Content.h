@@ -134,18 +134,23 @@ public:
 	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, UINT vShaderID);
 
 
+	[[nodiscard]] UINT GetMeshID(const std::string &name) const;
 	[[nodiscard]] MeshD3D11 *GetMesh(const std::string &name) const;
 	[[nodiscard]] MeshD3D11 *GetMesh(UINT id) const;
 
+	[[nodiscard]] UINT GetShaderID(const std::string &name) const;
 	[[nodiscard]] ShaderD3D11 *GetShader(const std::string &name) const;
 	[[nodiscard]] ShaderD3D11 *GetShader(UINT id) const;
 
+	[[nodiscard]] UINT GetTextureID(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
 
+	[[nodiscard]] UINT GetSamplerID(const std::string &name) const;
 	[[nodiscard]] SamplerD3D11 *GetSampler(const std::string &name) const;
 	[[nodiscard]] SamplerD3D11 *GetSampler(UINT id) const;
 
+	[[nodiscard]] UINT GetInputLayoutID(const std::string &name) const;
 	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(const std::string &name) const;
 	[[nodiscard]] InputLayoutD3D11 *GetInputLayout(UINT id) const;
 };

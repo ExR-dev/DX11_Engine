@@ -31,7 +31,6 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		_shadowCameras.push_back(lightCamera);
 
-
 		XMFLOAT4A dir = lightCamera->GetForward();
 
 		LightBuffer lightBuffer;
@@ -64,22 +63,54 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		return false;
 	}
 
+	_shadowViewport = { };
+	_shadowViewport.TopLeftX = 0;
+	_shadowViewport.TopLeftY = 0;
+	_shadowViewport.Width = static_cast<float>(lightInfo.shadowMapInfo.textureDimension);
+	_shadowViewport.Height = static_cast<float>(lightInfo.shadowMapInfo.textureDimension);
+	_shadowViewport.MinDepth = 0;
+	_shadowViewport.MaxDepth = 1;
+
 	return true;
 }
 
-bool SpotLightCollectionD3D11::UpdateLightBuffers(ID3D11DeviceContext *context) const
+
+bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 {
 	const UINT lightCount = static_cast<UINT>(_bufferData.size());
 	for (UINT i = 0; i < lightCount; i++)
 	{
-		const LightBuffer *lightBuffer = &_bufferData.at(i);
+		CameraD3D11 &shadowCamera = *_shadowCameras.at(i);
 
-		if (!_lightBuffer.UpdateBuffer(context, lightBuffer))
+		if (!shadowCamera.UpdateBuffers(context))
 		{
-			ErrMsg(std::format("Failed to update light buffer #{}!", i));
+			ErrMsg(std::format("Failed to update spotlight #{} camera buffers!", i));
 			return false;
 		}
+
+		LightBuffer &lightBuffer = _bufferData.at(i);
+
+		lightBuffer.vpMatrix = shadowCamera.GetViewProjectionMatrix();
+		memcpy(&lightBuffer.position, &shadowCamera.GetPosition(), sizeof(XMFLOAT3));
+		memcpy(&lightBuffer.direction, &shadowCamera.GetForward(), sizeof(XMFLOAT3));
 	}
+
+	if (!_lightBuffer.UpdateBuffer(context, _bufferData.data()))
+	{
+		ErrMsg("Failed to update light buffer!");
+		return false;
+	}
+
+	return true;
+}
+
+bool SpotLightCollectionD3D11::BindBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
+	context->CSSetShaderResources(3, 1, &lightBufferSRV);
+
+	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
+	context->CSSetShaderResources(4, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -110,12 +141,7 @@ CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) con
 	return _shadowCameras.at(lightIndex);
 }
 
-ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraVSBuffer(const UINT lightIndex) const
+const D3D11_VIEWPORT &SpotLightCollectionD3D11::GetViewport() const
 {
-	return _shadowCameras.at(lightIndex)->GetCameraVSBuffer();
-}
-
-ID3D11Buffer *SpotLightCollectionD3D11::GetLightCameraCSBuffer(const UINT lightIndex) const
-{
-	return _shadowCameras.at(lightIndex)->GetCameraCSBuffer();
+	return _shadowViewport;
 }
