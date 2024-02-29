@@ -1,7 +1,8 @@
 
 cbuffer WorldMatrixBuffer : register(b0)
 {
-    matrix worldMatrix;
+	matrix worldMatrix;
+	matrix inverseTransposeWorldMatrix;
 };
 
 cbuffer ViewProjMatrixBuffer : register(b1)
@@ -31,7 +32,7 @@ VertexShaderOutput main(VertexShaderInput input)
 	
 	output.world_position = mul(float4(input.position, 1.0f), worldMatrix);
 	output.position = mul(output.world_position, viewProjMatrix);
-	output.normal = (float3)normalize(mul(float4(input.normal, 0.0f), worldMatrix));
+	output.normal = normalize(mul(float4(input.normal, 0.0f), inverseTransposeWorldMatrix).xyz);
 	output.tex_coord = input.tex_coord;
 
 	return output;

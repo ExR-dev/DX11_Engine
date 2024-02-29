@@ -34,7 +34,7 @@ public:
 	Transform &operator=(Transform &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
-	[[nodiscard]] bool Initialize(ID3D11Device *device, XMMATRIX worldMatrix);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix);
 
 	void Move(const XMFLOAT4A &movement);
 	void Rotate(const XMFLOAT4A &rotation);

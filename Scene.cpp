@@ -48,34 +48,34 @@ bool Scene::Initialize(ID3D11Device *device)
 		1024, // Resolution
 		{ // Vector
 			{ // Light
-				{ 10.0f, 10.0f, 10.0f },	// color
+				{ 15.0f, 15.0f, 15.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
 				120.0f,						// angle
-				0.1f,						// projectionNearZ
+				0.04f,						// projectionNearZ
 				25.0f,						// projectionFarZ
 				{ 0.0f, 0.0f, 0.0f }		// initialPosition
 			},
 
-			/*{ // Light
+			{ // Light
 				{ 0.0f, 25.0f, 0.0f },	// color
 				45.0f,						// rotationX
 				35.0f,						// rotationY
 				90.0f,						// angle
-				0.1f,						// projectionNearZ
+				0.04f,						// projectionNearZ
 				15.0f,						// projectionFarZ
 				{ 0.0f, 10.0f, -5.0f }	// initialPosition
 			},
 
 			{ // Light
 				{ 0.0f, 0.0f, 50.0f },	// color
-				100.0f,						// rotationX
+				4.0f,						// rotationX
 				1.2f,						// rotationY
 				30.0f,						// angle
-				0.1f,						// projectionNearZ
-				100.0f,						// projectionFarZ
+				0.04f,						// projectionNearZ
+				50.0f,						// projectionFarZ
 				{ 15.0f, 15.0f, 0.0f }	// initialPosition
-			},*/
+			},
 		}
 	};
 
@@ -125,6 +125,45 @@ bool Scene::Initialize(ID3D11Device *device)
 		});
 	}
 
+	// Create debug box
+	{
+		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+		Entity *ent = _entities.back();
+
+		if (!ent->Initialize(
+			_device,
+			0,
+			6,
+			0,
+			2,
+			1))
+		{
+			ErrMsg("Failed to initialize room entity!");
+			return false;
+		}
+
+		ent->GetTransform()->Move({
+			-1.0f,
+			-0.5f,
+			5.0f,
+			0
+			});
+
+		ent->GetTransform()->Rotate({
+			0.26f,
+			1.9f,
+			3.91f,
+			0
+			});
+
+		ent->GetTransform()->ScaleRelative({
+			1.0f,
+			0.3f,
+			3.0f,
+			0
+		});
+	}
+
 	_initialized = true;
 	return true;
 }
@@ -157,16 +196,16 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				}
 
 				ent->GetTransform()->Move({
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					0
 				});
 
 				ent->GetTransform()->Rotate({
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 50.0f,
+					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
+					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
+					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
 					0
 				});
 			}
@@ -193,23 +232,23 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		if (currSelection == -1)
 		{ // Move camera
 			if (input.GetKey(KeyCode::D) == KeyState::Held)
-				_camera->MoveRight(time.deltaTime * 2.0f);
+				_camera->MoveRight(time.deltaTime * 2.5f);
 			else if (input.GetKey(KeyCode::A) == KeyState::Held)
-				_camera->MoveRight(-time.deltaTime * 2.0f);
+				_camera->MoveRight(-time.deltaTime * 2.5f);
 
 			if (input.GetKey(KeyCode::Space) == KeyState::Held)
-				_camera->MoveUp(time.deltaTime * 2.0f);
+				_camera->MoveUp(time.deltaTime * 2.5f);
 			else if (input.GetKey(KeyCode::X) == KeyState::Held)
-				_camera->MoveUp(-time.deltaTime * 2.0f);
+				_camera->MoveUp(-time.deltaTime * 2.5f);
 
 			if (input.GetKey(KeyCode::W) == KeyState::Held)
-				_camera->MoveForward(time.deltaTime * 2.0f);
+				_camera->MoveForward(time.deltaTime * 2.5f);
 			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-				_camera->MoveForward(-time.deltaTime * 2.0f);
+				_camera->MoveForward(-time.deltaTime * 2.5f);
 
 			const MouseState mState = input.GetMouse();
 			_camera->LookX(static_cast<float>(mState.dx) / 360.0f);
-			_camera->LookY(static_cast<float>(-mState.dy) / 360.0f);
+			_camera->LookY(static_cast<float>(mState.dy) / 360.0f);
 		}
 		else
 		{ // Move selected entity

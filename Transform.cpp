@@ -50,7 +50,7 @@ Transform::Transform(ID3D11Device *device, const XMMATRIX &worldMatrix)
 }
 
 
-bool Transform::Initialize(ID3D11Device *device, XMMATRIX worldMatrix)
+bool Transform::Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix)
 {
 	*reinterpret_cast<XMVECTOR *>(&_right) = worldMatrix.r[0];
 	*reinterpret_cast<XMVECTOR *>(&_up) = worldMatrix.r[1];
@@ -67,8 +67,13 @@ bool Transform::Initialize(ID3D11Device *device, XMMATRIX worldMatrix)
 	NormalizeBases();
 	OrthogonalizeBases();
 
-	worldMatrix = XMMatrixTranspose(GetWorldMatrix());
-	if (!_worldMatrixBuffer.Initialize(device, sizeof(XMMATRIX), &worldMatrix))
+	const XMMATRIX transposeWorldMatrix = XMMatrixTranspose(GetWorldMatrix());
+	const XMMATRIX worldMatrixData[2] = {
+		transposeWorldMatrix,
+		XMMatrixTranspose(XMMatrixInverse(nullptr, transposeWorldMatrix)),
+	};
+
+	if (!_worldMatrixBuffer.Initialize(device, sizeof(XMMATRIX) * 2, &worldMatrixData))
 	{
 		ErrMsg("Failed to initialize world matrix buffer!");
 		return false;
@@ -238,10 +243,13 @@ const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
 
 bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)
 {
-	XMFLOAT4X4 worldMatrix;
-	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(GetWorldMatrix()));
+	const XMMATRIX transposeWorldMatrix = XMMatrixTranspose(GetWorldMatrix());
+	const XMMATRIX worldMatrixData[2] = {
+		transposeWorldMatrix,
+		XMMatrixTranspose(XMMatrixInverse(nullptr, transposeWorldMatrix)),
+	};
 
-	if (!_worldMatrixBuffer.UpdateBuffer(context, &worldMatrix))
+	if (!_worldMatrixBuffer.UpdateBuffer(context, &worldMatrixData))
 	{
 		ErrMsg("Failed to update world matrix buffer!");
 		return false;

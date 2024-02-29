@@ -110,7 +110,7 @@ void CameraD3D11::LookX(const float amount)
 
 void CameraD3D11::LookY(const float amount)
 {
-	_transform.RotateLocal({ -amount, 0, 0, 0 });
+	_transform.RotateLocal({ amount, 0, 0, 0 });
 	_isDirty = true;
 }
 

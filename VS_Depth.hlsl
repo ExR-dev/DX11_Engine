@@ -1,7 +1,8 @@
 
 cbuffer WorldMatrixBuffer : register(b0)
 {
-    matrix worldMatrix;
+	matrix worldMatrix;
+	matrix inverseTransposeWorldMatrix;
 };
 
 cbuffer ViewProjMatrixBuffer : register(b1)

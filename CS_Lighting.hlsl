@@ -61,7 +61,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 		
 		// Prerequisite variables
-		/*const float3 toLight = lightPos - pos;
+		const float3 toLight = lightPos - pos;
 		const float inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2));
 
 		const float3 toLightDir = normalize(toLight);
@@ -92,11 +92,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		const float shadowFactor = shadowMapDepth < fragPosNDC.z ? 0.0f : 1.0f;
 
 		// Apply lighting
-		totalDiffuseLight += diffCol * centerOffset * shadowFactor;
-		totalSpecularLight += specCol * centerOffset * shadowFactor;
-		*/
+		//totalSpecularLight += specCol * centerOffset * shadowFactor;
+		//totalDiffuseLight += diffCol * centerOffset * shadowFactor;
+		totalDiffuseLight += shadowFactor;
+		
 
-		float4 newLightPos = mul(float4(lightPos, 1.0f), light.vp_matrix);
+		/*float4 newLightPos = mul(float4(lightPos, 1.0f), light.vp_matrix);
 
 		newLightPos.xy /= newLightPos.w;
 
@@ -116,10 +117,11 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// lerp (linear interpolation)
 		float shadowCoeff = lerp( lerp( s0, s1, fractex.x ), lerp( s2, s3, fractex.x ), fractex.y );
 		//totalDiffuseLight += shadowCoeff;
-		totalDiffuseLight += s0;
+		totalDiffuseLight += s0;*/
 
 	}
 
 	const float3 result = col * saturate((ambient_light.xyz * ambient_light.w) + totalDiffuseLight) + totalSpecularLight;
 	BackBufferUAV[DTid.xy] = float4(saturate(result), 1.0f);
+	//BackBufferUAV[DTid.xy] = float4((norm + float3(1,1,1)) * 0.5f, 1.0f);
 }
