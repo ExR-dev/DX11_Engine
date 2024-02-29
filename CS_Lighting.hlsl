@@ -36,6 +36,10 @@ cbuffer CameraData : register(b1)
 	float4 cam_position;
 };
 
+float3 ACESFilm(const float3 x)
+{
+	return clamp((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f), 0.0f, 1.0f);
+}
 
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -52,76 +56,39 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	for (uint lightIndex = 0; lightIndex < lightCount; lightIndex++)
 	{
-		const SpotLight light = SpotLights[lightIndex];
-		const float3 lightPos = light.light_position;
-		const float3 lightDir = light.direction;
-		const float3 lightCol = light.color;
-		const float lightMaxAngle = light.angle / 2.0f;
-
-
-		
 		// Prerequisite variables
-		const float3 toLight = lightPos - pos;
-		const float inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2));
+		const SpotLight light = SpotLights[lightIndex];
 
+		const float3 toLight = light.light_position - pos;
 		const float3 toLightDir = normalize(toLight);
-		const float3 viewDir = normalize(cam_position - pos);
+		const float3 viewDir = normalize(cam_position.xyz - pos);
 		const float3 halfwayDir = normalize(toLightDir + viewDir);
 
+		const float inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2));
+		const float maxOffsetAngle = light.angle / 2.0f;
 
-		const float lightDirOffset = dot(toLightDir, lightDir);
+		const float lightDirOffset = dot(-toLightDir, light.direction);
+		float offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));
 
-		float centerOffset = acos(lightDirOffset) / PI;
-		float maxCenterOffset = lightMaxAngle / 180.0f;
-
-		centerOffset = saturate(1.0f - (centerOffset / maxCenterOffset));
-
-		
 		// Lighting types
-		const float3 diffCol = lightCol.xyz * max(dot(norm, toLightDir), 0) * inverseLightDistSqr;
+		const float3 diffCol = light.color.xyz * max(dot(norm, toLightDir), 0); // * inverseLightDistSqr;
 		
-		const float specFactor = pow(saturate(dot(norm, halfwayDir)), 1);
-		const float3 specCol = float3(1, 1, 1) * smoothstep(0, 1, specFactor * inverseLightDistSqr);
+		const float specFactor = pow(saturate(dot(norm, halfwayDir)), 2);
+		const float3 specCol = float3(1, 1, 1) * smoothstep(0, 1, specFactor); // * inverseLightDistSqr);
 		
-		float4 fragPosClip = mul(float4(pos, 1.0f), light.vp_matrix);
-		float3 fragPosNDC = fragPosClip.xyz / fragPosClip.w;
+		float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix);
+		float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
-		const float3 shadowMapUV = float3((fragPosNDC.x * 0.5f) + 0.5f, (fragPosNDC.y * -0.5f) + 0.5f, lightIndex);
+		const float3 shadowMapUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, lightIndex);
 
-		const float shadowMapDepth = ShadowMaps.SampleLevel(ShadowMapSampler, shadowMapUV, 0).x + EPSILON;
-		const float shadowFactor = shadowMapDepth < fragPosNDC.z ? 0.0f : 1.0f;
+		const float shadowMapDepth = ShadowMaps.SampleLevel(ShadowMapSampler, shadowMapUV, 0).x;
+		const float shadowFactor = fragPosLightNDC.z <= shadowMapDepth + EPSILON ? 1.0f : 0.0f;
 
 		// Apply lighting
-		//totalSpecularLight += specCol * centerOffset * shadowFactor;
-		//totalDiffuseLight += diffCol * centerOffset * shadowFactor;
-		totalDiffuseLight += shadowFactor;
-		
-
-		/*float4 newLightPos = mul(float4(lightPos, 1.0f), light.vp_matrix);
-
-		newLightPos.xy /= newLightPos.w;
-
-		float3 smTex = float3(0.5f * newLightPos.x + 0.5f, -0.5f * newLightPos.y + 0.5f, lightIndex);
-		
-		float depth = newLightPos.z / newLightPos.w;
-
-		const float dx = 1.0f / 1024.0f;
-		const float s0 = (ShadowMaps.SampleLevel(ShadowMapSampler, smTex + float3(0.0f, 0.0f, 0.0f), 0).x + EPSILON < depth) ? 0.0f : 1.0f;
-		const float s1 = (ShadowMaps.SampleLevel(ShadowMapSampler, smTex + float3(dx, 0.0f, 0.0f), 0).x + EPSILON < depth) ? 0.0f : 1.0f;
-		const float s2 = (ShadowMaps.SampleLevel(ShadowMapSampler, smTex + float3(0.0f, dx, 0.0f), 0).x + EPSILON < depth) ? 0.0f : 1.0f;
-		const float s3 = (ShadowMaps.SampleLevel(ShadowMapSampler, smTex + float3(dx, dx, 0.0f), 0).x + EPSILON < depth) ? 0.0f : 1.0f;
-	
-		// Transform shadow map UV coord to texel space
-		float2 texelPos = smTex.xy * 1024.0f;
-		float2 fractex = frac(texelPos);
-		// lerp (linear interpolation)
-		float shadowCoeff = lerp( lerp( s0, s1, fractex.x ), lerp( s2, s3, fractex.x ), fractex.y );
-		//totalDiffuseLight += shadowCoeff;
-		totalDiffuseLight += s0;*/
-
+		totalDiffuseLight += diffCol * offsetAngle * shadowFactor * sqrt(saturate(1.0f - fragPosLightNDC.z));
+		totalSpecularLight += specCol * offsetAngle * shadowFactor * sqrt(saturate(1.0f - fragPosLightNDC.z));
 	}
 
-	const float3 result = col * saturate((ambient_light.xyz * ambient_light.w) + totalDiffuseLight) + totalSpecularLight;
+	const float3 result = col * ACESFilm((ambient_light.xyz * ambient_light.w) + totalDiffuseLight) + totalSpecularLight;
 	BackBufferUAV[DTid.xy] = float4(saturate(result), 1.0f);
-	//BackBufferUAV[DTid.xy] = float4((norm + float3(1,1,1)) * 0.5f, 1.0f);
 }

@@ -32,7 +32,7 @@ bool Scene::Initialize(ID3D11Device *device)
 
 	_device = device;
 
-	if (!_camera->Initialize(device, { 75.0f, 16.0f/9.0f, 0.1f, 50.0f }, {0.0f, 0.0f, -2.0f, 0.0f}))
+	if (!_camera->Initialize(device, { 75.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.1f, 50.0f}, {0.0f, 0.0f, -2.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
@@ -51,28 +51,28 @@ bool Scene::Initialize(ID3D11Device *device)
 				{ 15.0f, 15.0f, 15.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
-				120.0f,						// angle
-				0.04f,						// projectionNearZ
-				25.0f,						// projectionFarZ
+				XM_PIDIV2,					// angle
+				0.05f,						// projectionNearZ
+				50.0f,						// projectionFarZ
 				{ 0.0f, 0.0f, 0.0f }		// initialPosition
 			},
 
 			{ // Light
 				{ 0.0f, 25.0f, 0.0f },	// color
-				45.0f,						// rotationX
-				35.0f,						// rotationY
-				90.0f,						// angle
-				0.04f,						// projectionNearZ
-				15.0f,						// projectionFarZ
-				{ 0.0f, 10.0f, -5.0f }	// initialPosition
+				1.0f,						// rotationX
+				4.0f,						// rotationY
+				XM_PI/3.0f,					// angle
+				0.05f,						// projectionNearZ
+				50.0f,						// projectionFarZ
+				{ -4.0f, 5.0f, -5.0f }	// initialPosition
 			},
 
 			{ // Light
-				{ 0.0f, 0.0f, 50.0f },	// color
+				{ 0.0f, 0.0f, 20.0f },	// color
 				4.0f,						// rotationX
 				1.2f,						// rotationY
-				30.0f,						// angle
-				0.04f,						// projectionNearZ
+				XM_PI/2.5f,					// angle
+				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
 				{ 15.0f, 15.0f, 0.0f }	// initialPosition
 			},
@@ -105,24 +105,13 @@ bool Scene::Initialize(ID3D11Device *device)
 		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 		Entity *ent = _entities.back();
 
-		if (!ent->Initialize(
-			_device,
-			0,
-			1,
-			0,
-			2,
-			2))
+		if (!ent->Initialize(_device, 0, 1, 0, 2, 2))
 		{
 			ErrMsg("Failed to initialize room entity!");
 			return false;
 		}
 
-		ent->GetTransform()->ScaleRelative({
-			-15.0f,
-			-15.0f,
-			-15.0f,
-			0
-		});
+		ent->GetTransform()->ScaleRelative({ -15.0f, -15.0f, -15.0f, 0 });
 	}
 
 	// Create debug box
@@ -130,38 +119,29 @@ bool Scene::Initialize(ID3D11Device *device)
 		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 		Entity *ent = _entities.back();
 
-		if (!ent->Initialize(
-			_device,
-			0,
-			6,
-			0,
-			2,
-			1))
+		if (!ent->Initialize(_device, 0, 1, 0, 2, 1))
 		{
-			ErrMsg("Failed to initialize room entity!");
+			ErrMsg("Failed to initialize box!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({
-			-1.0f,
-			-0.5f,
-			5.0f,
-			0
-			});
+		ent->GetTransform()->Move({ -1.0f, -0.5f, 5.0f, 0 });
+		ent->GetTransform()->Rotate({ 0.26f, 1.9f, 3.91f, 0 });
+		ent->GetTransform()->ScaleRelative({ 1.0f, 0.3f, 3.0f, 0 });
+	}
 
-		ent->GetTransform()->Rotate({
-			0.26f,
-			1.9f,
-			3.91f,
-			0
-			});
+	// Create debug error
+	{
+		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+		Entity *ent = _entities.back();
 
-		ent->GetTransform()->ScaleRelative({
-			1.0f,
-			0.3f,
-			3.0f,
-			0
-		});
+		if (!ent->Initialize(_device, 0, 0, 0, 2, 0))
+		{
+			ErrMsg("Failed to initialize error!");
+			return false;
+		}
+
+		ent->GetTransform()->Move({ 1.5f, -2.0f, 23.0f, 0 });
 	}
 
 	_initialized = true;
@@ -178,7 +158,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
 		{ // Create 5 random entities
-			for (size_t i = 0; i < 5; i++)
+			for (size_t i = 0; i < 25; i++)
 			{
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
@@ -232,19 +212,19 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		if (currSelection == -1)
 		{ // Move camera
 			if (input.GetKey(KeyCode::D) == KeyState::Held)
-				_camera->MoveRight(time.deltaTime * 2.5f);
+				_camera->MoveRight(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::A) == KeyState::Held)
-				_camera->MoveRight(-time.deltaTime * 2.5f);
+				_camera->MoveRight(-time.deltaTime * 3.5f);
 
 			if (input.GetKey(KeyCode::Space) == KeyState::Held)
-				_camera->MoveUp(time.deltaTime * 2.5f);
+				_camera->MoveUp(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::X) == KeyState::Held)
-				_camera->MoveUp(-time.deltaTime * 2.5f);
+				_camera->MoveUp(-time.deltaTime * 3.5f);
 
 			if (input.GetKey(KeyCode::W) == KeyState::Held)
-				_camera->MoveForward(time.deltaTime * 2.5f);
+				_camera->MoveForward(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-				_camera->MoveForward(-time.deltaTime * 2.5f);
+				_camera->MoveForward(-time.deltaTime * 3.5f);
 
 			const MouseState mState = input.GetMouse();
 			_camera->LookX(static_cast<float>(mState.dx) / 360.0f);

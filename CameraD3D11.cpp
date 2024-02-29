@@ -138,7 +138,7 @@ XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 				*reinterpret_cast<XMVECTOR *>(&cUp)
 			) *
 			XMMatrixPerspectiveFovLH(
-				_projInfo.fovAngleY * (XM_PI / 180.0f),
+				_projInfo.fovAngleY,
 				_projInfo.aspectRatio,
 				_projInfo.nearZ,
 				_projInfo.farZ

@@ -26,7 +26,7 @@ Cubemap::~Cubemap()
 bool Cubemap::Initialize(ID3D11Device *device, const float nearZ, const float farZ, const XMFLOAT4A &initialPosition)
 {
 	const ProjectionInfo projInfo {
-		90.0f,
+		XM_PIDIV2,
 		1.0f,
 		nearZ,
 		farZ
@@ -48,11 +48,11 @@ bool Cubemap::Initialize(ID3D11Device *device, const float nearZ, const float fa
 		}
 	}
 
-	_cameras[1]->LookX(90.0f * XM_PI / 180.0f);
-	_cameras[2]->LookX(180.0f * XM_PI / 180.0f);
-	_cameras[3]->LookX(270.0f * XM_PI / 180.0f);
-	_cameras[4]->LookY(-90.0f * XM_PI / 180.0f);
-	_cameras[5]->LookY(90.0f * XM_PI / 180.0f);
+	_cameras[1]->LookX(XM_PIDIV2);
+	_cameras[2]->LookX(XM_PI);
+	_cameras[3]->LookX(-XM_PIDIV2);
+	_cameras[4]->LookY(-XM_PIDIV2);
+	_cameras[5]->LookY(XM_PIDIV2);
 
 	return true;
 }
