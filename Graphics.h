@@ -71,6 +71,7 @@ private:
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
 
+	ConstantBufferD3D11 _globalLightBuffer;
 	CameraD3D11 *_currCamera = nullptr;
 	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;

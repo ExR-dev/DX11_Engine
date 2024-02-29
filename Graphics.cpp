@@ -66,6 +66,13 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		}
 	}
 
+	constexpr XMFLOAT4A ambientColor = { 1.0f,  1.0f,  1.0f,  0.25f };
+	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &ambientColor))
+	{
+		ErrMsg("Failed to initialize global light buffer!");
+		return false;
+	}
+
 #ifdef _DEBUG
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -361,6 +368,8 @@ bool Graphics::RenderGeometry()
 			}
 			_currMeshID = resources.meshID;
 		}
+		else if (loadedMesh == nullptr)
+			loadedMesh = _content->GetMesh(resources.meshID);
 
 		if (_currVsID != resources.vsID)
 		{
@@ -447,6 +456,10 @@ bool Graphics::RenderLighting()
 		srvs[i] = _gBuffers[i].GetSRV();
 	_context->CSSetShaderResources(0, 3, srvs);
 
+	// Bind global light data
+	ID3D11Buffer *const globalLightBuffer = _globalLightBuffer.GetBuffer();
+	_context->CSSetConstantBuffers(0, 1, &globalLightBuffer);
+
 	// Bind spotlight collection
 	if (!_currSpotLightCollection->BindBuffers(_context))
 	{
@@ -461,7 +474,7 @@ bool Graphics::RenderLighting()
 	if (!_currCamera->BindLightingBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
-		return false;
+		//return false;
 	}
 
 	// Send execution command

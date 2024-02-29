@@ -48,10 +48,10 @@ bool Scene::Initialize(ID3D11Device *device)
 		1024, // Resolution
 		{ // Vector
 			{ // Light
-				{ 50.0f, 50.0f, 50.0f },	// color
+				{ 10.0f, 10.0f, 10.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
-				90.0f,						// angle
+				120.0f,						// angle
 				0.1f,						// projectionNearZ
 				25.0f,						// projectionFarZ
 				{ 0.0f, 0.0f, 0.0f }		// initialPosition
@@ -98,6 +98,31 @@ bool Scene::Initialize(ID3D11Device *device)
 	{
 		ErrMsg("Failed to initialize point light collection!");
 		return false;
+	}
+
+	// Create room entity
+	{
+		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
+		Entity *ent = _entities.back();
+
+		if (!ent->Initialize(
+			_device,
+			0,
+			1,
+			0,
+			2,
+			2))
+		{
+			ErrMsg("Failed to initialize room entity!");
+			return false;
+		}
+
+		ent->GetTransform()->ScaleRelative({
+			-15.0f,
+			-15.0f,
+			-15.0f,
+			0
+		});
 	}
 
 	_initialized = true;
@@ -191,10 +216,14 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 			static bool isRotating = false;
 			if (input.GetKey(KeyCode::R) == KeyState::Pressed)
 				isRotating = !isRotating;
+			static bool isScaling = false;
+			if (input.GetKey(KeyCode::T) == KeyState::Pressed)
+				isScaling = !isScaling;
 
 			Transform *entityTransform = _entities.at(currSelection)->GetTransform();
 
 			XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
+
 			if (input.GetKey(KeyCode::D) == KeyState::Held)
 				transformationVector.x += time.deltaTime;
 			else if (input.GetKey(KeyCode::A) == KeyState::Held)
@@ -212,6 +241,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 
 			if (isRotating)
 				entityTransform->Rotate(transformationVector);
+			else if (isScaling)
+				entityTransform->ScaleAbsolute(transformationVector);
 			else
 				entityTransform->Move(transformationVector);
 		}
@@ -258,7 +289,7 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 
 	static int currCamera = -1;
 	if (input.GetKey(KeyCode::V) == KeyState::Pressed)
-		currCamera = 6;
+		currCamera = -2;
 
 	if (!hasSetCamera)
 	{
@@ -287,21 +318,31 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 	{ // Change camera
 		currCamera++;
 
-		if (currCamera >= 6)
+		if (currCamera - 6 >= static_cast<int>(_spotLights->GetNrOfLights()))
+			currCamera = -1;
+
+		if (currCamera < 0)
 		{
+			currCamera = -1;
 			if (!graphics->SetCamera(_camera))
 			{
 				ErrMsg("Failed to set camera to main!");
 				return false;
 			}
-
-			currCamera = -1;
 		}
-		else
+		else if (currCamera < 6)
 		{
 			if (!graphics->SetCamera(_cubemap.GetCamera(currCamera)))
 			{
 				ErrMsg(std::format("Failed to set camera to cubemap view #{}!", currCamera));
+				return false;
+			}
+		}
+		else
+		{
+			if (!graphics->SetCamera(_spotLights->GetLightCamera(currCamera - 6)))
+			{
+				ErrMsg(std::format("Failed to set camera to spotlight view #{}!", currCamera - 6));
 				return false;
 			}
 		}

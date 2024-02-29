@@ -26,13 +26,19 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 }
 
 
-CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition)
+CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer)
 {
-	if (!Initialize(device, projectionInfo, initialPosition))
+	if (!Initialize(device, projectionInfo, initialPosition, hasCSBuffer))
 		ErrMsg("Failed to initialize camera buffer in camera constructor!");
 }
 
-bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition)
+CameraD3D11::~CameraD3D11()
+{
+	delete _cameraCSBuffer;
+}
+
+
+bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer)
 {
 	_projInfo = projectionInfo;
 	_transform.SetPosition(initialPosition);
@@ -44,16 +50,14 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 		return false;
 	}
 
-	if (!_cameraCSBuffer.Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
+	if (hasCSBuffer)
 	{
-		ErrMsg("Failed to initialize camera CS buffer!");
-		return false;
-	}
-
-	if (!_lightingBuffer.Initialize(device, sizeof(LightingBufferData), &_lightingBufferData))
-	{
-		ErrMsg("Failed to initialize lighting buffer!");
-		return false;
+		_cameraCSBuffer = new ConstantBufferD3D11();
+		if (!_cameraCSBuffer->Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
+		{
+			ErrMsg("Failed to initialize camera CS buffer!");
+			return false;
+		}
 	}
 
 	return true;
@@ -158,17 +162,14 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 		return false;
 	}
 
-	const XMFLOAT4A camPos = _transform.GetPosition();
-	if (!_cameraCSBuffer.UpdateBuffer(context, &camPos))
+	if (_cameraCSBuffer != nullptr)
 	{
-		ErrMsg("Failed to update camera CS buffer!");
-		return false;
-	}
-
-	if (!_lightingBuffer.UpdateBuffer(context, &_lightingBufferData))
-	{
-		ErrMsg("Failed to update lighting buffer!");
-		return false;
+		const XMFLOAT4A camPos = _transform.GetPosition();
+		if (!_cameraCSBuffer->UpdateBuffer(context, &camPos))
+		{
+			ErrMsg("Failed to update camera CS buffer!");
+			return false;
+		}
 	}
 
 	_isDirty = false;
@@ -186,11 +187,14 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 
 bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 {
-	/*ID3D11Buffer *const lightingBuffer = _lightingBuffer.GetBuffer();
-	context->CSSetConstantBuffers(0, 1, &lightingBuffer);*/
+	if (_cameraCSBuffer == nullptr)
+	{
+		ErrMsg("Failed to bind lighting buffers, camera does not have that buffer!");
+		return false;
+	}
 
 	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
-	context->CSSetConstantBuffers(0, 1, &camPosBuffer);
+	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
 
 	return true;
 }
@@ -203,5 +207,8 @@ ID3D11Buffer *CameraD3D11::GetCameraVSBuffer() const
 
 ID3D11Buffer *CameraD3D11::GetCameraCSBuffer() const
 {
-	return _cameraCSBuffer.GetBuffer();
+	if (_cameraCSBuffer == nullptr)
+		return nullptr;
+
+	return _cameraCSBuffer->GetBuffer();
 }

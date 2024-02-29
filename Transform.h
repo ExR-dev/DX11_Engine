@@ -14,7 +14,8 @@ private:
 		_right		= { 1.0f, 0.0f, 0.0f, 0.0f },
 		_up			= { 0.0f, 1.0f, 0.0f, 0.0f },
 		_forward	= { 0.0f, 0.0f, 1.0f, 0.0f },
-		_pos		= { 0.0f, 0.0f, 0.0f, 1.0f };
+		_pos		= { 0.0f, 0.0f, 0.0f, 1.0f },
+		_scale		= { 1.0f, 1.0f, 1.0f, 0.0f };
 
 	ConstantBufferD3D11 _worldMatrixBuffer;
 	bool _isDirty = true;
@@ -37,16 +38,20 @@ public:
 
 	void Move(const XMFLOAT4A &movement);
 	void Rotate(const XMFLOAT4A &rotation);
+	void ScaleAbsolute(const XMFLOAT4A &scale);
 
 	void MoveLocal(const XMFLOAT4A &movement);
 	void RotateLocal(const XMFLOAT4A &rotation);
+	void ScaleRelative(const XMFLOAT4A &scale);
 
 	void RotateByQuaternion(const XMVECTOR &quaternion);
 
 	void SetPosition(const XMFLOAT4A &position);
+	void SetScale(const XMFLOAT4A &scale);
 	void SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward);
 
 	[[nodiscard]] const XMFLOAT4A &GetPosition() const;
+	[[nodiscard]] const XMFLOAT4A &GetScale() const;
 	[[nodiscard]] const XMFLOAT4A &GetRight() const;
 	[[nodiscard]] const XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const XMFLOAT4A &GetForward() const;

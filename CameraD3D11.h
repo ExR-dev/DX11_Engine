@@ -46,17 +46,8 @@ private:
 	ProjectionInfo _projInfo;
 
 	ConstantBufferD3D11 _cameraVSBuffer;
-	ConstantBufferD3D11 _cameraCSBuffer;
+	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
 	bool _isDirty = true;
-
-	ConstantBufferD3D11 _lightingBuffer;
-	LightingBufferData _lightingBufferData = {
-		{0.5f, 2.0f, -2.5f, 1.0f}, // Light position
-		{0.75f, 0.9f, 1.0f, 0.05f}, // Ambient
-		{1.0f, 1.0f, 1.0f, 5.0f}, // Diffuse
-		{10.0f, 10.0f, 10.0f, 128.0f}, // Specular
-	};
-
 
 	void Move(float amount, const XMFLOAT4A &direction);
 	void MoveLocal(float amount, const XMFLOAT4A &direction);
@@ -64,15 +55,15 @@ private:
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f));
-	~CameraD3D11() = default;
+		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+	~CameraD3D11();
 	CameraD3D11(const CameraD3D11 &other) = delete;
 	CameraD3D11 &operator=(const CameraD3D11 &other) = delete;
 	CameraD3D11(CameraD3D11 &&other) = delete;
 	CameraD3D11 &operator=(CameraD3D11 &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f));
+		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);

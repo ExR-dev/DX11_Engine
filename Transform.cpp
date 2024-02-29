@@ -57,6 +57,13 @@ bool Transform::Initialize(ID3D11Device *device, XMMATRIX worldMatrix)
 	*reinterpret_cast<XMVECTOR *>(&_forward) = worldMatrix.r[2];
 	*reinterpret_cast<XMVECTOR *>(&_pos) = worldMatrix.r[3];
 
+	_scale = {
+		XMVectorGetX(XMVector3Length(worldMatrix.r[0])),
+		XMVectorGetX(XMVector3Length(worldMatrix.r[1])),
+		XMVectorGetX(XMVector3Length(worldMatrix.r[2])),
+		0.0f
+	};
+
 	NormalizeBases();
 	OrthogonalizeBases();
 
@@ -67,6 +74,7 @@ bool Transform::Initialize(ID3D11Device *device, XMMATRIX worldMatrix)
 		return false;
 	}
 
+	_isDirty = true;
 	return true;
 }
 
@@ -105,7 +113,19 @@ void Transform::Rotate(const XMFLOAT4A &rotation)
 
 	NormalizeBases();
 	OrthogonalizeBases();
+
+	_isDirty = true;
 }
+
+void Transform::ScaleAbsolute(const XMFLOAT4A &scale)
+{
+	_scale.x += scale.x;
+	_scale.y += scale.y;
+	_scale.z += scale.z;
+
+	_isDirty = true;
+}
+
 
 void Transform::MoveLocal(const XMFLOAT4A &movement)
 {
@@ -134,6 +154,17 @@ void Transform::RotateLocal(const XMFLOAT4A &rotation)
 
 	NormalizeBases();
 	OrthogonalizeBases();
+
+	_isDirty = true;
+}
+
+void Transform::ScaleRelative(const XMFLOAT4A &scale)
+{
+	_scale.x *= scale.x;
+	_scale.y *= scale.y;
+	_scale.z *= scale.z;
+
+	_isDirty = true;
 }
 
 
@@ -148,11 +179,6 @@ void Transform::RotateByQuaternion(const XMVECTOR &quaternion)
 		*rightPtr = reinterpret_cast<XMVECTOR *>(&_right),
 		*upPtr = reinterpret_cast<XMVECTOR *>(&_up),
 		*forwardPtr = reinterpret_cast<XMVECTOR *>(&_forward);
-
-	const float
-		rightScale = XMVectorGetX(XMVector3Length(*rightPtr)),
-		upScale = XMVectorGetX(XMVector3Length(*upPtr)),
-		forwardScale = XMVectorGetX(XMVector3Length(*forwardPtr));
 
 	(*rightPtr) = XMQuaternionMultiply(quatIdentity, *rightPtr),
 	(*upPtr) = XMQuaternionMultiply(quatIdentity, *upPtr),
@@ -176,11 +202,25 @@ void Transform::SetPosition(const XMFLOAT4A &position)
 	_isDirty = true;
 }
 
+void Transform::SetScale(const XMFLOAT4A &scale)
+{
+	_scale = scale;
+
+	_isDirty = true;
+}
+
 void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward)
 {
 	_right = right;
 	_up = up;
 	_forward = forward;
+
+	_scale = {
+		XMVectorGetX(XMVector3Length(*reinterpret_cast<XMVECTOR *>(&_right))),
+		XMVectorGetX(XMVector3Length(*reinterpret_cast<XMVECTOR *>(&_up))),
+		XMVectorGetX(XMVector3Length(*reinterpret_cast<XMVECTOR *>(&_forward))),
+		0.0f
+	};
 
 	NormalizeBases();
 	OrthogonalizeBases();
@@ -190,6 +230,7 @@ void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLO
 
 
 const XMFLOAT4A &Transform::GetPosition() const	{ return _pos;		}
+const XMFLOAT4A &Transform::GetScale() const	{ return _scale;	}
 const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
 const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
 const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
@@ -218,9 +259,9 @@ ID3D11Buffer *Transform::GetConstantBuffer() const
 XMMATRIX Transform::GetWorldMatrix() const
 {
 	return XMMatrixSet(
-		_right.x,	_right.y,	_right.z,	0,
-		_up.x,		_up.y,		_up.z,		0,
-		_forward.x, _forward.y, _forward.z, 0,
-		_pos.x,		_pos.y,		_pos.z,		1
+		_right.x * _scale.x,	_right.y * _scale.x,	_right.z * _scale.x,	0,
+		_up.x * _scale.y,		_up.y * _scale.y,		_up.z * _scale.y,		0,
+		_forward.x * _scale.z,	_forward.y * _scale.z,	_forward.z * _scale.z,  0,
+		_pos.x,					_pos.y,					_pos.z,		1
 	);
 }
