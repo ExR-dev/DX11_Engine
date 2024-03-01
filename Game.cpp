@@ -8,8 +8,6 @@ Game::Game()
 	_device				= nullptr;
 	_immediateContext	= nullptr;
 
-	//_graphics	= { };
-
 	_scene		= nullptr;
 }
 
@@ -35,12 +33,10 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"Error",
 		"Fallback",
 		"Room",
-		"ShapeTri",
 		"SimpleSubmesh",
 		"ControlChair",
 		"ControlDesk",
 		"CharacterSculptLow0",
-		"CharacterSculptLow1",
 	};
 
 	for (const std::string &meshName : meshNames)
@@ -60,8 +56,6 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"texture4",
 		"texture5",
 		"CharacterSculptLow0Texture",
-		"CharacterSculptLow0Texture1",
-		"CharacterSculptLow1Texture",
 	};
 
 	for (const std::string &textureName : textureNames)

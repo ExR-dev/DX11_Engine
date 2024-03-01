@@ -51,7 +51,7 @@ private:
 	StructuredBufferD3D11 _lightBuffer;
 	std::vector<CameraD3D11*> _shadowCameras;
 	SpotLightData::ShadowMapInfo _shadowMapInfo;
-	D3D11_VIEWPORT _shadowViewport;
+	D3D11_VIEWPORT _shadowViewport = { };
 
 public:
 	SpotLightCollectionD3D11() = default;

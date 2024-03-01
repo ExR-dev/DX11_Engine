@@ -32,7 +32,7 @@ bool Scene::Initialize(ID3D11Device *device)
 
 	_device = device;
 
-	if (!_camera->Initialize(device, { 75.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.1f, 50.0f}, {0.0f, 0.0f, -2.0f, 0.0f}))
+	if (!_camera->Initialize(device, { 75.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.1f, 50.0f}, {0.0f, 1.5f, -1.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
@@ -45,36 +45,36 @@ bool Scene::Initialize(ID3D11Device *device)
 	}
 
 	const SpotLightData spotLightInfo = {
-		512,
+		1024,
 		std::vector {
-			SpotLightData::PerLightInfo {
-				{ 15.0f, 15.0f, 15.0f },	// color
+			/*SpotLightData::PerLightInfo {
+				{ 15.0f, 15.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
-				XM_PI/2.0f,					// angle
+				XM_PI * 0.66f,				// angle
 				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
-				{ 0.0f, 0.0f, 0.0f }		// initialPosition
-			},
+				{ 0.0f, 2.0f, 0.0f }		// initialPosition
+			},*/
 
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 0.0f, 10.0f, 0.0f },		// color
 				1.0f,						// rotationX
 				4.0f,						// rotationY
-				XM_PI/3.0f,					// angle
+				XM_PI * 0.333f,				// angle
 				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
-				{ -4.0f, 5.0f, -5.0f }		// initialPosition
-			},
+				{ 4.0f, 5.0f, 5.0f }		// initialPosition
+			},*/
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 10.0f },		// color
-				4.0f,						// rotationX
-				1.2f,						// rotationY
-				XM_PI/2.5f,					// angle
+				{ 20.0f, 20.0f, 20.0f },	// color
+				XM_PI / 4.0f,				// rotationX
+				XM_PI / 4.0f,				// rotationY
+				XM_PI / 3.0f,				// angle
 				0.05f,						// projectionNearZ
-				50.0f,						// projectionFarZ
-				{ 15.0f, 15.0f, 0.0f }		// initialPosition
+				55.0f,						// projectionFarZ
+				{ -15.0f, 30.0f, -15.0f }	// initialPosition
 			},
 		}
 	};
@@ -114,34 +114,36 @@ bool Scene::Initialize(ID3D11Device *device)
 		ent->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
-	// Create debug box
+	// Create model
 	{
 		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 		Entity *ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 1, 0, 2, 1))
+		if (!ent->Initialize(_device, 0, 6, 0, 2, 7))
 		{
-			ErrMsg("Failed to initialize box!");
+			ErrMsg("Failed to initialize model!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ 1.0f, 1.5f, 5.0f, 0 });
-		ent->GetTransform()->Rotate({ 0.26f, 1.9f, 3.91f, 0 });
-		ent->GetTransform()->ScaleRelative({ 1.0f, 0.3f, 3.0f, 0 });
+		ent->GetTransform()->Move({ 1.0f, 0.0f, 5.0f, 0 });
+		ent->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
+		ent->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}
 
-	// Create debug error
+	// Create error
 	{
 		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 		Entity *ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 0, 0, 2, 0))
+		if (!ent->Initialize(_device, 0, 0, 0, 2, 1))
 		{
 			ErrMsg("Failed to initialize error!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ 1.5f, 2.0f, 23.0f, 0 });
+		ent->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
+		ent->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
+		ent->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
 
 	_initialized = true;
@@ -166,10 +168,10 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				if (!ent->Initialize(
 					_device, 
 					0, 
-					rand() % 8, 
+					rand() % 7, 
 					0, 
 					2, 
-					rand() % 10))
+					rand() % 8))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
@@ -183,9 +185,9 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				});
 
 				ent->GetTransform()->Rotate({
-					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
-					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
-					static_cast<float>((rand() % 2000)) * (XM_PI / 1000.0f),
+					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
+					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
+					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					0
 				});
 			}
