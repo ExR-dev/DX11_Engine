@@ -34,6 +34,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	const std::vector<std::string> meshNames = {
 		"Error",
 		"Fallback",
+		"Room",
 		"ShapeTri",
 		"SimpleSubmesh",
 		"ControlChair",

@@ -66,7 +66,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		}
 	}
 
-	constexpr XMFLOAT4A ambientColor = { 1.0f,  1.0f,  1.0f,  0.05f };
+	constexpr XMFLOAT4A ambientColor = { 1.0f,  1.0f,  1.0f,  0.25f };
 	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &ambientColor))
 	{
 		ErrMsg("Failed to initialize global light buffer!");

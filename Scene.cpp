@@ -45,36 +45,36 @@ bool Scene::Initialize(ID3D11Device *device)
 	}
 
 	const SpotLightData spotLightInfo = {
-		1024, // Resolution
-		{ // Vector
-			{ // Light
+		512,
+		std::vector {
+			SpotLightData::PerLightInfo {
 				{ 15.0f, 15.0f, 15.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
-				XM_PIDIV2,					// angle
+				XM_PI/2.0f,					// angle
 				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
 				{ 0.0f, 0.0f, 0.0f }		// initialPosition
 			},
 
-			{ // Light
-				{ 0.0f, 25.0f, 0.0f },	// color
+			SpotLightData::PerLightInfo {
+				{ 0.0f, 10.0f, 0.0f },		// color
 				1.0f,						// rotationX
 				4.0f,						// rotationY
 				XM_PI/3.0f,					// angle
 				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
-				{ -4.0f, 5.0f, -5.0f }	// initialPosition
+				{ -4.0f, 5.0f, -5.0f }		// initialPosition
 			},
 
-			{ // Light
-				{ 0.0f, 0.0f, 20.0f },	// color
+			SpotLightData::PerLightInfo {
+				{ 0.0f, 0.0f, 10.0f },		// color
 				4.0f,						// rotationX
 				1.2f,						// rotationY
 				XM_PI/2.5f,					// angle
 				0.05f,						// projectionNearZ
 				50.0f,						// projectionFarZ
-				{ 15.0f, 15.0f, 0.0f }	// initialPosition
+				{ 15.0f, 15.0f, 0.0f }		// initialPosition
 			},
 		}
 	};
@@ -105,13 +105,13 @@ bool Scene::Initialize(ID3D11Device *device)
 		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 		Entity *ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 1, 0, 2, 2))
+		if (!ent->Initialize(_device, 0, 2, 0, 2, 2))
 		{
 			ErrMsg("Failed to initialize room entity!");
 			return false;
 		}
 
-		ent->GetTransform()->ScaleRelative({ -15.0f, -15.0f, -15.0f, 0 });
+		ent->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
 	// Create debug box
@@ -125,7 +125,7 @@ bool Scene::Initialize(ID3D11Device *device)
 			return false;
 		}
 
-		ent->GetTransform()->Move({ -1.0f, -0.5f, 5.0f, 0 });
+		ent->GetTransform()->Move({ 1.0f, 1.5f, 5.0f, 0 });
 		ent->GetTransform()->Rotate({ 0.26f, 1.9f, 3.91f, 0 });
 		ent->GetTransform()->ScaleRelative({ 1.0f, 0.3f, 3.0f, 0 });
 	}
@@ -141,7 +141,7 @@ bool Scene::Initialize(ID3D11Device *device)
 			return false;
 		}
 
-		ent->GetTransform()->Move({ 1.5f, -2.0f, 23.0f, 0 });
+		ent->GetTransform()->Move({ 1.5f, 2.0f, 23.0f, 0 });
 	}
 
 	_initialized = true;
@@ -157,8 +157,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (input.IsCursorLocked()) // Handle user input
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 5 random entities
-			for (size_t i = 0; i < 25; i++)
+		{ // Create a random entity
+			for (size_t i = 0; i < 1; i++)
 			{
 				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
 				Entity *ent = _entities.back();
