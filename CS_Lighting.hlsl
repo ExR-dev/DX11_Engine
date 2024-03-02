@@ -1,6 +1,6 @@
 
 static const float PI = 3.14159265f;
-static const float EPSILON = 0.0005f;
+static const float EPSILON = 0.00001f;
 
 
 RWTexture2D<unorm float4> BackBufferUAV : register(u0);
@@ -36,10 +36,19 @@ cbuffer CameraData : register(b1)
 	float4 cam_position;
 };
 
+
+float2 rand_2(in float2 uv)
+{
+	float noiseX = (frac(sin(dot(uv, float2(12.9898,78.233)      )) * 43758.5453));
+	float noiseY = (frac(sin(dot(uv, float2(12.9898,78.233) * 2.0)) * 43758.5453));
+    return float2(noiseX, noiseY);
+}
+
 float3 ACESFilm(const float3 x)
 {
 	return clamp((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f), 0.0f, 1.0f);
 }
+
 
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -47,17 +56,24 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	const float3 pos = PositionGBuffer[DTid.xy].xyz;
 	const float3 col = ColorGBuffer[DTid.xy].xyz;
 	const float3 norm = normalize(NormalGBuffer[DTid.xy].xyz);
+
+	uint screenWidth, screenHeight, _;
+	PositionGBuffer.GetDimensions(0, screenWidth, screenHeight, _);
+
+	const float2 uv = float3((float)DTid.x / (float)screenWidth, (float)DTid.y / (float)screenHeight, 0);
+
+	uint lightCount;
+	SpotLights.GetDimensions(lightCount, _);
+
+	uint smWidth, smHeight;
+	ShadowMaps.GetDimensions(0, smWidth, smHeight, _, _);
+
+	const float
+		smDX = 1.0f / (float)smWidth,
+		smDY = 1.0f / (float)smHeight;
 	
 	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
-
-	uint lightCount, _;
-	SpotLights.GetDimensions(lightCount, _);
-
-	uint smWidth;
-	ShadowMaps.GetDimensions(0, smWidth, _, _, _);
-
-	const float smDX = 1.0f / (float)smWidth;
 
 	for (uint light_i = 0; light_i < lightCount; light_i++)
 	{
@@ -81,15 +97,17 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		
 		const float specFactor = pow(saturate(dot(norm, halfwayDir)), 4.0f);
 		const float3 specularCol = float3(1.0f, 1.0f, 1.0f) * smoothstep(0, 1, specFactor); // * inverseLightDistSqr);
-		
-		const float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix);
+
+		// Calculate shadow projection
+		const float4 randOffset = float4(rand_2(frac(uv + ambient_light.w)) * 4.0f / float2(screenWidth, screenHeight), 0, 0);
+		const float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix) + randOffset;
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
 		const float3
 			smUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i),
-			smUV01 = smUV00 + float3(0.0f, smDX, 0.0f),
+			smUV01 = smUV00 + float3(0.0f, smDY, 0.0f),
 			smUV10 = smUV00 + float3(smDX, 0.0f, 0.0f),
-			smUV11 = smUV00 + float3(smDX, smDX, 0.0f);
+			smUV11 = smUV00 + float3(smDX, smDY, 0.0f);
 
 		const float
 			smDepth00 = ShadowMaps.SampleLevel(ShadowMapSampler, smUV00, 0).x,
@@ -115,11 +133,15 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			sqrt(saturate(1.0f - fragPosLightNDC.z))
 		);
 
+		//const float shadow = saturate(offsetAngle * smResult00 * sqrt(saturate(1.0f - fragPosLightNDC.z)));
+
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow;
-		//totalSpecularLight += specularCol * shadow;
+		totalSpecularLight += specularCol * shadow;
 	}
 
-	const float3 result = ACESFilm(col * ((ambient_light.xyz * ambient_light.w) + totalDiffuseLight + totalSpecularLight));
+	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
+	//const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
 	BackBufferUAV[DTid.xy] = float4(saturate(result), 1.0f);
+
 }

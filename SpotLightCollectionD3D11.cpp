@@ -1,10 +1,16 @@
 #include "SpotLightCollectionD3D11.h"
 
+#include <DirectXCollision.h>
+
 #include "ErrMsg.h"
 
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
 {
+	for (ID3D11RasterizerState *rasterizerState : _rasterizerStates)
+		if (rasterizerState != nullptr)
+			rasterizerState->Release();
+
 	for (const CameraD3D11 *camera : _shadowCameras)
 		delete camera;
 }
@@ -24,8 +30,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 			device,
 			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
 			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
-			// TODO: false
-			true
+			true // TODO: Make false, only true to control the camera for debugging purposes
 		);
 
 		lightCamera->LookY(iLightInfo.rotationY);
@@ -43,6 +48,26 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		lightBuffer.direction = { dir.x, dir.y, dir.z };
 
 		_bufferData.push_back(lightBuffer);
+
+		
+		_rasterizerStates.push_back(nullptr);
+		D3D11_RASTERIZER_DESC rasterizerDesc = { };
+		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+		rasterizerDesc.CullMode = D3D11_CULL_BACK;
+		rasterizerDesc.FrontCounterClockwise = false;
+		rasterizerDesc.DepthBias = 1;
+		rasterizerDesc.DepthBiasClamp = 0.0025f;
+		rasterizerDesc.SlopeScaledDepthBias = 4.0f;
+		rasterizerDesc.DepthClipEnable = false;
+		rasterizerDesc.ScissorEnable = false;
+		rasterizerDesc.MultisampleEnable = false;
+		rasterizerDesc.AntialiasedLineEnable = false;
+
+		if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_rasterizerStates.back())))
+		{
+			ErrMsg(std::format("Failed to create rasterizer state for spotlight #{}!", i));
+			return false;
+		}
 	}
 
 	if (!_shadowMaps.Initialize(device, 
@@ -70,12 +95,37 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 	_shadowViewport.TopLeftY = 0;
 	_shadowViewport.Width = static_cast<float>(lightInfo.shadowMapInfo.textureDimension);
 	_shadowViewport.Height = static_cast<float>(lightInfo.shadowMapInfo.textureDimension);
-	_shadowViewport.MinDepth = 0;
-	_shadowViewport.MaxDepth = 1;
+	_shadowViewport.MinDepth = 0.0f;
+	_shadowViewport.MaxDepth = 1.0f;
 
 	return true;
 }
 
+
+bool SpotLightCollectionD3D11::ScaleLightFrustumsToCamera(const CameraD3D11 &viewCamera)
+{
+	/*BoundingFrustum viewFrustum;
+	XMFLOAT4X4A cameraProjectionMatrix = viewCamera.GetProjectionMatrix();
+	viewFrustum.CreateFromMatrix(viewFrustum, *reinterpret_cast<XMMATRIX *>(&cameraProjectionMatrix));
+
+	XMFLOAT3 corners[8];
+	viewFrustum.GetCorners(corners);
+
+	const UINT lightCount = static_cast<UINT>(_bufferData.size());
+	for (size_t i = 0; i < lightCount; i++)
+	{
+		CameraD3D11 &shadowCamera = *_shadowCameras.at(i);
+
+		BoundingFrustum lightFrustum;
+		XMFLOAT4X4A lightProjectionMatrix = shadowCamera.GetProjectionMatrix();
+		lightFrustum.CreateFromMatrix(lightFrustum, *reinterpret_cast<XMMATRIX *>(&lightProjectionMatrix));
+
+		// ...
+		
+	}*/
+
+	return false;
+}
 
 bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 {
@@ -106,7 +156,7 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	return true;
 }
 
-bool SpotLightCollectionD3D11::BindBuffers(ID3D11DeviceContext *context) const
+bool SpotLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
 	context->CSSetShaderResources(3, 1, &lightBufferSRV);
@@ -136,6 +186,11 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetShadowMapsSRV() const
 ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 {
 	return _lightBuffer.GetSRV();
+}
+
+ID3D11RasterizerState *SpotLightCollectionD3D11::GetLightRasterizer(const UINT lightIndex) const
+{
+	return _rasterizerStates.at(lightIndex);
 }
 
 CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const

@@ -66,7 +66,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		}
 	}
 
-	constexpr XMFLOAT4A ambientColor = { 1.0f,  1.0f,  1.0f,  0.10f };
+	constexpr XMFLOAT4A ambientColor = { 0.03f, 0.03f, 0.03f, 0.0f };
 	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &ambientColor))
 	{
 		ErrMsg("Failed to initialize global light buffer!");
@@ -174,6 +174,13 @@ bool Graphics::EndRender(const Time &time)
 		return false;
 	}
 
+	const XMFLOAT4A ambientColor = { 0.03f, 0.03f, 0.03f, time.time };
+	if (!_globalLightBuffer.UpdateBuffer(_context, &ambientColor))
+	{
+		ErrMsg("Failed to initialize global light buffer!");
+		return false;
+	}
+
 	if (!RenderShadowCasters())
 	{
 		ErrMsg("Failed to render shadow casters!");
@@ -265,6 +272,8 @@ bool Graphics::RenderShadowCasters()
 			return false;
 		}
 
+		_context->RSSetState(_currSpotLightCollection->GetLightRasterizer(spotlight_i));
+
 		UINT entity_i = 0;
 		for (const auto &[resources, instance] : _renderInstances)
 		{
@@ -338,6 +347,7 @@ bool Graphics::RenderGeometry()
 	_context->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_context->RSSetViewports(1, &_viewport);
+	_context->RSSetState(nullptr); // TODO: Does this work?
 
 	// Bind camera data
 	if (!_currCamera->BindGeometryBuffers(_context))
@@ -461,7 +471,7 @@ bool Graphics::RenderLighting()
 	_context->CSSetConstantBuffers(0, 1, &globalLightBuffer);
 
 	// Bind spotlight collection
-	if (!_currSpotLightCollection->BindBuffers(_context))
+	if (!_currSpotLightCollection->BindCSBuffers(_context))
 	{
 		ErrMsg("Failed to bind spotlight buffers!");
 		return false;

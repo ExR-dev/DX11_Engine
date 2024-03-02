@@ -7,8 +7,7 @@ Game::Game()
 {
 	_device				= nullptr;
 	_immediateContext	= nullptr;
-
-	_scene		= nullptr;
+	_scene				= nullptr;
 }
 
 Game::~Game()
@@ -55,7 +54,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"texture3",
 		"texture4",
 		"texture5",
-		"CharacterSculptLow0Texture",
+		"CharacterSculptLow0Texture1",
 	};
 
 	for (const std::string &textureName : textureNames)
@@ -122,7 +121,7 @@ bool Game::SetScene(Scene *scene)
 
 	_scene = scene;
 
-	if (!_scene->Initialize(_device))
+	if (!_scene->Initialize(_device, &_content))
 	{
 		ErrMsg("Failed to initialize scene!");
 		return false;

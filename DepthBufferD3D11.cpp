@@ -3,7 +3,8 @@
 #include "ErrMsg.h"
 
 
-DepthBufferD3D11::DepthBufferD3D11(ID3D11Device *device, const UINT width, const UINT height, const bool hasSRV)
+DepthBufferD3D11::DepthBufferD3D11(
+	ID3D11Device *device, const UINT width, const UINT height, const bool hasSRV)
 {
 	if (!Initialize(device, width, height, hasSRV))
 		ErrMsg("Failed to initialize depth buffer in constructor!");
@@ -25,7 +26,9 @@ DepthBufferD3D11::~DepthBufferD3D11()
 }
 
 
-bool DepthBufferD3D11::Initialize(ID3D11Device *device, const UINT width, const UINT height, const bool hasSRV, const UINT arraySize)
+bool DepthBufferD3D11::Initialize(
+	ID3D11Device *device, const UINT width, const UINT height, 
+	const bool hasSRV, const UINT arraySize)
 {
 	D3D11_TEXTURE2D_DESC textureDesc;
 	textureDesc.Width = width;

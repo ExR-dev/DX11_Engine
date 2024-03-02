@@ -12,25 +12,30 @@ Scene::Scene()
 	_camera = new CameraD3D11();
 	_spotLights = new SpotLightCollectionD3D11();
 	_pointLights = new PointLightCollectionD3D11();
+
+	_currCameraPtr = _camera;
 }
 
 Scene::~Scene()
 {
 	const size_t entityCount = _entities.size();
 	for (size_t i = 0; i < entityCount; i++)
-		delete _entities.at(i);
+		delete _entities.at(i).item;
 
 	delete _pointLights;
 	delete _spotLights;
 	delete _camera;
 }
 
-bool Scene::Initialize(ID3D11Device *device)
+bool Scene::Initialize(ID3D11Device *device, Content *content)
 {
 	if (_initialized)
 		return false;
 
 	_device = device;
+
+	_totalMeshes = content->GetMeshCount();
+	_totalTextures = content->GetTextureCount();
 
 	if (!_camera->Initialize(device, { 75.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.1f, 50.0f}, {0.0f, 1.5f, -1.0f, 0.0f}))
 	{
@@ -45,36 +50,46 @@ bool Scene::Initialize(ID3D11Device *device)
 	}
 
 	const SpotLightData spotLightInfo = {
-		1024,
-		std::vector {
-			/*SpotLightData::PerLightInfo {
-				{ 15.0f, 15.0f, 0.0f },	// color
+		2048,
+		std::vector<SpotLightData::PerLightInfo> {
+			SpotLightData::PerLightInfo {
+				{ 5.0f, 0.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
-				XM_PI * 0.66f,				// angle
+				XM_PI * 0.4f,				// angle
 				0.05f,						// projectionNearZ
-				50.0f,						// projectionFarZ
-				{ 0.0f, 2.0f, 0.0f }		// initialPosition
-			},*/
-
-			/*SpotLightData::PerLightInfo {
-				{ 0.0f, 10.0f, 0.0f },		// color
-				1.0f,						// rotationX
-				4.0f,						// rotationY
-				XM_PI * 0.333f,				// angle
-				0.05f,						// projectionNearZ
-				50.0f,						// projectionFarZ
-				{ 4.0f, 5.0f, 5.0f }		// initialPosition
-			},*/
+				30.0f,						// projectionFarZ
+				{ 0.0f, 2.5f, -3.25f }		// initialPosition
+			},
 
 			SpotLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 20.0f },	// color
-				XM_PI / 4.0f,				// rotationX
-				XM_PI / 4.0f,				// rotationY
-				XM_PI / 3.0f,				// angle
+				{ 0.0f, 5.0f, 0.0f },		// color
+				0.0f,						// rotationX
+				0.3f,						// rotationY
+				XM_PI * 0.4f,				// angle
 				0.05f,						// projectionNearZ
-				55.0f,						// projectionFarZ
-				{ -15.0f, 30.0f, -15.0f }	// initialPosition
+				30.0f,						// projectionFarZ
+				{ 0.0f, 3.5f, -3.25f }		// initialPosition
+			},
+
+			SpotLightData::PerLightInfo {
+				{ 0.0f, 0.0f, 5.0f },		// color
+				0.0f,						// rotationX
+				-0.3f,						// rotationY
+				XM_PI * 0.4f,				// angle
+				0.05f,						// projectionNearZ
+				30.0f,						// projectionFarZ
+				{ 0.0f, 1.5f, -3.25f }		// initialPosition
+			},
+
+			SpotLightData::PerLightInfo {
+				{ 0.5f, 0.5f, 0.5f },		// color
+				0.0f,						// rotationX
+				XM_PIDIV2,					// rotationY
+				XM_PI * 0.1f,				// angle
+				0.2f,						// projectionNearZ
+				10.5f,						// projectionFarZ
+				{ 0.0f, 10.0f, 0.0f }		// initialPosition
 			},
 		}
 	};
@@ -102,50 +117,50 @@ bool Scene::Initialize(ID3D11Device *device)
 
 	// Create room entity
 	{
-		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-		Entity *ent = _entities.back();
+		_entities.push_back({ new Entity(static_cast<UINT>(_entities.size())) });
+		const SceneEntity &ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 2, 0, 2, 2))
+		if (!ent.item->Initialize(_device, 0, 2, 0, 2, 2))
 		{
 			ErrMsg("Failed to initialize room entity!");
 			return false;
 		}
 
-		ent->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		ent.item->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
 	// Create model
 	{
-		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-		Entity *ent = _entities.back();
+		_entities.push_back({ new Entity(static_cast<UINT>(_entities.size())) });
+		const SceneEntity &ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 6, 0, 2, 7))
+		if (!ent.item->Initialize(_device, 0, 6, 0, 2, 7))
 		{
 			ErrMsg("Failed to initialize model!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ 1.0f, 0.0f, 5.0f, 0 });
-		ent->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
-		ent->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+		ent.item->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
+		ent.item->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
+		ent.item->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}
 
 	// Create error
 	{
-		_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-		Entity *ent = _entities.back();
+		_entities.push_back({ new Entity(static_cast<UINT>(_entities.size())) });
+		const SceneEntity &ent = _entities.back();
 
-		if (!ent->Initialize(_device, 0, 0, 0, 2, 1))
+		if (!ent.item->Initialize(_device, 0, 0, 0, 2, 1))
 		{
 			ErrMsg("Failed to initialize error!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
-		ent->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
-		ent->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
+		ent.item->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
+		ent.item->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
+		ent.item->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
-
+	
 	_initialized = true;
 	return true;
 }
@@ -156,35 +171,46 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (!_initialized)
 		return false;
 
+
+	/*_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
+	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
+
+	_spotLights->GetLightCamera(1)->MoveRight(time.deltaTime * -1.5f * -1.4786f);
+	_spotLights->GetLightCamera(1)->LookX(time.deltaTime * 0.5f * -1.4786f);
+
+	_spotLights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f * 1.84248f);
+	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f * 1.84248f);*/
+
+
 	if (input.IsCursorLocked()) // Handle user input
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
 		{ // Create a random entity
 			for (size_t i = 0; i < 1; i++)
 			{
-				_entities.push_back(new Entity(static_cast<UINT>(_entities.size())));
-				Entity *ent = _entities.back();
+				_entities.push_back({ new Entity(static_cast<UINT>(_entities.size())) });
+				const SceneEntity &ent = _entities.back();
 
-				if (!ent->Initialize(
+				if (!ent.item->Initialize(
 					_device, 
 					0, 
-					rand() % 7, 
+					rand() % _totalMeshes, 
 					0, 
 					2, 
-					rand() % 8))
+					rand() % _totalTextures))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", _entities.size() - 1));
 					return false;
 				}
 
-				ent->GetTransform()->Move({
+				ent.item->GetTransform()->Move({
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					0
 				});
 
-				ent->GetTransform()->Rotate({
+				ent.item->GetTransform()->Rotate({
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
@@ -214,23 +240,23 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		if (currSelection == -1)
 		{ // Move camera
 			if (input.GetKey(KeyCode::D) == KeyState::Held)
-				_camera->MoveRight(time.deltaTime * 3.5f);
+				_currCameraPtr->MoveRight(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::A) == KeyState::Held)
-				_camera->MoveRight(-time.deltaTime * 3.5f);
+				_currCameraPtr->MoveRight(-time.deltaTime * 3.5f);
 
 			if (input.GetKey(KeyCode::Space) == KeyState::Held)
-				_camera->MoveUp(time.deltaTime * 3.5f);
+				_currCameraPtr->MoveUp(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::X) == KeyState::Held)
-				_camera->MoveUp(-time.deltaTime * 3.5f);
+				_currCameraPtr->MoveUp(-time.deltaTime * 3.5f);
 
 			if (input.GetKey(KeyCode::W) == KeyState::Held)
-				_camera->MoveForward(time.deltaTime * 3.5f);
+				_currCameraPtr->MoveForward(time.deltaTime * 3.5f);
 			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-				_camera->MoveForward(-time.deltaTime * 3.5f);
+				_currCameraPtr->MoveForward(-time.deltaTime * 3.5f);
 
 			const MouseState mState = input.GetMouse();
-			_camera->LookX(static_cast<float>(mState.dx) / 360.0f);
-			_camera->LookY(static_cast<float>(mState.dy) / 360.0f);
+			_currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
+			_currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
 		}
 		else
 		{ // Move selected entity
@@ -241,7 +267,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 			if (input.GetKey(KeyCode::T) == KeyState::Pressed)
 				isScaling = !isScaling;
 
-			Transform *entityTransform = _entities.at(currSelection)->GetTransform();
+			Transform *entityTransform = _entities.at(currSelection).item->GetTransform();
 
 			XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
 
@@ -289,9 +315,9 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 
 	for (int i = 0; i < _entities.size(); i++)
 	{
-		Entity *ent = _entities.at(i);
+		const SceneEntity &ent = _entities.at(i);
 
-		if (!ent->Update(context, time, input))
+		if (!ent.item->Update(context, time, input))
 		{
 			ErrMsg(std::format("Failed to update entity #{}!", i));
 			return false;
@@ -307,19 +333,12 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 		return false;
 
 	static bool hasSetCamera = false;
-
-	static int currCamera = -1;
 	if (input.GetKey(KeyCode::V) == KeyState::Pressed)
-		currCamera = -2;
+		_currCamera = -2;
 
 	if (!hasSetCamera)
 	{
-		if (!graphics->SetCamera(_camera))
-		{
-			ErrMsg("Failed to set camera!");
-			return false;
-		}
-
+		_currCameraPtr = _camera;
 		if (!graphics->SetSpotlightCollection(_spotLights))
 		{
 			ErrMsg("Failed to set spotlight collection!");
@@ -334,46 +353,36 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 
 		hasSetCamera = true;
 	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed ||
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || 
 			 input.GetKey(KeyCode::V) == KeyState::Pressed)
 	{ // Change camera
-		currCamera++;
+		_currCamera++;
 
-		if (currCamera - 6 >= static_cast<int>(_spotLights->GetNrOfLights()))
-			currCamera = -1;
+		if (_currCamera - 6 >= static_cast<int>(_spotLights->GetNrOfLights()))
+			_currCamera = -1;
 
-		if (currCamera < 0)
+		if (_currCamera < 0)
 		{
-			currCamera = -1;
-			if (!graphics->SetCamera(_camera))
-			{
-				ErrMsg("Failed to set camera to main!");
-				return false;
-			}
+			_currCamera = -1;
+			_currCameraPtr = _camera;
 		}
-		else if (currCamera < 6)
-		{
-			if (!graphics->SetCamera(_cubemap.GetCamera(currCamera)))
-			{
-				ErrMsg(std::format("Failed to set camera to cubemap view #{}!", currCamera));
-				return false;
-			}
-		}
+		else if (_currCamera < 6)
+			_currCameraPtr = _cubemap.GetCamera(_currCamera);
 		else
-		{
-			if (!graphics->SetCamera(_spotLights->GetLightCamera(currCamera - 6)))
-			{
-				ErrMsg(std::format("Failed to set camera to spotlight view #{}!", currCamera - 6));
-				return false;
-			}
-		}
+			_currCameraPtr = _spotLights->GetLightCamera(_currCamera - 6);
+	}
+
+	if (!graphics->SetCamera(_currCameraPtr))
+	{
+		ErrMsg("Failed to set camera!");
+		return false;
 	}
 
 	for (int i = 0; i < _entities.size(); i++)
 	{
-		Entity *ent = _entities.at(i);
+		const SceneEntity &ent = _entities.at(i);
 
-		if (!ent->Render(graphics))
+		if (!ent.item->Render(graphics))
 		{
 			ErrMsg(std::format("Failed to render entity #{}!", i));
 			return false;

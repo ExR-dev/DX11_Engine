@@ -134,6 +134,10 @@ public:
 	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, UINT vShaderID);
 
 
+	[[nodiscard]] UINT GetMeshCount() const;
+	[[nodiscard]] UINT GetTextureCount() const;
+
+
 	[[nodiscard]] UINT GetMeshID(const std::string &name) const;
 	[[nodiscard]] MeshD3D11 *GetMesh(const std::string &name) const;
 	[[nodiscard]] MeshD3D11 *GetMesh(UINT id) const;

@@ -456,9 +456,9 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 
 bool LoadTextureFromFile(const char *path, UINT &width, UINT &height, std::vector<unsigned char> &data)
 {
-	int w, h, comp;
-
 	stbi_set_flip_vertically_on_load(1);
+
+	int w, h, comp;
 	unsigned char *imgData = stbi_load(path, &w, &h, &comp, STBI_rgb_alpha);
 	if (imgData == nullptr)
 	{

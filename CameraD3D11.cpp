@@ -120,14 +120,43 @@ const XMFLOAT4A &CameraD3D11::GetUp() const			{ return _transform.GetUp();		}
 const XMFLOAT4A &CameraD3D11::GetForward() const	{ return _transform.GetForward();	}
 const XMFLOAT4A &CameraD3D11::GetPosition() const	{ return _transform.GetPosition();	}
 
-XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
+
+XMFLOAT4X4A CameraD3D11::GetViewMatrix() const
 {
 	XMFLOAT4A
 		cPos = _transform.GetPosition(),
 		cFwd = _transform.GetForward(),
 		cUp = _transform.GetUp();
 
-	XMFLOAT4X4 vpMatrix;
+	XMMATRIX projectionMatrix = XMMatrixLookAtLH(
+		*reinterpret_cast<XMVECTOR *>(&cPos),
+		*reinterpret_cast<XMVECTOR *>(&cPos) + *reinterpret_cast<XMVECTOR *>(&cFwd),
+		*reinterpret_cast<XMVECTOR *>(&cUp)
+	);
+
+	return *reinterpret_cast<XMFLOAT4X4A *>(&projectionMatrix);
+}
+
+XMFLOAT4X4A CameraD3D11::GetProjectionMatrix() const
+{
+	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(
+		_projInfo.fovAngleY,
+		_projInfo.aspectRatio,
+		_projInfo.nearZ,
+		_projInfo.farZ
+	);
+
+	return *reinterpret_cast<XMFLOAT4X4A *>(&projectionMatrix);
+}
+
+XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
+{
+	XMFLOAT4A
+		cPos = _transform.GetPosition(),
+		cFwd = _transform.GetForward(),
+		cUp = _transform.GetUp();
+
+	XMFLOAT4X4A vpMatrix;
 
 	XMStoreFloat4x4(
 		&vpMatrix,
@@ -155,7 +184,7 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	if (!_isDirty)
 		return true;
 
-	const XMFLOAT4X4 viewProjMatrix = GetViewProjectionMatrix();
+	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
 	if (!_cameraVSBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
 		ErrMsg("Failed to update camera VS buffer!");
