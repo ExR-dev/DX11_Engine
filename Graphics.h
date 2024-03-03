@@ -67,7 +67,7 @@ private:
 	ID3D11Texture2D	*_dsTexture		= nullptr;
 	ID3D11DepthStencilView *_dsView = nullptr;
 	ID3D11UnorderedAccessView *_uav = nullptr;
-	D3D11_VIEWPORT _viewport		= {};
+	D3D11_VIEWPORT _viewport		= { };
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
 

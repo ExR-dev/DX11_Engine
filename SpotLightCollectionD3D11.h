@@ -25,12 +25,21 @@ struct SpotLightData
 		float rotationX	= 0.0f;
 		float rotationY	= 0.0f;
 		float angle	= 0.0f;
+		float falloff = 0.0f;
+		float specularity = 0.0f;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
 		XMFLOAT3 initialPosition = { };
 	};
 
 	std::vector<PerLightInfo> perLightInfo;
+};
+
+struct ShadowCamera
+{
+	CameraD3D11 *camera = nullptr;
+	ID3D11RasterizerState *rasterizerState = nullptr;
+	bool isEnabled = true;
 };
 
 class SpotLightCollectionD3D11
@@ -42,6 +51,8 @@ private:
 		XMFLOAT3 color = { };
 		XMFLOAT3 direction = { };
 		float angle = 0.0f;
+		float falloff = 0.0f;
+		float specularity = 0.0f;
 		XMFLOAT3 position = { };
 	};
 
@@ -49,8 +60,7 @@ private:
 
 	DepthBufferD3D11 _shadowMaps;
 	StructuredBufferD3D11 _lightBuffer;
-	std::vector<CameraD3D11 *> _shadowCameras;
-	std::vector<ID3D11RasterizerState *> _rasterizerStates;
+	std::vector<ShadowCamera> _shadowCameras;
 	SpotLightData::ShadowMapInfo _shadowMapInfo;
 	D3D11_VIEWPORT _shadowViewport = { };
 
@@ -75,4 +85,6 @@ public:
 	[[nodiscard]] ID3D11RasterizerState *GetLightRasterizer(UINT lightIndex) const;
 	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex) const;
 	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
+
+	[[nodiscard]] bool IsEnabled(UINT lightIndex) const;
 };

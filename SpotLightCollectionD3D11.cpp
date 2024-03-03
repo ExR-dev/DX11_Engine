@@ -7,12 +7,13 @@
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
 {
-	for (ID3D11RasterizerState *rasterizerState : _rasterizerStates)
-		if (rasterizerState != nullptr)
-			rasterizerState->Release();
+	for (const ShadowCamera &shadowCamera : _shadowCameras)
+	{
+		if (shadowCamera.rasterizerState != nullptr)
+			shadowCamera.rasterizerState->Release();
 
-	for (const CameraD3D11 *camera : _shadowCameras)
-		delete camera;
+		delete shadowCamera.camera;
+	}
 }
 
 bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightData &lightInfo)
@@ -26,48 +27,52 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		const SpotLightData::PerLightInfo iLightInfo = lightInfo.perLightInfo.at(i);
 
-		CameraD3D11 *lightCamera = new CameraD3D11(
-			device,
-			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
-			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
-			true // TODO: Make false, only true to control the camera for debugging purposes
-		);
+		_shadowCameras.push_back({ nullptr, nullptr, true });
+		ShadowCamera &shadowCamera = _shadowCameras.back();
 
-		lightCamera->LookY(iLightInfo.rotationY);
-		lightCamera->LookX(iLightInfo.rotationX);
 
-		_shadowCameras.push_back(lightCamera);
-
-		XMFLOAT4A dir = lightCamera->GetForward();
-
-		LightBuffer lightBuffer;
-		lightBuffer.vpMatrix = lightCamera->GetViewProjectionMatrix();
-		lightBuffer.color = iLightInfo.color;
-		lightBuffer.position = iLightInfo.initialPosition;
-		lightBuffer.angle = iLightInfo.angle;
-		lightBuffer.direction = { dir.x, dir.y, dir.z };
-
-		_bufferData.push_back(lightBuffer);
-
-		
-		_rasterizerStates.push_back(nullptr);
 		D3D11_RASTERIZER_DESC rasterizerDesc = { };
 		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 		rasterizerDesc.CullMode = D3D11_CULL_BACK;
 		rasterizerDesc.FrontCounterClockwise = false;
 		rasterizerDesc.DepthBias = 1;
 		rasterizerDesc.DepthBiasClamp = 0.0025f;
-		rasterizerDesc.SlopeScaledDepthBias = 4.0f;
+		rasterizerDesc.SlopeScaledDepthBias = 2.0f;
 		rasterizerDesc.DepthClipEnable = false;
 		rasterizerDesc.ScissorEnable = false;
 		rasterizerDesc.MultisampleEnable = false;
 		rasterizerDesc.AntialiasedLineEnable = false;
 
-		if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_rasterizerStates.back())))
+		if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &shadowCamera.rasterizerState)))
 		{
 			ErrMsg(std::format("Failed to create rasterizer state for spotlight #{}!", i));
 			return false;
 		}
+
+
+		shadowCamera.camera = new CameraD3D11(
+			device,
+			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
+			true // TODO: Make false, only true to control the camera for debugging purposes
+		);
+
+		shadowCamera.camera->LookY(iLightInfo.rotationY);
+		shadowCamera.camera->LookX(iLightInfo.rotationX);
+
+
+		XMFLOAT4A dir = shadowCamera.camera->GetForward();
+
+		LightBuffer lightBuffer;
+		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
+		lightBuffer.color = iLightInfo.color;
+		lightBuffer.position = iLightInfo.initialPosition;
+		lightBuffer.angle = iLightInfo.angle;
+		lightBuffer.falloff = iLightInfo.falloff;
+		lightBuffer.specularity = iLightInfo.specularity;
+		lightBuffer.direction = { dir.x, dir.y, dir.z };
+
+		_bufferData.push_back(lightBuffer);
 	}
 
 	if (!_shadowMaps.Initialize(device, 
@@ -104,27 +109,24 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 bool SpotLightCollectionD3D11::ScaleLightFrustumsToCamera(const CameraD3D11 &viewCamera)
 {
-	/*BoundingFrustum viewFrustum;
+	const XMMATRIX cameraWorldMatrix = viewCamera.GetTransform().GetWorldMatrix();
 	XMFLOAT4X4A cameraProjectionMatrix = viewCamera.GetProjectionMatrix();
+
+	BoundingFrustum viewFrustum;
 	viewFrustum.CreateFromMatrix(viewFrustum, *reinterpret_cast<XMMATRIX *>(&cameraProjectionMatrix));
+	viewFrustum.Transform(viewFrustum, cameraWorldMatrix);
 
 	XMFLOAT3 corners[8];
 	viewFrustum.GetCorners(corners);
 
-	const UINT lightCount = static_cast<UINT>(_bufferData.size());
-	for (size_t i = 0; i < lightCount; i++)
-	{
-		CameraD3D11 &shadowCamera = *_shadowCameras.at(i);
+	std::vector<XMFLOAT4A> frustumCorners;
+	for (XMFLOAT3 &corner : corners)
+		frustumCorners.push_back({ corner.x, corner.y, corner.z, 0.0f });
 
-		BoundingFrustum lightFrustum;
-		XMFLOAT4X4A lightProjectionMatrix = shadowCamera.GetProjectionMatrix();
-		lightFrustum.CreateFromMatrix(lightFrustum, *reinterpret_cast<XMMATRIX *>(&lightProjectionMatrix));
+	for (ShadowCamera &shadowCamera : _shadowCameras)
+		shadowCamera.isEnabled = shadowCamera.camera->FitPlanesToPoints(frustumCorners);
 
-		// ...
-		
-	}*/
-
-	return false;
+	return true;
 }
 
 bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
@@ -132,9 +134,12 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	const UINT lightCount = static_cast<UINT>(_bufferData.size());
 	for (UINT i = 0; i < lightCount; i++)
 	{
-		CameraD3D11 &shadowCamera = *_shadowCameras.at(i);
+		const ShadowCamera &shadowCamera = _shadowCameras.at(i);
 
-		if (!shadowCamera.UpdateBuffers(context))
+		if (!shadowCamera.isEnabled)
+			continue;
+
+		if (!shadowCamera.camera->UpdateBuffers(context))
 		{
 			ErrMsg(std::format("Failed to update spotlight #{} camera buffers!", i));
 			return false;
@@ -142,9 +147,9 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 		LightBuffer &lightBuffer = _bufferData.at(i);
 
-		lightBuffer.vpMatrix = shadowCamera.GetViewProjectionMatrix();
-		memcpy(&lightBuffer.position, &shadowCamera.GetPosition(), sizeof(XMFLOAT3));
-		memcpy(&lightBuffer.direction, &shadowCamera.GetForward(), sizeof(XMFLOAT3));
+		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
+		memcpy(&lightBuffer.position, &shadowCamera.camera->GetPosition(), sizeof(XMFLOAT3));
+		memcpy(&lightBuffer.direction, &shadowCamera.camera->GetForward(), sizeof(XMFLOAT3));
 	}
 
 	if (!_lightBuffer.UpdateBuffer(context, _bufferData.data()))
@@ -190,15 +195,21 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 
 ID3D11RasterizerState *SpotLightCollectionD3D11::GetLightRasterizer(const UINT lightIndex) const
 {
-	return _rasterizerStates.at(lightIndex);
+	return _shadowCameras.at(lightIndex).rasterizerState;
 }
 
 CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const
 {
-	return _shadowCameras.at(lightIndex);
+	return _shadowCameras.at(lightIndex).camera;
 }
 
 const D3D11_VIEWPORT &SpotLightCollectionD3D11::GetViewport() const
 {
 	return _shadowViewport;
+}
+
+
+bool SpotLightCollectionD3D11::IsEnabled(const UINT lightIndex) const
+{
+	return _shadowCameras.at(lightIndex).isEnabled;
 }

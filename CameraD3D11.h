@@ -2,7 +2,9 @@
 
 #include <array>
 #include <d3d11_4.h>
+#include <DirectXCollision.h>
 #include <DirectXMath.h>
+#include <vector>
 
 #include "ConstantBufferD3D11.h"
 #include "Transform.h"
@@ -10,7 +12,7 @@
 
 struct ProjectionInfo
 {
-	float fovAngleY = 80.0f;
+	float fovAngleY = 80.0f * (XM_PI / 180.0f);
 	float aspectRatio = 1.0f;
 	float nearZ = 0.1f;
 	float farZ = 50.0f;
@@ -43,7 +45,9 @@ class CameraD3D11
 {
 private:
 	Transform _transform;
-	ProjectionInfo _projInfo;
+	ProjectionInfo _defaultProjInfo, _currProjInfo;
+
+	BoundingFrustum _frustum;
 
 	ConstantBufferD3D11 _cameraVSBuffer;
 	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
@@ -85,11 +89,13 @@ public:
 	[[nodiscard]] XMFLOAT4X4A GetProjectionMatrix() const;
 	[[nodiscard]] XMFLOAT4X4A GetViewProjectionMatrix() const;
 
+	[[nodiscard]] bool FitPlanesToPoints(const std::vector<XMFLOAT4A> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
 
+	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraCSBuffer() const;
 };

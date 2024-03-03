@@ -263,6 +263,11 @@ bool Graphics::RenderShadowCasters()
 	{
 		ID3D11DepthStencilView *dsView = _currSpotLightCollection->GetShadowMapDSV(spotlight_i);
 		_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 1, 0);
+
+		// Skip rendering if disabled
+		if (!_currSpotLightCollection->IsEnabled(spotlight_i))
+			continue;
+
 		_context->OMSetRenderTargets(0, nullptr, dsView);
 
 		// Bind shadow-camera data

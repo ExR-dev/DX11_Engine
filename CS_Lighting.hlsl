@@ -1,6 +1,8 @@
 
 static const float PI = 3.14159265f;
 static const float EPSILON = 0.00001f;
+//static const float MIN_EPSILON = 0.000005f;
+//static const float MAX_EPSILON = 0.0002f;
 
 
 RWTexture2D<unorm float4> BackBufferUAV : register(u0);
@@ -21,6 +23,8 @@ struct SpotLight
 	float3 color;
 	float3 direction;
 	float angle;
+	float falloff;
+	float specularity;
 	float3 light_position;
 };
 
@@ -87,16 +91,23 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			halfwayDir = normalize(toLightDir + viewDir);
 		
 		const float
-			//inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2)),
+			inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2)),
 			maxOffsetAngle = light.angle * 0.5f,
 			lightDirOffset = dot(-toLightDir, light.direction),
 			offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));
 
+		const float
+			//lightSlope = (dot(norm, toLightDir) <= 0.0f) ? (0.0f) : (1.0f - dot(norm, toLightDir)),
+			//currEpsilon = lerp(MIN_EPSILON, MAX_EPSILON, pow(lightSlope, 2));
+			currEpsilon = EPSILON;
+
+
 		// Calculate Blinn-Phong shading
 		const float3 diffuseCol = light.color.xyz * max(dot(norm, toLightDir), 0.0f); // * inverseLightDistSqr;
 		
-		const float specFactor = pow(saturate(dot(norm, halfwayDir)), 4.0f);
+		const float specFactor = pow(saturate(dot(norm, halfwayDir)), light.specularity);
 		const float3 specularCol = float3(1.0f, 1.0f, 1.0f) * smoothstep(0, 1, specFactor); // * inverseLightDistSqr);
+
 
 		// Calculate shadow projection
 		const float4 randOffset = float4(rand_2(frac(uv + ambient_light.w)) * 4.0f / float2(screenWidth, screenHeight), 0, 0);
@@ -116,10 +127,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			smDepth11 = ShadowMaps.SampleLevel(ShadowMapSampler, smUV11, 0).x;
 
 		const float
-			smResult00 = smDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult01 = smDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult10 = smDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult11 = smDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+			smResult00 = smDepth00 + currEpsilon > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult01 = smDepth01 + currEpsilon > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult10 = smDepth10 + currEpsilon > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult11 = smDepth11 + currEpsilon > fragPosLightNDC.z ? 1.0f : 0.0f;
 
 		const float2
 			texelPos = smUV00.xy * (float)smWidth,
@@ -129,19 +140,23 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			offsetAngle * lerp(
 				lerp(smResult00, smResult10, fracTex.x),
 				lerp(smResult01, smResult11, fracTex.x),
-				fracTex.y) * 
-			sqrt(saturate(1.0f - fragPosLightNDC.z))
+				fracTex.y)
 		);
 
 		//const float shadow = saturate(offsetAngle * smResult00 * sqrt(saturate(1.0f - fragPosLightNDC.z)));
 
+
 		// Apply lighting
-		totalDiffuseLight += diffuseCol * shadow;
-		totalSpecularLight += specularCol * shadow;
+		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
+		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
+
+		//totalDiffuseLight += saturate(lightSlope) / lightCount;
 	}
 
 	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
 	//const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
 	BackBufferUAV[DTid.xy] = float4(saturate(result), 1.0f);
+
+	//BackBufferUAV[DTid.xy] = float4(saturate(totalDiffuseLight), 1.0f);
 
 }
