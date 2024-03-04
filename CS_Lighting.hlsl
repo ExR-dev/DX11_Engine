@@ -91,7 +91,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			halfwayDir = normalize(toLightDir + viewDir);
 		
 		const float
-			inverseLightDistSqr = 1.0f / (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2)),
+			inverseLightDistSqr = 1.0f / (1.0f + (pow(toLight.x, 2) + pow(toLight.y, 2) + pow(toLight.z, 2))),
 			maxOffsetAngle = light.angle * 0.5f,
 			lightDirOffset = dot(-toLightDir, light.direction),
 			offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));

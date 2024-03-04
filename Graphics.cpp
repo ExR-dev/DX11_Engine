@@ -136,7 +136,7 @@ bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11* spotlights)
 }
 
 
-bool Graphics::BeginRender()
+bool Graphics::BeginSceneRender()
 {
 	if (!_isSetup)
 	{
@@ -154,7 +154,7 @@ bool Graphics::BeginRender()
 	return true;
 }
 
-bool Graphics::QueueRender(const ResourceGroup &resources, const RenderInstance &instance)
+bool Graphics::QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance)
 {
 	if (!_isRendering)
 	{
@@ -166,7 +166,7 @@ bool Graphics::QueueRender(const ResourceGroup &resources, const RenderInstance 
 	return true;
 }
 
-bool Graphics::EndRender(const Time &time)
+bool Graphics::EndSceneRender(const Time &time)
 {
 	if (!_isRendering)
 	{
@@ -199,9 +199,12 @@ bool Graphics::EndRender(const Time &time)
 		return false;
 	}
 
+	return true;
+}
 
-#ifdef _DEBUG
-	// ImGui
+
+bool Graphics::BeginUIRender() const
+{
 	_context->OMSetRenderTargets(1, &_rtv, _dsView);
 
 	ImGui_ImplDX11_NewFrame();
@@ -209,15 +212,32 @@ bool Graphics::EndRender(const Time &time)
 	ImGui::NewFrame();
 	ImGui::Begin("Debug");
 
-	ImGui::Text(std::format("ms: {}", time.deltaTime).c_str());
-	ImGui::Text(std::format("fps: {}", 1.0f / time.deltaTime).c_str());
-	ImGui::Text(std::format("Objects: {}", _renderInstances.size()).c_str());
+	return true;
+}
 
+bool Graphics::RenderUI(const Time &time) const
+{
+	char fps[8]{};
+	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
+	ImGui::Text(std::format("fps: {}", fps).c_str());
+
+	ImGui::Text(std::format("Draws: {}", _renderInstances.size()).c_str());
+
+	return true;
+}
+
+bool Graphics::EndUIRender() const
+{
 	ImGui::End();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-#endif // _DEBUG
 
+	return true;
+}
+
+
+bool Graphics::EndFrame()
+{
 	if (FAILED(_swapChain->Present(1, 0)))
 	{
 		ErrMsg("Failed to present geometry!");
@@ -232,7 +252,6 @@ bool Graphics::EndRender(const Time &time)
 
 	return true;
 }
-
 
 
 bool Graphics::RenderShadowCasters()

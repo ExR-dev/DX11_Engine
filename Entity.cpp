@@ -3,9 +3,10 @@
 #include "ErrMsg.h"
 
 
-Entity::Entity(const UINT id)
+Entity::Entity(const UINT id, const DirectX::BoundingBox &bounds)
 {
 	_entityID = id;
+	_bounds = bounds;
 }
 
 bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UINT meshID, const UINT vsID, const UINT psID, const UINT texID)
@@ -42,6 +43,17 @@ void Entity::SetPixelShader(const UINT id)	{ _psID = id;			}
 void Entity::SetTexture(const UINT id)		{ _texID = id;			}
 
 Transform *Entity::GetTransform() { return &_transform; }
+
+UINT Entity::GetID() const
+{
+	return _entityID;
+}
+
+bool Entity::StoreBounds(BoundingBox& entityBounds) const
+{
+	_bounds.Transform(entityBounds, _transform.GetWorldMatrix());
+	return true;
+}
 
 
 bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input &input)
@@ -98,7 +110,7 @@ bool Entity::Render(Graphics *graphics)
 		sizeof(Entity)
 	};
 
-	if (!graphics->QueueRender(resources, instance))
+	if (!graphics->QueueRenderInstance(resources, instance))
 	{
 		ErrMsg("Failed to queue entity for rendering!");
 		return false;

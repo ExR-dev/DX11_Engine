@@ -47,7 +47,7 @@ private:
 	Transform _transform;
 	ProjectionInfo _defaultProjInfo, _currProjInfo;
 
-	BoundingFrustum _frustum;
+	DirectX::BoundingFrustum _frustum;
 
 	ConstantBufferD3D11 _cameraVSBuffer;
 	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
@@ -94,6 +94,8 @@ public:
 
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
+
+	void StoreFrustum(DirectX::BoundingFrustum &frustum) const;
 
 	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;

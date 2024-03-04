@@ -3,9 +3,10 @@
 #include <vector>
 #include <d3d11.h>
 
-#include "CameraD3D11.h"
+#include "SceneHolder.h"
 #include "Entity.h"
 #include "Input.h"
+#include "CameraD3D11.h"
 #include "SpotLightCollectionD3D11.h"
 #include "PointLightCollectionD3D11.h"
 #include "Cubemap.h"
@@ -14,24 +15,21 @@
 class Scene
 {
 private:
-	struct SceneEntity { Entity *item; };
-
 	bool _initialized;
 	ID3D11Device *_device = nullptr;
+	Content *_content = nullptr;
+
+	SceneHolder _sceneHolder;
 
 	CameraD3D11 *_camera = nullptr;
-	std::vector<SceneEntity> _entities;
 	SpotLightCollectionD3D11 *_spotLights;
 	PointLightCollectionD3D11 *_pointLights;
 
-	Cubemap _cubemap;
+	Cubemap _cubemap; // TODO: Discard
 
 	int _currCamera = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;
 
-	UINT
-		_totalMeshes = 0,
-		_totalTextures = 0;
 
 public:
 	Scene();
@@ -45,4 +43,5 @@ public:
 
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
 	[[nodiscard]] bool Render(Graphics *graphics, const Time &time, const Input &input);
+	[[nodiscard]] bool RenderUI() const;
 };

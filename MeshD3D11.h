@@ -17,10 +17,7 @@ struct MeshData
 		size_t nrOfVerticesInBuffer = 0;
 		float *vertexData = nullptr;
 
-		~VertexInfo()
-		{
-			delete[] vertexData;
-		}
+		~VertexInfo() { delete[] vertexData; }
 	} vertexInfo;
 
 	struct IndexInfo
@@ -28,10 +25,7 @@ struct MeshData
 		size_t nrOfIndicesInBuffer = 0;
 		uint32_t *indexData = nullptr;
 
-		~IndexInfo()
-		{
-			delete[] indexData;
-		}
+		~IndexInfo() { delete[] indexData; }
 	} indexInfo;
 
 	struct SubMeshInfo
@@ -53,6 +47,7 @@ private:
 	std::vector<SubMeshD3D11> _subMeshes;
 	VertexBufferD3D11 _vertexBuffer;
 	IndexBufferD3D11 _indexBuffer;
+	DirectX::BoundingBox _boundingBox;
 
 
 public:
@@ -67,6 +62,8 @@ public:
 
 	[[nodiscard]] bool BindMeshBuffers(ID3D11DeviceContext *context, UINT stride = 0, UINT offset = 0) const;
 	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
+
+	[[nodiscard]] const DirectX::BoundingBox &GetBoundingBox() const;
 
 	[[nodiscard]] size_t GetNrOfSubMeshes() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetAmbientSRV(size_t subMeshIndex) const;

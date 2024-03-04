@@ -38,6 +38,11 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 		}
 
 		_subMeshes.push_back(subMesh);
+
+		if (i == 0)
+			_boundingBox = meshInfo.subMeshInfo.at(i).boundingBox;
+		else
+			DirectX::BoundingBox::CreateMerged(_boundingBox, _boundingBox, meshInfo.subMeshInfo.at(i).boundingBox);
 	}
 
 	return true;
@@ -66,6 +71,11 @@ bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_
 		return false;
 	}
 	return true;
+}
+
+const DirectX::BoundingBox& MeshD3D11::GetBoundingBox() const
+{
+	return _boundingBox;
 }
 
 

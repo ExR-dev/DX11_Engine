@@ -12,6 +12,7 @@ private:
 	UINT _entityID;
 	bool _isInitialized = false;
 	Transform _transform;
+	BoundingBox _bounds;
 
 	UINT
 		_inputLayoutID	= CONTENT_LOAD_ERROR,
@@ -21,7 +22,7 @@ private:
 		_texID			= CONTENT_LOAD_ERROR;
 
 public:
-	explicit Entity(UINT id);
+	explicit Entity(UINT id, const DirectX::BoundingBox &bounds);
 	~Entity() = default;
 	Entity(const Entity &other) = delete;
 	Entity &operator=(const Entity &other) = delete;
@@ -38,6 +39,9 @@ public:
 	void SetTexture(UINT id);
 
 	[[nodiscard]] Transform *GetTransform();
+	[[nodiscard]] UINT GetID() const;
+
+	[[nodiscard]] bool StoreBounds(BoundingBox &entityBounds) const;
 
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
 	[[nodiscard]] bool BindBuffers(ID3D11DeviceContext *context) const;

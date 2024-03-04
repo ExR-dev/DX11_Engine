@@ -155,9 +155,9 @@
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="InputLayoutD3D11.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Octree.cpp" />
     <ClCompile Include="PointLightCollectionD3D11.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneHolder.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="ContentLoader.cpp" />
     <ClCompile Include="ConstantBufferD3D11.cpp" />
@@ -197,6 +197,7 @@
     <ClInclude Include="Octree.h" />
     <ClInclude Include="PointLightCollectionD3D11.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneHolder.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="ConstantBufferD3D11.h" />

@@ -67,7 +67,7 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	}
 
 	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	return true;
 }
@@ -218,7 +218,7 @@ bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 	}
 
 	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	_isDirty = true;
 	return true;
@@ -271,6 +271,12 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
 
 	return true;
+}
+
+
+void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum) const
+{
+	_frustum.Transform(frustum, _transform.GetWorldMatrix());
 }
 
 

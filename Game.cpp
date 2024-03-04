@@ -154,7 +154,7 @@ bool Game::Update(const Time &time, const Input &input)
 
 bool Game::Render(const Time &time, const Input &input)
 {
-	if (!_graphics.BeginRender())
+	if (!_graphics.BeginSceneRender())
 	{
 		ErrMsg("Failed to begin rendering!");
 		return false;
@@ -175,9 +175,52 @@ bool Game::Render(const Time &time, const Input &input)
 	/// ^        Render scene here...              ^ ///
 	/// ^==========================================^ ///
 
-	if (!_graphics.EndRender(time))
+	if (!_graphics.EndSceneRender(time))
 	{
-		ErrMsg("Failed to end rendering!\n");
+		ErrMsg("Failed to end rendering!");
+		return false;
+	}
+
+
+#ifdef _DEBUG
+	if (!_graphics.BeginUIRender())
+	{
+		ErrMsg("Failed to begin UI rendering!");
+		return false;
+	}
+
+	/// v==========================================v ///
+	/// v        Render UI here...                 v ///
+	/// v==========================================v ///
+
+	if (!_graphics.RenderUI(time))
+	{
+		ErrMsg("Failed to render graphics UI!");
+		return false;
+	}
+
+	if (_scene != nullptr)
+		if (!_scene->RenderUI())
+		{
+			ErrMsg("Failed to render scene UI!");
+			return false;
+		}
+
+	/// ^==========================================^ ///
+	/// ^        Render UI here...                 ^ ///
+	/// ^==========================================^ ///
+
+	if (!_graphics.EndUIRender())
+	{
+		ErrMsg("Failed to end UI rendering!");
+		return false;
+	}
+#endif // _DEBUG
+
+
+	if (!_graphics.EndFrame())
+	{
+		ErrMsg("Failed to end frame!");
 		return false;
 	}
 

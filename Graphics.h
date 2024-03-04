@@ -107,7 +107,13 @@ public:
 	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
 	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
-	[[nodiscard]] bool BeginRender();
-	[[nodiscard]] bool QueueRender(const ResourceGroup &resources, const RenderInstance &instance);
-	[[nodiscard]] bool EndRender(const Time &time);
+	[[nodiscard]] bool BeginSceneRender();
+	[[nodiscard]] bool QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance);
+	[[nodiscard]] bool EndSceneRender(const Time &time);
+
+	[[nodiscard]] bool BeginUIRender() const;
+	[[nodiscard]] bool RenderUI(const Time &time) const;
+	[[nodiscard]] bool EndUIRender() const;
+
+	[[nodiscard]] bool EndFrame();
 };
