@@ -1,12 +1,14 @@
 #pragma once
 
+#include <vector>
 #include <array>
+#include <map>
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
 #include <DirectXMath.h>
-#include <vector>
 
 #include "ConstantBufferD3D11.h"
+#include "Content.h"
 #include "Transform.h"
 
 
@@ -41,6 +43,45 @@ struct LightingBufferData
 	}
 };
 
+
+struct ResourceGroup
+{
+	UINT
+		meshID = CONTENT_LOAD_ERROR,
+		vsID = CONTENT_LOAD_ERROR,
+		psID = CONTENT_LOAD_ERROR,
+		texID = CONTENT_LOAD_ERROR,
+		samplerID = CONTENT_LOAD_ERROR,
+		inputLayoutID = CONTENT_LOAD_ERROR;
+
+	bool operator<(const ResourceGroup &other) const
+	{
+		if (meshID != other.meshID)
+			return meshID < other.meshID;
+
+		if (texID != other.texID)
+			return texID < other.texID;
+
+		if (vsID != other.vsID)
+			return vsID < other.vsID;
+
+		if (psID != other.psID)
+			return psID < other.psID;
+
+		if (samplerID != other.samplerID)
+			return samplerID < other.samplerID;
+
+		return inputLayoutID < other.inputLayoutID;
+	}
+};
+
+struct RenderInstance
+{
+	void *subject;
+	size_t subjectSize;
+};
+
+
 class CameraD3D11
 {
 private:
@@ -48,13 +89,20 @@ private:
 	ProjectionInfo _defaultProjInfo, _currProjInfo;
 
 	DirectX::BoundingFrustum _frustum;
+	DirectX::BoundingFrustum _transformedFrustum;
+	bool _recalculateFrustum = true;
 
 	ConstantBufferD3D11 _cameraVSBuffer;
 	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
 	bool _isDirty = true;
 
+	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
+	UINT _lastCullCount = 0;
+
+
 	void Move(float amount, const XMFLOAT4A &direction);
 	void MoveLocal(float amount, const XMFLOAT4A &direction);
+
 
 public:
 	CameraD3D11() = default;
@@ -95,7 +143,12 @@ public:
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
 
-	void StoreFrustum(DirectX::BoundingFrustum &frustum) const;
+	void StoreFrustum(DirectX::BoundingFrustum &frustum);
+
+	void QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance);
+	void ResetRenderQueue();
+	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetRenderQueue() const;
+	[[nodiscard]] UINT GetCullCount() const;
 
 	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;

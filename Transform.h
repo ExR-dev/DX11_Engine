@@ -56,6 +56,8 @@ public:
 	[[nodiscard]] const XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const XMFLOAT4A &GetForward() const;
 
+	[[nodiscard]] bool GetDirty() const;
+
 	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
 	[[nodiscard]] XMMATRIX GetWorldMatrix() const;

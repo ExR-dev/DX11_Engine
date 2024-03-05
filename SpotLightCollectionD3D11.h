@@ -87,4 +87,5 @@ public:
 	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
 
 	[[nodiscard]] bool IsEnabled(UINT lightIndex) const;
+	void SetEnabled(UINT lightIndex, bool state);
 };

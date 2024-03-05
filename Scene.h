@@ -15,7 +15,7 @@
 class Scene
 {
 private:
-	bool _initialized;
+	bool _initialized = false;
 	ID3D11Device *_device = nullptr;
 	Content *_content = nullptr;
 
@@ -30,6 +30,7 @@ private:
 	int _currCamera = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;
 
+	bool _doMultiThread = false;
 
 public:
 	Scene();
@@ -41,7 +42,7 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, Content *content);
 
-	[[nodiscard]] bool Update(ID3D11DeviceContext *context, const Time &time, const Input &input);
-	[[nodiscard]] bool Render(Graphics *graphics, const Time &time, const Input &input);
-	[[nodiscard]] bool RenderUI() const;
+	[[nodiscard]] bool Update(ID3D11DeviceContext *context, Time &time, const Input &input);
+	[[nodiscard]] bool Render(Graphics *graphics, Time &time, const Input &input);
+	[[nodiscard]] bool RenderUI();
 };

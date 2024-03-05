@@ -19,6 +19,7 @@ private:
 	Content		_content;
 	Scene		*_scene;
 
+
 public:
 	Game();
 	~Game();
@@ -26,6 +27,6 @@ public:
 	[[nodiscard]] bool Setup(UINT width, UINT height, HWND window);
 	[[nodiscard]] bool SetScene(Scene *scene);
 
-	[[nodiscard]] bool Update(const Time &time, const Input &input);
-	[[nodiscard]] bool Render(const Time &time, const Input &input);
+	[[nodiscard]] bool Update(Time &time, const Input &input);
+	[[nodiscard]] bool Render(Time &time, const Input &input);
 };

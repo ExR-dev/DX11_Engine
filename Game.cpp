@@ -1,6 +1,7 @@
 #include "Game.h"
 
 #include "ErrMsg.h"
+#include "ImGui/imgui.h"
 
 
 Game::Game()
@@ -131,18 +132,20 @@ bool Game::SetScene(Scene *scene)
 }
 
 
-bool Game::Update(const Time &time, const Input &input)
+bool Game::Update(Time &time, const Input &input)
 {
 	/// v==========================================v ///
 	/// v        Update game logic here...         v ///
 	/// v==========================================v ///
 
+	time.TakeSnapshot("SceneUpdateTime");
 	if (_scene != nullptr)
 		if (!_scene->Update(_immediateContext, time, input))
 		{
 			ErrMsg("Failed to update scene!");
 			return false;
 		}
+	time.TakeSnapshot("SceneUpdateTime");
 
 	/// ^==========================================^ ///
 	/// ^        Update game logic here...         ^ ///
@@ -152,7 +155,7 @@ bool Game::Update(const Time &time, const Input &input)
 }
 
 
-bool Game::Render(const Time &time, const Input &input)
+bool Game::Render(Time &time, const Input &input)
 {
 	if (!_graphics.BeginSceneRender())
 	{
@@ -164,12 +167,14 @@ bool Game::Render(const Time &time, const Input &input)
 	/// v        Render scene here...              v ///
 	/// v==========================================v ///
 
+	time.TakeSnapshot("SceneRenderTime");
 	if (_scene != nullptr)
 		if (!_scene->Render(&_graphics, time, input))
 		{
 			ErrMsg("Failed to render scene!");
 			return false;
 		}
+	time.TakeSnapshot("SceneRenderTime");
 
 	/// ^==========================================^ ///
 	/// ^        Render scene here...              ^ ///
@@ -182,7 +187,7 @@ bool Game::Render(const Time &time, const Input &input)
 	}
 
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	if (!_graphics.BeginUIRender())
 	{
 		ErrMsg("Failed to begin UI rendering!");
@@ -199,12 +204,43 @@ bool Game::Render(const Time &time, const Input &input)
 		return false;
 	}
 
+	ImGui::Separator();
+
 	if (_scene != nullptr)
 		if (!_scene->RenderUI())
 		{
 			ErrMsg("Failed to render scene UI!");
 			return false;
 		}
+
+	ImGui::Separator();
+
+	char timeStr[32]{};
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.deltaTime);
+	ImGui::Text(std::format("{} Frame", timeStr).c_str());
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneUpdateTime"));
+	ImGui::Text(std::format("{} Scene Update", timeStr).c_str());
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneRenderTime"));
+	ImGui::Text(std::format("{} Scene Render", timeStr).c_str());
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCull"));
+	ImGui::Text(std::format("{} Culling Main View", timeStr).c_str());
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullSpotlights"));
+	ImGui::Text(std::format("{} Culling Spotlights Total", timeStr).c_str());
+
+	int i = 0;
+	float spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", i));
+	while (spotlightTime >= 0.0f)
+	{
+		snprintf(timeStr, sizeof(timeStr), "%.6f", spotlightTime);
+		ImGui::Text(std::format("{} Culling Spotlight #{}", timeStr, i).c_str());
+
+		spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", ++i));
+	}
 
 	/// ^==========================================^ ///
 	/// ^        Render UI here...                 ^ ///
@@ -215,7 +251,7 @@ bool Game::Render(const Time &time, const Input &input)
 		ErrMsg("Failed to end UI rendering!");
 		return false;
 	}
-#endif // _DEBUG
+//#endif // _DEBUG
 
 
 	if (!_graphics.EndFrame())

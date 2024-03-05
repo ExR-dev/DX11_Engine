@@ -6,11 +6,9 @@
 #include "Entity.h"
 #include "D3D11Helper.h"
 
-#ifdef _DEBUG
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
-#endif // _DEBUG
 
 
 Graphics::~Graphics()
@@ -66,21 +64,20 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		}
 	}
 
-	constexpr XMFLOAT4A ambientColor = { 0.03f, 0.03f, 0.03f, 0.0f };
-	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &ambientColor))
+	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &_ambientColor))
 	{
 		ErrMsg("Failed to initialize global light buffer!");
 		return false;
 	}
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
 	ImGui_ImplWin32_Init(window);
 	ImGui_ImplDX11_Init(device, immediateContext);
 	ImGui::StyleColorsDark();
-#endif // _DEBUG
+//#endif // _DEBUG
 
 	_context = immediateContext;
 	_content = content;
@@ -154,19 +151,7 @@ bool Graphics::BeginSceneRender()
 	return true;
 }
 
-bool Graphics::QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance)
-{
-	if (!_isRendering)
-	{
-		ErrMsg("Failed to queue render object, rendering has not begun!");
-		return false;
-	}
-
-	_renderInstances.insert({ resources, instance });
-	return true;
-}
-
-bool Graphics::EndSceneRender(const Time &time)
+bool Graphics::EndSceneRender(Time &time)
 {
 	if (!_isRendering)
 	{
@@ -174,8 +159,8 @@ bool Graphics::EndSceneRender(const Time &time)
 		return false;
 	}
 
-	const XMFLOAT4A ambientColor = { 0.03f, 0.03f, 0.03f, time.time };
-	if (!_globalLightBuffer.UpdateBuffer(_context, &ambientColor))
+	_ambientColor.w = time.time;
+	if (!_globalLightBuffer.UpdateBuffer(_context, &_ambientColor))
 	{
 		ErrMsg("Failed to initialize global light buffer!");
 		return false;
@@ -196,57 +181,6 @@ bool Graphics::EndSceneRender(const Time &time)
 	if (!RenderLighting())
 	{
 		ErrMsg("Failed to render lighting!");
-		return false;
-	}
-
-	return true;
-}
-
-
-bool Graphics::BeginUIRender() const
-{
-	_context->OMSetRenderTargets(1, &_rtv, _dsView);
-
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-	ImGui::Begin("Debug");
-
-	return true;
-}
-
-bool Graphics::RenderUI(const Time &time) const
-{
-	char fps[8]{};
-	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
-	ImGui::Text(std::format("fps: {}", fps).c_str());
-
-	ImGui::Text(std::format("Draws: {}", _renderInstances.size()).c_str());
-
-	return true;
-}
-
-bool Graphics::EndUIRender() const
-{
-	ImGui::End();
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	return true;
-}
-
-
-bool Graphics::EndFrame()
-{
-	if (FAILED(_swapChain->Present(1, 0)))
-	{
-		ErrMsg("Failed to present geometry!");
-		return false;
-	}
-
-	if (!ResetRenderState())
-	{
-		ErrMsg("Failed to reset render state!");
 		return false;
 	}
 
@@ -290,7 +224,9 @@ bool Graphics::RenderShadowCasters()
 		_context->OMSetRenderTargets(0, nullptr, dsView);
 
 		// Bind shadow-camera data
-		if (!_currSpotLightCollection->GetLightCamera(spotlight_i)->BindGeometryBuffers(_context))
+		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(spotlight_i);
+
+		if (!spotlightCamera->BindGeometryBuffers(_context))
 		{
 			ErrMsg(std::format("Failed to bind shadow-camera buffers for spotlight #{}!", spotlight_i));
 			return false;
@@ -299,7 +235,7 @@ bool Graphics::RenderShadowCasters()
 		_context->RSSetState(_currSpotLightCollection->GetLightRasterizer(spotlight_i));
 
 		UINT entity_i = 0;
-		for (const auto &[resources, instance] : _renderInstances)
+		for (const auto &[resources, instance] : spotlightCamera->GetRenderQueue())
 		{
 			// Bind shared entity data, skip data irrelevant for shadow mapping
 			if (_currInputLayoutID != resources.inputLayoutID)
@@ -383,7 +319,7 @@ bool Graphics::RenderGeometry()
 	const MeshD3D11 *loadedMesh = nullptr;
 
 	UINT i = 0;
-	for (const auto &[resources, instance] : _renderInstances)
+	for (const auto &[resources, instance] : _currCamera->GetRenderQueue())
 	{
 		// Bind shared entity data
 		if (_currInputLayoutID != resources.inputLayoutID)
@@ -474,7 +410,7 @@ bool Graphics::RenderGeometry()
 	return true;
 }
 
-bool Graphics::RenderLighting()
+bool Graphics::RenderLighting() const
 {
 	if (!_content->GetShader("CS_Lighting")->BindShader(_context))
 	{
@@ -522,9 +458,67 @@ bool Graphics::RenderLighting()
 }
 
 
+bool Graphics::BeginUIRender() const
+{
+	_context->OMSetRenderTargets(1, &_rtv, _dsView);
+
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+	ImGui::Begin("Debug");
+
+	return true;
+}
+
+bool Graphics::RenderUI(Time &time) const
+{
+	char fps[8]{};
+	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
+	ImGui::Text(std::format("fps: {}", fps).c_str());
+
+	ImGui::Text(std::format("Main Draws: {}", _currCamera->GetRenderQueue().size()).c_str());
+	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
+	{
+		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
+		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetRenderQueue().size()).c_str());
+	}
+
+	return true;
+}
+
+bool Graphics::EndUIRender() const
+{
+	ImGui::End();
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	return true;
+}
+
+
+bool Graphics::EndFrame()
+{
+	if (FAILED(_swapChain->Present(1, 0)))
+	{
+		ErrMsg("Failed to present geometry!");
+		return false;
+	}
+
+	if (!ResetRenderState())
+	{
+		ErrMsg("Failed to reset render state!");
+		return false;
+	}
+
+	return true;
+}
+
 bool Graphics::ResetRenderState()
 {
-	_renderInstances.clear();
+	_currCamera->ResetRenderQueue();
+
+	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
+		_currSpotLightCollection->GetLightCamera(i)->ResetRenderQueue();
 
 	_currInputLayoutID = CONTENT_LOAD_ERROR;
 	_currMeshID = CONTENT_LOAD_ERROR;

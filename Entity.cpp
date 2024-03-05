@@ -49,14 +49,20 @@ UINT Entity::GetID() const
 	return _entityID;
 }
 
-bool Entity::StoreBounds(BoundingBox& entityBounds) const
+bool Entity::StoreBounds(BoundingBox& entityBounds)
 {
-	_bounds.Transform(entityBounds, _transform.GetWorldMatrix());
+	if (_recalculateBounds)
+	{
+		_bounds.Transform(_transformedBounds, _transform.GetWorldMatrix());
+		_recalculateBounds = false;
+	}
+
+	entityBounds = _transformedBounds;
 	return true;
 }
 
 
-bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input &input)
+bool Entity::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
 	if (!_isInitialized)
 	{
@@ -64,7 +70,7 @@ bool Entity::Update(ID3D11DeviceContext *context, const Time &time, const Input 
 		return false;
 	}
 
-
+	_recalculateBounds |= _transform.GetDirty();
 	if (!_transform.UpdateConstantBuffer(context))
 	{
 		ErrMsg("Failed to set world matrix buffer!");
@@ -88,7 +94,7 @@ bool Entity::BindBuffers(ID3D11DeviceContext *context) const
 	return true;
 }
 
-bool Entity::Render(Graphics *graphics)
+bool Entity::Render(CameraD3D11 *camera)
 {
 	if (!_isInitialized)
 	{
@@ -110,11 +116,6 @@ bool Entity::Render(Graphics *graphics)
 		sizeof(Entity)
 	};
 
-	if (!graphics->QueueRenderInstance(resources, instance))
-	{
-		ErrMsg("Failed to queue entity for rendering!");
-		return false;
-	}
-
+	camera->QueueRenderInstance(resources, instance);
 	return true;
 }

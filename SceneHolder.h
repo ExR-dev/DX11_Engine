@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include "Octree.h"
+#include "Quadtree.h"
 
 
 class SceneHolder
@@ -24,7 +25,12 @@ private:
 	};
 
 	std::vector<SceneEntity*> _entities;
-	Octree<Entity> _octree;
+
+	//Octree _volumeTree;
+	Quadtree _volumeTree;
+
+	std::vector<UINT> _treeInsertionQueue;
+
 
 public:
 	SceneHolder() = default;
@@ -35,6 +41,7 @@ public:
 	SceneHolder &operator=(SceneHolder &&other) = delete;
 
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds);
+	[[nodiscard]] bool Update();
 
 	[[nodiscard]] Entity *AddEntity(const BoundingBox &bounds);
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
@@ -46,5 +53,5 @@ public:
 	[[nodiscard]] UINT GetEntityCount() const;
 	void GetEntities(std::vector<Entity *> entities) const;
 
-	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::set<Entity *> &containingItems);
+	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const;
 };

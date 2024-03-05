@@ -8,8 +8,6 @@
 
 Scene::Scene()
 {
-	_initialized = false;
-
 	_camera = new CameraD3D11();
 	_spotLights = new SpotLightCollectionD3D11();
 	_pointLights = new PointLightCollectionD3D11();
@@ -147,12 +145,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		ent->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
-
-		if (!_sceneHolder.UpdateEntityPosition(ent))
-		{
-			ErrMsg("Failed to update room position!");
-			return false;
-		}
 	}
 
 	// Create model
@@ -174,12 +166,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		ent->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
 		ent->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
 		ent->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
-
-		if (!_sceneHolder.UpdateEntityPosition(ent))
-		{
-			ErrMsg("Failed to update model position!");
-			return false;
-		}
 	}
 
 	// Create error
@@ -201,12 +187,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		ent->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
 		ent->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
 		ent->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
-
-		if (!_sceneHolder.UpdateEntityPosition(ent))
-		{
-			ErrMsg("Failed to update error position!");
-			return false;
-		}
 	}
 	
 	_initialized = true;
@@ -214,7 +194,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 }
 
 
-bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &input)
+bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
@@ -233,8 +213,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	if (input.IsCursorLocked()) // Handle user input
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 10 random entities
-			for (size_t i = 0; i < 10; i++)
+		{ // Create 100 random entities
+			for (size_t i = 0; i < 100; i++)
 			{
 				const UINT
 					inputLayoutID = 0,
@@ -263,12 +243,6 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					0
 				});
-
-				if (!_sceneHolder.UpdateEntityPosition(ent))
-				{
-					ErrMsg("Failed to update entity position!");
-					return false;
-				}
 			}
 		}
 
@@ -315,8 +289,8 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				_currCameraPtr->MoveForward(-time.deltaTime * currSpeed);
 
 			const MouseState mState = input.GetMouse();
-			_currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
-			_currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
+			if (mState.dx != 0) _currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
+			if (mState.dy != 0) _currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
 		}
 		else
 		{ // Move selected entity
@@ -328,36 +302,59 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 				isScaling = !isScaling;
 
 			XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
+			bool doMove = false;
 
 			if (input.GetKey(KeyCode::D) == KeyState::Held)
+			{
 				transformationVector.x += time.deltaTime * currSpeed;
+				doMove = true;
+			}
 			else if (input.GetKey(KeyCode::A) == KeyState::Held)
+			{
 				transformationVector.x -= time.deltaTime * currSpeed;
+				doMove = true;
+			}
 
 			if (input.GetKey(KeyCode::Space) == KeyState::Held)
+			{
 				transformationVector.y += time.deltaTime * currSpeed;
+				doMove = true;
+			}
 			else if (input.GetKey(KeyCode::X) == KeyState::Held)
+			{
 				transformationVector.y -= time.deltaTime * currSpeed;
+				doMove = true;
+			}
 
 			if (input.GetKey(KeyCode::W) == KeyState::Held)
-				transformationVector.z += time.deltaTime * currSpeed;
-			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-				transformationVector.z -= time.deltaTime * currSpeed;
-
-			Entity *ent = _sceneHolder.GetEntity(currSelection);
-			Transform *entityTransform = ent->GetTransform();
-
-			if (isRotating)
-				entityTransform->Rotate(transformationVector);
-			else if (isScaling)
-				entityTransform->ScaleAbsolute(transformationVector);
-			else
-				entityTransform->Move(transformationVector);
-
-			if (!_sceneHolder.UpdateEntityPosition(ent))
 			{
-				ErrMsg("Failed to update entity position!");
-				return false;
+				transformationVector.z += time.deltaTime * currSpeed;
+				doMove = true;
+			}
+			else if (input.GetKey(KeyCode::S) == KeyState::Held)
+			{
+				transformationVector.z -= time.deltaTime * currSpeed;
+				doMove = true;
+			}
+
+			if (doMove)
+			{
+				Entity *ent = _sceneHolder.GetEntity(currSelection);
+				Transform *entityTransform = ent->GetTransform();
+
+				if (isRotating)
+					entityTransform->Rotate(transformationVector);
+				else if (isScaling)
+					entityTransform->ScaleAbsolute(transformationVector);
+				else
+					entityTransform->Move(transformationVector);
+
+
+				if (!_sceneHolder.UpdateEntityPosition(ent))
+				{
+					ErrMsg("Failed to update entity position!");
+					return false;
+				}
 			}
 		}
 	}
@@ -390,7 +387,7 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 	}
 
 	const UINT entityCount = _sceneHolder.GetEntityCount();
-	for (int i = 0; i < entityCount; i++)
+	for (UINT i = 0; i < entityCount; i++)
 	{
 		if (!_sceneHolder.GetEntity(i)->Update(context, time, input))
 		{
@@ -399,10 +396,16 @@ bool Scene::Update(ID3D11DeviceContext *context, const Time &time, const Input &
 		}
 	}
 
+	if (!_sceneHolder.Update())
+	{
+		ErrMsg("Failed to update scene holder!");
+		return false;
+	}
+
 	return true;
 }
 
-bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
+bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
@@ -447,44 +450,115 @@ bool Scene::Render(Graphics *graphics, const Time &time, const Input &input)
 			_currCameraPtr = _spotLights->GetLightCamera(_currCamera - 6);
 	}
 
+
 	if (!graphics->SetCamera(_currCameraPtr))
 	{
 		ErrMsg("Failed to set camera!");
 		return false;
 	}
 
-	static std::set<Entity *> entitiesToRender;
-	entitiesToRender.clear();
+	std::vector<Entity *> entitiesToRender;
+	entitiesToRender.reserve(_currCameraPtr->GetCullCount());
 
 	DirectX::BoundingFrustum viewFrustum;
 	_currCameraPtr->StoreFrustum(viewFrustum);
 
+	time.TakeSnapshot("FrustumCull");
 	if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
 	{
 		ErrMsg("Failed to perform frustum culling!");
 		return false;
 	}
+	time.TakeSnapshot("FrustumCull");
 
 	for (Entity *ent : entitiesToRender)
 	{
-		if (!ent->Render(graphics))
+		if (!ent->Render(_currCameraPtr))
 		{
 			ErrMsg("Failed to render entity!");
 			return false;
 		}
 	}
 
+	const UINT spotlightCount = _spotLights->GetNrOfLights();
+	time.TakeSnapshot("FrustumCullSpotlights");
+
+	if (_doMultiThread)
+		#pragma omp parallel for num_threads(2)
+		for (int i = 0; i < spotlightCount; i++)
+		{
+			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
+
+			std::vector<Entity *> entitiesToCastShadows;
+			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
+
+			DirectX::BoundingFrustum spotlightFrustum;
+			spotlightCamera->StoreFrustum(spotlightFrustum);
+
+			if (!viewFrustum.Intersects(spotlightFrustum))
+			{ // Skip rendering if the frustums don't intersect
+				_spotLights->SetEnabled(i, false);
+				continue;
+			}
+			_spotLights->SetEnabled(i, true);
+
+			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
+			{
+				ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+				continue;
+			}
+
+			for (Entity *ent : entitiesToCastShadows)
+			{
+				if (!ent->Render(spotlightCamera))
+				{
+					ErrMsg(std::format("Failed to render entity for spotlight #{}!", i));
+					break;
+				}
+			}
+		}
+	else
+		for (int i = 0; i < spotlightCount; i++)
+		{
+			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
+
+			std::vector<Entity *> entitiesToCastShadows;
+			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
+
+			DirectX::BoundingFrustum spotlightFrustum;
+			spotlightCamera->StoreFrustum(spotlightFrustum);
+
+			if (!viewFrustum.Intersects(spotlightFrustum))
+			{ // Skip rendering if the frustums don't intersect
+				_spotLights->SetEnabled(i, false);
+				continue; 
+			}
+			_spotLights->SetEnabled(i, true);
+
+			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
+			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
+			{
+				ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+				return false;
+			}
+			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
+
+			for (Entity *ent : entitiesToCastShadows)
+			{
+				if (!ent->Render(spotlightCamera))
+				{
+					ErrMsg(std::format( "Failed to render entity for spotlight #{}!", i));
+					return false;
+				}
+			}
+		}
+
+	time.TakeSnapshot("FrustumCullSpotlights");
 	return true;
 }
 
-bool Scene::RenderUI() const
+bool Scene::RenderUI()
 {
-	if (_sceneHolder.GetEntityCount() > 150)
-	{
-		int i = 0;
-		printf("");
-	}
-
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
 	const XMFLOAT4A camPos = _currCameraPtr->GetPosition();
@@ -492,8 +566,10 @@ bool Scene::RenderUI() const
 	snprintf(camXCoord, sizeof(camXCoord), "%.2f", camPos.x);
 	snprintf(camYCoord, sizeof(camYCoord), "%.2f", camPos.y);
 	snprintf(camZCoord, sizeof(camZCoord), "%.2f", camPos.z);
-
 	ImGui::Text(std::format("Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
+
+	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
+		_doMultiThread = !_doMultiThread;
 
 	return true;
 }

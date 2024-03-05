@@ -213,3 +213,8 @@ bool SpotLightCollectionD3D11::IsEnabled(const UINT lightIndex) const
 {
 	return _shadowCameras.at(lightIndex).isEnabled;
 }
+
+void SpotLightCollectionD3D11::SetEnabled(const UINT lightIndex, const bool state)
+{
+	_shadowCameras.at(lightIndex).isEnabled = state;
+}

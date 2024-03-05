@@ -15,43 +15,6 @@
 constexpr UINT G_BUFFER_COUNT = 3;
 
 
-struct ResourceGroup
-{
-	UINT
-		meshID = CONTENT_LOAD_ERROR,
-		vsID = CONTENT_LOAD_ERROR,
-		psID = CONTENT_LOAD_ERROR,
-		texID = CONTENT_LOAD_ERROR,
-		samplerID = CONTENT_LOAD_ERROR,
-		inputLayoutID = CONTENT_LOAD_ERROR;
-
-    bool operator<(const ResourceGroup& other) const
-    {
-        if (meshID != other.meshID)
-            return meshID < other.meshID;
-
-        if (texID != other.texID)
-            return texID < other.texID;
-
-        if (vsID != other.vsID)
-            return vsID < other.vsID;
-
-        if (psID != other.psID)
-            return psID < other.psID;
-
-        if (samplerID != other.samplerID)
-            return samplerID < other.samplerID;
-
-        return inputLayoutID < other.inputLayoutID;
-    }
-};
-
-struct RenderInstance
-{
-	void *subject;
-	size_t subjectSize;
-};
-
 
 class Graphics
 {
@@ -75,7 +38,6 @@ private:
 	CameraD3D11 *_currCamera = nullptr;
 	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
-	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 
 	UINT
 		_currMeshID			= CONTENT_LOAD_ERROR,
@@ -85,12 +47,15 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
+	XMFLOAT4A _ambientColor = { 0.05f, 0.05f, 0.05f, 0.0f };
+
 
 	[[nodiscard]] bool RenderShadowCasters();
 	[[nodiscard]] bool RenderGeometry();
-	[[nodiscard]] bool RenderLighting();
+	[[nodiscard]] bool RenderLighting() const;
 
 	[[nodiscard]] bool ResetRenderState();
+
 
 public:
 	~Graphics();
@@ -108,11 +73,10 @@ public:
 	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
 	[[nodiscard]] bool BeginSceneRender();
-	[[nodiscard]] bool QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance);
-	[[nodiscard]] bool EndSceneRender(const Time &time);
+	[[nodiscard]] bool EndSceneRender(Time &time);
 
 	[[nodiscard]] bool BeginUIRender() const;
-	[[nodiscard]] bool RenderUI(const Time &time) const;
+	[[nodiscard]] bool RenderUI(Time &time) const;
 	[[nodiscard]] bool EndUIRender() const;
 
 	[[nodiscard]] bool EndFrame();

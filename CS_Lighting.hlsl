@@ -40,14 +40,6 @@ cbuffer CameraData : register(b1)
 	float4 cam_position;
 };
 
-
-float2 rand_2(in float2 uv)
-{
-	float noiseX = (frac(sin(dot(uv, float2(12.9898,78.233)      )) * 43758.5453));
-	float noiseY = (frac(sin(dot(uv, float2(12.9898,78.233) * 2.0)) * 43758.5453));
-    return float2(noiseX, noiseY);
-}
-
 float3 ACESFilm(const float3 x)
 {
 	return clamp((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f), 0.0f, 1.0f);
@@ -110,8 +102,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 
 		// Calculate shadow projection
-		const float4 randOffset = float4(rand_2(frac(uv + ambient_light.w)) * 4.0f / float2(screenWidth, screenHeight), 0, 0);
-		const float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix) + randOffset;
+		const float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
 		const float3

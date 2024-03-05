@@ -3,23 +3,22 @@
 #include <memory>
 #include <DirectXCollision.h>
 #include <vector>
-#include <omp.h>
 
 #include "Entity.h"
 
 
-class Octree
+class Quadtree
 {
 private:
 	static constexpr UINT _MAX_ITEMS_IN_NODE = 8;
 	static constexpr UINT _MAX_DEPTH = 3;
-	static constexpr UINT _THREAD_DEPTH = 1;
+
 
 	struct Node
 	{
 		std::vector<IEntity *> data;
 		DirectX::BoundingBox bounds;
-		std::unique_ptr<Node> children[8];
+		std::unique_ptr<Node> children[4];
 		bool isLeaf = true;
 
 
@@ -28,26 +27,18 @@ private:
 			const DirectX::XMFLOAT3
 				center = bounds.Center,
 				extents = bounds.Extents,
-				min = { center.x - extents.x, center.y - extents.y, center.z - extents.z },
-				max = { center.x + extents.x, center.y + extents.y, center.z + extents.z };
+				min = { center.x - extents.x, 0.0f, center.z - extents.z },
+				max = { center.x + extents.x, 0.0f, center.z + extents.z };
 
 			children[0] = std::make_unique<Node>();
 			children[1] = std::make_unique<Node>();
 			children[2] = std::make_unique<Node>();
 			children[3] = std::make_unique<Node>();
-			children[4] = std::make_unique<Node>();
-			children[5] = std::make_unique<Node>();
-			children[6] = std::make_unique<Node>();
-			children[7] = std::make_unique<Node>();
 
-			DirectX::BoundingBox::CreateFromPoints(children[0]->bounds, { min.x, min.y, min.z, 0 }, { center.x, center.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, min.y, min.z, 0 },	 { max.x, center.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, min.y, center.z, 0 },	 { center.x, center.y, max.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[3]->bounds, { center.x, min.y, center.z, 0 }, { max.x, center.y, max.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[4]->bounds, { min.x, center.y, min.z, 0 },	 { center.x, max.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[5]->bounds, { center.x, center.y, min.z, 0 }, { max.x, max.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[6]->bounds, { min.x, center.y, center.z, 0 }, { center.x, max.y, max.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[7]->bounds, { center.x, center.y, center.z, 0 }, { max.x, max.y, max.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[0]->bounds, { min.x, -extents.y, min.z, 0 }, { center.x, extents.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, -extents.y, min.z, 0 }, { max.x, extents.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, -extents.y, center.z, 0 }, { center.x, extents.y, max.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[3]->bounds, { center.x, -extents.y, center.z, 0 }, { max.x, extents.y, max.z, 0 });
 
 			for (int i = 0; i < data.size(); i++)
 				if (data[i] != nullptr)
@@ -55,7 +46,7 @@ private:
 					DirectX::BoundingBox itemBounds;
 					data[i]->StoreBounds(itemBounds);
 
-					for (int j = 0; j < 8; j++)
+					for (int j = 0; j < 4; j++)
 						children[j]->Insert(data[i], itemBounds, depth + 1);
 				}
 
@@ -80,7 +71,7 @@ private:
 				Split(depth);
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				if (children[i] != nullptr)
 					children[i]->Insert(item, itemBounds, depth + 1);
@@ -89,7 +80,7 @@ private:
 			return true;
 		}
 
-		void Remove(IEntity *item, const DirectX::BoundingBox &itemBounds, const bool skipIntersection = false)
+		void Remove(IEntity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
 		{
 			if (!skipIntersection)
 				if (!bounds.Intersects(itemBounds))
@@ -101,16 +92,16 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				if (children[i] != nullptr)
-					children[i]->Remove(item, itemBounds, skipIntersection);
+					children[i]->Remove(item, itemBounds, depth + 1, skipIntersection);
 			}
 
 			bool gotHomogenousItems = false;
 			std::vector<IEntity *> containingItems;
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 4; i++)
 				if (children[i] != nullptr)
 				{
 					if (!children[i]->isLeaf)
@@ -132,7 +123,7 @@ private:
 					}
 				}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				children[i].release();
 				children[i] = nullptr;
@@ -145,7 +136,7 @@ private:
 		}
 
 
-		void AddToVector(std::vector<IEntity *> &containingItems) const
+		void AddToVector(std::vector<IEntity *> &containingItems, const UINT depth) const
 		{
 			if (isLeaf)
 			{
@@ -161,16 +152,16 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				if (children[i] == nullptr)
 					continue;
 
-				children[i]->AddToVector(containingItems);
+				children[i]->AddToVector(containingItems, depth + 1);
 			}
 		}
 
-		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems) const
+		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems, UINT depth = 0) const
 		{
 			switch (frustum.Contains(bounds))
 			{
@@ -178,7 +169,7 @@ private:
 				return;
 
 			case CONTAINS:
-				AddToVector(containingItems);
+				AddToVector(containingItems, depth + 1);
 				return;
 
 			case INTERSECTS:
@@ -196,13 +187,14 @@ private:
 					return;
 				}
 
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 4; i++)
 				{
 					if (children[i] == nullptr)
 						continue;
 
-					children[i]->FrustumCull(frustum, containingItems);
+					children[i]->FrustumCull(frustum, containingItems, depth + 1);
 				}
+				
 				break;
 			}
 		}
@@ -212,12 +204,12 @@ private:
 
 
 public:
-	Octree() = default;
-	~Octree() = default;
-	Octree(const Octree &other) = delete;
-	Octree &operator=(const Octree &other) = delete;
-	Octree(Octree &&other) = delete;
-	Octree &operator=(Octree &&other) = delete;
+	Quadtree() = default;
+	~Quadtree() = default;
+	Quadtree(const Quadtree &other) = delete;
+	Quadtree &operator=(const Quadtree &other) = delete;
+	Quadtree(Quadtree &&other) = delete;
+	Quadtree &operator=(Quadtree &&other) = delete;
 
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds)
 	{
@@ -247,7 +239,7 @@ public:
 		if (_root == nullptr)
 			return false;
 
-		_root->Remove(data, _root->bounds, true);
+		_root->Remove(data, _root->bounds, 0, true);
 		return true;
 	}
 

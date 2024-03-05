@@ -18,6 +18,7 @@ void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
 		0.0f
 	});
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
@@ -29,6 +30,7 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 		0.0f
 	});
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 
@@ -77,18 +79,21 @@ void CameraD3D11::MoveForward(const float amount)
 {
 	MoveLocal(amount, { 0, 0, 1, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::MoveRight(const float amount)
 {
 	MoveLocal(amount, { 1, 0, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::MoveUp(const float amount)
 {
 	MoveLocal(amount, { 0, 1, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 
@@ -96,18 +101,21 @@ void CameraD3D11::RotateRoll(const float amount)
 {
 	_transform.RotateLocal({ 0, 0, amount, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::RotatePitch(const float amount)
 {
 	_transform.RotateLocal({ amount, 0, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::RotateYaw(const float amount)
 {
 	_transform.RotateLocal({ 0, amount, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 
@@ -115,12 +123,14 @@ void CameraD3D11::LookX(const float amount)
 {
 	_transform.Rotate({ 0, amount, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 void CameraD3D11::LookY(const float amount)
 {
 	_transform.RotateLocal({ amount, 0, 0, 0 });
 	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 
@@ -165,7 +175,7 @@ XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
 		cFwd = _transform.GetForward(),
 		cUp = _transform.GetUp();
 
-	XMFLOAT4X4A vpMatrix;
+	XMFLOAT4X4A vpMatrix = { };
 
 	XMStoreFloat4x4(
 		&vpMatrix,
@@ -221,6 +231,7 @@ bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	_isDirty = true;
+	_recalculateFrustum = true;
 	return true;
 }
 
@@ -274,9 +285,37 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 }
 
 
-void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum) const
+void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum)
 {
-	_frustum.Transform(frustum, _transform.GetWorldMatrix());
+	if (_recalculateFrustum)
+	{
+		_frustum.Transform(_transformedFrustum, _transform.GetWorldMatrix());
+		_recalculateFrustum = false;
+	}
+
+	frustum = _transformedFrustum;
+}
+
+
+void CameraD3D11::QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance)
+{
+	_renderInstances.insert({ resources, instance });
+}
+
+void CameraD3D11::ResetRenderQueue()
+{
+	_lastCullCount = _renderInstances.size();
+	_renderInstances.clear();
+}
+
+const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetRenderQueue() const
+{
+	return _renderInstances;
+}
+
+UINT CameraD3D11::GetCullCount() const
+{
+	return _lastCullCount;
 }
 
 

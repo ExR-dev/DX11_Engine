@@ -245,6 +245,11 @@ const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
 const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
 const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
 
+bool Transform::GetDirty() const
+{
+	return _isDirty;
+}
+
 
 bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)
 {
