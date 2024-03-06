@@ -30,7 +30,7 @@ private:
 	int _currCamera = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;
 
-	bool _doMultiThread = false;
+	bool _doMultiThread = true;
 
 public:
 	Scene();

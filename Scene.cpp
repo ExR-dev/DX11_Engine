@@ -38,7 +38,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	if (!_camera->Initialize(device, 
-		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 25.0f }, 
+		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
 		{ 0.0f, 1.5f, -1.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize camera!");
@@ -56,11 +56,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
-				{ 7.0f, 0.0f, 0.0f },		// color
+				{ 10.0f, 0.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.4f,				// angle
-				15.0f,						// falloff
+				0.5f,						// falloff
 				8.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
@@ -68,11 +68,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 7.0f, 0.0f },		// color
+				{ 0.0f, 10.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
-				10.0f,						// falloff
+				1.0f,						// falloff
 				32.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
@@ -80,11 +80,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 7.0f },		// color
+				{ 0.0f, 0.0f, 10.0f },	// color
 				0.0f,						// rotationX
 				-0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
-				5.0f,						// falloff
+				2.0f,						// falloff
 				128.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
@@ -96,10 +96,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
-				10.5f,						// falloff
+				1.0f,						// falloff
 				1024.0f,					// specularity
-				0.1f,						// projectionNearZ
-				25.0f,						// projectionFarZ
+				0.05f,						// projectionNearZ
+				30.0f,						// projectionFarZ
 				{ 0.0f, 20.0f, 0.0f }		// initialPosition
 			},
 		}
@@ -213,8 +213,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	if (input.IsCursorLocked()) // Handle user input
 	{
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 100 random entities
-			for (size_t i = 0; i < 100; i++)
+		{ // Create 10 random entities
+			for (size_t i = 0; i < 10; i++)
 			{
 				const UINT
 					inputLayoutID = 0,
