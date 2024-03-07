@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Entity.h"
-#include "Octree.h"
+#include "Object.h"
+//#include "Octree.h"
 #include "Quadtree.h"
 
 
@@ -10,10 +11,28 @@ class SceneHolder
 private:
 	struct SceneEntity
 	{
-		Entity *item;
+		union
+		{
+			Object *item;
+			//Emitter *item;
+			//Light *item;
+		};
 
-		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds)
-		{ item = new Entity(id, bounds); }
+		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds, EntityType type)
+		{
+			switch (type)
+			{
+				case EntityType::OBJECT:
+					item = new Object(id, bounds);
+					break;
+
+				case EntityType::EMITTER:
+					break;
+
+				case EntityType::LIGHT:
+					break;
+			}
+		}
 
 		~SceneEntity()
 		{ delete item; }
@@ -24,7 +43,7 @@ private:
 		SceneEntity &operator=(SceneEntity &&other) = delete;
 	};
 
-	std::vector<SceneEntity*> _entities;
+	std::vector<SceneEntity *> _entities;
 
 	//Octree _volumeTree;
 	Quadtree _volumeTree;
@@ -43,7 +62,7 @@ public:
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds);
 	[[nodiscard]] bool Update();
 
-	[[nodiscard]] Entity *AddEntity(const BoundingBox &bounds);
+	[[nodiscard]] Entity *AddEntity(const BoundingBox &bounds, EntityType type);
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
 	[[nodiscard]] bool RemoveEntity(UINT id);
 

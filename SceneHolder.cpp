@@ -24,16 +24,12 @@ bool SceneHolder::Update()
 {
 	for (const UINT i : _treeInsertionQueue)
 	{
-		Entity *entity = _entities[i]->item;
+		Entity *entity = (Entity*)_entities[i]->item;
 
 		DirectX::BoundingBox entityBounds;
-		if (!entity->StoreBounds(entityBounds))
-		{
-			ErrMsg("Failed to insert queued entity into volume tree, unable to get entity bounds!");
-			return false;
-		}
+		entity->StoreBounds(entityBounds);
 
-		_volumeTree.Insert((IEntity *)entity, entityBounds);
+		_volumeTree.Insert(entity, entityBounds);
 	}
 	_treeInsertionQueue.clear();
 
@@ -42,31 +38,28 @@ bool SceneHolder::Update()
 
 
 // Entity is Not initialized automatically. Initialize manually through the returned pointer.
-Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds)
+Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityType type)
 {
-	SceneEntity *newEntity = new SceneEntity(static_cast<UINT>(_entities.size()), bounds);
+	SceneEntity *newEntity = new SceneEntity(static_cast<UINT>(_entities.size()), bounds, type);
 	_entities.push_back(newEntity);
-	_treeInsertionQueue.push_back(newEntity->item->GetID());
 
-	return _entities.back()->item;
+	_treeInsertionQueue.push_back(((Entity *)newEntity->item)->GetID());
+
+	return (Entity *)_entities.back()->item;
 }
 
 bool SceneHolder::RemoveEntity(Entity *entity)
 {
 	DirectX::BoundingBox entityBounds;
-	if (!entity->StoreBounds(entityBounds))
-	{
-		ErrMsg("Failed to remove entity, unable to get entity bounds!");
-		return false;
-	}
+	entity->StoreBounds(entityBounds);
 
-	if (!_volumeTree.Remove((IEntity *)entity, entityBounds))
+	if (!_volumeTree.Remove(entity, entityBounds))
 	{
 		ErrMsg("Failed to remove entity from volume tree!");
 		return false;
 	}
 
-	std::erase_if(_entities, [entity](const SceneEntity *item) { return item->item == entity; });
+	std::erase_if(_entities, [entity](const SceneEntity *item) { return ((Entity *)item->item) == entity; });
 	return true;
 }
 
@@ -78,26 +71,22 @@ bool SceneHolder::RemoveEntity(const UINT id)
 		return false;
 	}
 
-	return RemoveEntity(_entities[id]->item);
+	return RemoveEntity((Entity *)_entities[id]->item);
 }
 
 
 bool SceneHolder::UpdateEntityPosition(Entity *entity)
 {
 	DirectX::BoundingBox entityBounds;
-	if (!entity->StoreBounds(entityBounds))
-	{
-		ErrMsg("Failed to update entity position, unable to get entity bounds!");
-		return false;
-	}
+	entity->StoreBounds(entityBounds);
 
-	if (!_volumeTree.Remove((IEntity *)entity))
+	if (!_volumeTree.Remove(entity))
 	{
 		ErrMsg("Failed to remove entity from volume tree!");
 		return false;
 	}
 
-	_volumeTree.Insert((IEntity *)entity, entityBounds);
+	_volumeTree.Insert(entity, entityBounds);
 	return true;
 }
 
@@ -110,7 +99,7 @@ Entity *SceneHolder::GetEntity(const UINT id) const
 		return nullptr;
 	}
 
-	return _entities[id]->item;
+	return ((Entity *)_entities[id]->item);
 }
 
 UINT SceneHolder::GetEntityCount() const
@@ -121,13 +110,13 @@ UINT SceneHolder::GetEntityCount() const
 void SceneHolder::GetEntities(std::vector<Entity *> entities) const
 {
 	for (const SceneEntity *ent : _entities)
-		entities.push_back(ent->item);
+		entities.push_back((Entity *)ent->item);
 }
 
 
 bool SceneHolder::FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 {
-	std::vector<IEntity *> containingInterfaces;
+	std::vector<Entity *> containingInterfaces;
 	containingInterfaces.reserve(_entities.capacity());
 
 	if (!_volumeTree.FrustumCull(frustum, containingInterfaces))
@@ -136,8 +125,8 @@ bool SceneHolder::FrustumCull(const DirectX::BoundingFrustum &frustum, std::vect
 		return false;
 	}
 
-	for (IEntity *iEnt : containingInterfaces)
-		containingItems.push_back((Entity *)iEnt);
+	for (Entity *iEnt : containingInterfaces)
+		containingItems.push_back(iEnt);
 
 	return true;
 }

@@ -93,7 +93,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	if (_content.AddSampler(_device, "FallbackSampler", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
+	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add fallback sampler!");
 		return false;

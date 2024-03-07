@@ -48,30 +48,14 @@ struct ResourceGroup
 {
 	UINT
 		meshID = CONTENT_LOAD_ERROR,
-		vsID = CONTENT_LOAD_ERROR,
-		psID = CONTENT_LOAD_ERROR,
-		texID = CONTENT_LOAD_ERROR,
-		samplerID = CONTENT_LOAD_ERROR,
-		inputLayoutID = CONTENT_LOAD_ERROR;
+		texID = CONTENT_LOAD_ERROR;
 
 	bool operator<(const ResourceGroup &other) const
 	{
 		if (meshID != other.meshID)
 			return meshID < other.meshID;
 
-		if (texID != other.texID)
-			return texID < other.texID;
-
-		if (vsID != other.vsID)
-			return vsID < other.vsID;
-
-		if (psID != other.psID)
-			return psID < other.psID;
-
-		if (samplerID != other.samplerID)
-			return samplerID < other.samplerID;
-
-		return inputLayoutID < other.inputLayoutID;
+		return texID < other.texID;
 	}
 };
 

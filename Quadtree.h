@@ -16,7 +16,7 @@ private:
 
 	struct Node
 	{
-		std::vector<IEntity *> data;
+		std::vector<Entity *> data;
 		DirectX::BoundingBox bounds;
 		std::unique_ptr<Node> children[4];
 		bool isLeaf = true;
@@ -55,7 +55,7 @@ private:
 		}
 
 
-		bool Insert(IEntity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0)
+		bool Insert(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0)
 		{
 			if (!bounds.Intersects(itemBounds))
 				return false;
@@ -80,7 +80,7 @@ private:
 			return true;
 		}
 
-		void Remove(IEntity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
+		void Remove(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
 		{
 			if (!skipIntersection)
 				if (!bounds.Intersects(itemBounds))
@@ -88,7 +88,7 @@ private:
 
 			if (isLeaf)
 			{
-				std::erase_if(data, [item](const IEntity *otherItem) { return item == otherItem; });
+				std::erase_if(data, [item](const Entity *otherItem) { return item == otherItem; });
 				return;
 			}
 
@@ -99,7 +99,7 @@ private:
 			}
 
 			bool gotHomogenousItems = false;
-			std::vector<IEntity *> containingItems;
+			std::vector<Entity *> containingItems;
 
 			for (int i = 0; i < 4; i++)
 				if (children[i] != nullptr)
@@ -109,7 +109,7 @@ private:
 
 					if (!children[i]->data.empty())
 					{
-						for (IEntity *childItem : children[i]->data)
+						for (Entity *childItem : children[i]->data)
 						{
 							if (childItem == nullptr)
 								continue;
@@ -131,16 +131,16 @@ private:
 
 			isLeaf = true;
 			data.clear();
-			for (IEntity *newItem : containingItems)
+			for (Entity *newItem : containingItems)
 				data.push_back(newItem);
 		}
 
 
-		void AddToVector(std::vector<IEntity *> &containingItems, const UINT depth) const
+		void AddToVector(std::vector<Entity *> &containingItems, const UINT depth) const
 		{
 			if (isLeaf)
 			{
-				for (IEntity *item : data)
+				for (Entity *item : data)
 				{
 					if (item == nullptr)
 						continue;
@@ -161,7 +161,7 @@ private:
 			}
 		}
 
-		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems, UINT depth = 0) const
+		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, UINT depth = 0) const
 		{
 			switch (frustum.Contains(bounds))
 			{
@@ -175,7 +175,7 @@ private:
 			case INTERSECTS:
 				if (isLeaf)
 				{
-					for (IEntity *item : data)
+					for (Entity *item : data)
 					{
 						if (item == nullptr)
 							continue;
@@ -219,13 +219,13 @@ public:
 		return true;
 	}
 
-	void Insert(IEntity *data, const DirectX::BoundingBox &bounds) const
+	void Insert(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
 		if (_root != nullptr)
 			_root->Insert(data, bounds);
 	}
 
-	[[nodiscard]] bool Remove(IEntity *data, const DirectX::BoundingBox &bounds) const
+	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
 		if (_root == nullptr)
 			return false;
@@ -234,7 +234,7 @@ public:
 		return true;
 	}
 
-	[[nodiscard]] bool Remove(IEntity *data) const
+	[[nodiscard]] bool Remove(Entity *data) const
 	{
 		if (_root == nullptr)
 			return false;
@@ -243,7 +243,7 @@ public:
 		return true;
 	}
 
-	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems) const
+	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 	{
 		if (_root == nullptr)
 			return false;

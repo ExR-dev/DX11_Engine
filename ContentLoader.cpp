@@ -96,7 +96,7 @@ static bool ReadWavefront(const char *path,
 		std::string dataType;
 		if (!(segments >> dataType))
 		{
-			ErrMsg(std::format("Failed to get data type from line \"{}\"!", line));
+			ErrMsg(std::format("Failed to get data type from line \"{}\", file \"{}\"!", line, path));
 			return false;
 		}
 
@@ -131,7 +131,7 @@ static bool ReadWavefront(const char *path,
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				ErrMsg(std::format("Failed to get vertex position from line \"{}\"!", line));
+				ErrMsg(std::format(R"(Failed to get vertex position from line "{}", file "{}"!)", line, path));
 				return false;
 			}
 
@@ -142,7 +142,7 @@ static bool ReadWavefront(const char *path,
 			float u, v;
 			if (!(segments >> u >> v))
 			{
-				ErrMsg(std::format("Failed to get texture coordinate from line \"{}\"!", line));
+				ErrMsg(std::format(R"(Failed to get texture coordinate from line "{}", file "{}"!)", line, path));
 				return false;
 			}
 
@@ -153,7 +153,7 @@ static bool ReadWavefront(const char *path,
 			float x, y, z;
 			if (!(segments >> x >> y >> z))
 			{
-				ErrMsg(std::format("Failed to get normal from line \"{}\"!", line));
+				ErrMsg(std::format(R"(Failed to get normal from line "{}", file "{}"!)", line, path));
 				return false;
 			}
 
@@ -163,7 +163,7 @@ static bool ReadWavefront(const char *path,
 		{ // Index Group
 			if (!begunReadingSubMesh)
 			{
-				ErrMsg("Reached index group before creating submesh!");
+				ErrMsg(std::format(R"(Reached index group before creating submesh, file "{}"!)", path));
 				return false;
 			}
 
@@ -176,7 +176,7 @@ static bool ReadWavefront(const char *path,
 			size_t groupSize = indicesInGroup.size();
 			if (groupSize < 3 || groupSize > 4)
 			{
-				ErrMsg(std::format("Unparseable group size '{}' at line \"{}\"!", groupSize, line));
+				ErrMsg(std::format(R"(Unparseable group size '{}' at line "{}", file "{}"!)", groupSize, line, path));
 				return false;
 			}
 
@@ -204,7 +204,7 @@ static bool ReadWavefront(const char *path,
 		}
 		else
 		{
-			ErrMsg(std::format("Unimplemented type flag '{}' on line \"{}\"!", dataType, line));
+			ErrMsg(std::format(R"(Unimplemented type flag '{}' on line "{}", file "{}"!)", dataType, line, path));
 		}
 	}
 	return true;

@@ -9,7 +9,8 @@ Entity::Entity(const UINT id, const DirectX::BoundingBox &bounds)
 	_bounds = bounds;
 }
 
-bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UINT meshID, const UINT vsID, const UINT psID, const UINT texID)
+
+bool Entity::Initialize(ID3D11Device *device)
 {
 	if (_isInitialized)
 	{
@@ -23,33 +24,28 @@ bool Entity::Initialize(ID3D11Device *device, const UINT inputLayoutID, const UI
 		return false;
 	}
 
-	_inputLayoutID = inputLayoutID;
-	_meshID = meshID;
-	_vsID = vsID;
-	_psID = psID;
-	_texID = texID;
-
 	_isInitialized = true;
 	return true;
 }
 
-bool Entity::IsInitialized() const { return _isInitialized; }
+bool Entity::IsInitialized() const
+{
+	return _isInitialized;
+}
 
-
-void Entity::SetInputLayout(const UINT id)	{ _inputLayoutID = id;	}
-void Entity::SetMesh(const UINT id)			{ _meshID = id;			}
-void Entity::SetVertexShader(const UINT id)	{ _vsID = id;			}
-void Entity::SetPixelShader(const UINT id)	{ _psID = id;			}
-void Entity::SetTexture(const UINT id)		{ _texID = id;			}
-
-Transform *Entity::GetTransform() { return &_transform; }
 
 UINT Entity::GetID() const
 {
 	return _entityID;
 }
 
-bool Entity::StoreBounds(BoundingBox& entityBounds)
+Transform *Entity::GetTransform()
+{
+	return &_transform;
+}
+
+
+void Entity::StoreBounds(DirectX::BoundingBox &entityBounds)
 {
 	if (_recalculateBounds)
 	{
@@ -58,11 +54,10 @@ bool Entity::StoreBounds(BoundingBox& entityBounds)
 	}
 
 	entityBounds = _transformedBounds;
-	return true;
 }
 
 
-bool Entity::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
+bool Entity::InternalUpdate(ID3D11DeviceContext *context)
 {
 	if (!_isInitialized)
 	{
@@ -80,7 +75,7 @@ bool Entity::Update(ID3D11DeviceContext *context, Time &time, const Input &input
 	return true;
 }
 
-bool Entity::BindBuffers(ID3D11DeviceContext *context) const
+bool Entity::InternalBindBuffers(ID3D11DeviceContext *context) const
 {
 	if (!_isInitialized)
 	{
@@ -94,7 +89,7 @@ bool Entity::BindBuffers(ID3D11DeviceContext *context) const
 	return true;
 }
 
-bool Entity::Render(CameraD3D11 *camera)
+bool Entity::InternalRender(CameraD3D11 *camera)
 {
 	if (!_isInitialized)
 	{
@@ -102,20 +97,5 @@ bool Entity::Render(CameraD3D11 *camera)
 		return false;
 	}
 
-	const ResourceGroup resources = {
-		_meshID,
-		_vsID,
-		_psID,
-		_texID,
-		0,
-		_inputLayoutID
-	};
-
-	const RenderInstance instance = {
-		this,
-		sizeof(Entity)
-	};
-
-	camera->QueueRenderInstance(resources, instance);
 	return true;
 }

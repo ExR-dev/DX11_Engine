@@ -6,24 +6,21 @@
 #include "Graphics.h"
 
 
-class IEntity
+enum class EntityType
 {
-	public:
-	virtual ~IEntity() = default;
-
-	virtual Transform *GetTransform() = 0;
-	virtual bool StoreBounds(DirectX::BoundingBox &entityBounds) = 0;
-
-	virtual bool Update(ID3D11DeviceContext *context, Time &time, const Input &input) = 0;
-	virtual bool BindBuffers(ID3D11DeviceContext *context) const = 0;
-	virtual bool Render(CameraD3D11 *camera) = 0;
+	OBJECT,
+	EMITTER,
+	LIGHT,
 };
 
 
-class Entity final : IEntity
+class Entity
 {
 private:
 	UINT _entityID;
+
+
+protected:
 	bool _isInitialized = false;
 	Transform _transform;
 
@@ -31,35 +28,31 @@ private:
 	DirectX::BoundingBox _transformedBounds;
 	bool _recalculateBounds = true;
 
-	UINT
-		_inputLayoutID	= CONTENT_LOAD_ERROR,
-		_meshID			= CONTENT_LOAD_ERROR,
-		_vsID			= CONTENT_LOAD_ERROR,
-		_psID			= CONTENT_LOAD_ERROR,
-		_texID			= CONTENT_LOAD_ERROR;
+
+	Entity(UINT id, const DirectX::BoundingBox &bounds);
+
+	[[nodiscard]] bool Initialize(ID3D11Device *device);
+
+	[[nodiscard]] bool InternalUpdate(ID3D11DeviceContext *context);
+	[[nodiscard]] bool InternalBindBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool InternalRender(CameraD3D11 *camera);
 
 public:
-	explicit Entity(UINT id, const DirectX::BoundingBox &bounds);
+	virtual ~Entity() = default;
 	Entity(const Entity &other) = delete;
 	Entity &operator=(const Entity &other) = delete;
 	Entity(Entity &&other) = delete;
 	Entity &operator=(Entity &&other) = delete;
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT inputLayoutID, UINT meshID, UINT vsID, UINT psID, UINT texID);
 	[[nodiscard]] bool IsInitialized() const;
 
-	void SetInputLayout(UINT id);
-	void SetMesh(UINT id);
-	void SetVertexShader(UINT id);
-	void SetPixelShader(UINT id);
-	void SetTexture(UINT id);
-
-	[[nodiscard]] Transform *GetTransform() override;
 	[[nodiscard]] UINT GetID() const;
+	[[nodiscard]] Transform *GetTransform();
+	[[nodiscard]] virtual EntityType GetType() const = 0;
 
-	[[nodiscard]] bool StoreBounds(DirectX::BoundingBox &entityBounds) override;
+	void StoreBounds(DirectX::BoundingBox &entityBounds);
 
-	[[nodiscard]] bool Update(ID3D11DeviceContext *context, Time &time, const Input &input) override;
-	[[nodiscard]] bool BindBuffers(ID3D11DeviceContext *context) const override;
-	[[nodiscard]] bool Render(CameraD3D11 *camera) override;
+	[[nodiscard]] virtual bool Update(ID3D11DeviceContext *context, Time &time, const Input &input) = 0;
+	[[nodiscard]] virtual bool BindBuffers(ID3D11DeviceContext *context) const = 0;
+	[[nodiscard]] virtual bool Render(CameraD3D11 *camera) = 0;
 };

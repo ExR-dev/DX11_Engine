@@ -131,62 +131,53 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	// Create room entity
 	{
 		constexpr UINT
-			inputLayoutID = 0,
 			meshID = 2,
-			vShaderID = 0,
-			pShaderID = 2,
 			textureID = 2;
 
-		Entity *ent = _sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox());
-		if (!ent->Initialize(_device, inputLayoutID, meshID, vShaderID, pShaderID, textureID))
+		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		if (!obj->Initialize(_device, meshID, textureID))
 		{
-			ErrMsg("Failed to initialize room entity!");
+			ErrMsg("Failed to initialize room object!");
 			return false;
 		}
 
-		ent->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		((Entity *)obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
 	// Create model
 	{
 		constexpr UINT
-			inputLayoutID = 0,
 			meshID = 6,
-			vShaderID = 0,
-			pShaderID = 2,
 			textureID = 7;
 
-		Entity *ent = _sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox());
-		if (!ent->Initialize(_device, inputLayoutID, meshID, vShaderID, pShaderID, textureID))
+		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		if (!obj->Initialize(_device, meshID, textureID))
 		{
-			ErrMsg("Failed to initialize model!");
+			ErrMsg("Failed to initialize model object!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
-		ent->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
-		ent->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+		((Entity *)obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
+		((Entity *)obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
+		((Entity *)obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}
 
 	// Create error
 	{
 		constexpr UINT
-			inputLayoutID = 0,
 			meshID = 0,
-			vShaderID = 0,
-			pShaderID = 2,
 			textureID = 1;
 
-		Entity *ent = _sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox());
-		if (!ent->Initialize(_device, inputLayoutID, meshID, vShaderID, pShaderID, textureID))
+		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		if (!obj->Initialize(_device, meshID, textureID))
 		{
-			ErrMsg("Failed to initialize error!");
+			ErrMsg("Failed to initialize error object!");
 			return false;
 		}
 
-		ent->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
-		ent->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
-		ent->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
+		((Entity *)obj)->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
+		((Entity *)obj)->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
+		((Entity *)obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
 	
 	_initialized = true;
@@ -217,27 +208,24 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			for (size_t i = 0; i < 10; i++)
 			{
 				const UINT
-					inputLayoutID = 0,
 					meshID = rand() % _content->GetMeshCount(),
-					vShaderID = 0,
-					pShaderID = 2,
 					textureID = rand() % _content->GetTextureCount();
 
-				Entity *ent = _sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox());
-				if (!ent->Initialize(_device, inputLayoutID, meshID, vShaderID, pShaderID, textureID))
+				Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+				if (!obj->Initialize(_device, meshID, textureID))
 				{
-					ErrMsg(std::format("Failed to initialize entity #{}!", ent->GetID()));
+					ErrMsg(std::format("Failed to initialize entity #{}!", ((Entity *)obj)->GetID()));
 					return false;
 				}
 
-				ent->GetTransform()->Move({
+				((Entity *)obj)->GetTransform()->Move({
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
 					0
 				});
 
-				ent->GetTransform()->Rotate({
+				((Entity *)obj)->GetTransform()->Rotate({
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
@@ -431,8 +419,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 		hasSetCamera = true;
 	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || 
-			 input.GetKey(KeyCode::V) == KeyState::Pressed)
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || input.GetKey(KeyCode::V) == KeyState::Pressed)
 	{ // Change camera
 		_currCamera++;
 

@@ -5,6 +5,7 @@
 #include "ErrMsg.h"
 #include "Entity.h"
 #include "D3D11Helper.h"
+#include "Object.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
@@ -196,14 +197,25 @@ bool Graphics::RenderShadowCasters()
 		return false;
 	}
 
-	const UINT depthVShaderID = _content->GetShaderID("VS_Depth");
-	if (_currVsID != depthVShaderID)
-		if (!_content->GetShader(depthVShaderID)->BindShader(_context))
+	// Bind depth stage resources
+	const UINT ilID = _content->GetInputLayoutID("IL_Fallback");
+	if (_currInputLayoutID != ilID)
+	{
+		_context->IASetInputLayout(_content->GetInputLayout(ilID)->GetInputLayout());
+		_currInputLayoutID = ilID;
+	}
+
+	const UINT vsID = _content->GetShaderID("VS_Depth");
+	if (_currVsID != vsID)
+	{
+		if (!_content->GetShader(vsID)->BindShader(_context))
 		{
-			ErrMsg("Failed to bind depth vertex shader!");
+			ErrMsg("Failed to bind depth-stage vertex shader!");
 			return false;
 		}
-	_currVsID = depthVShaderID;
+		_currVsID = vsID;
+	}
+
 	_context->PSSetShader(nullptr, nullptr, 0);
 
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -237,18 +249,18 @@ bool Graphics::RenderShadowCasters()
 		UINT entity_i = 0;
 		for (const auto &[resources, instance] : spotlightCamera->GetRenderQueue())
 		{
-			// Bind shared entity data, skip data irrelevant for shadow mapping
-			if (_currInputLayoutID != resources.inputLayoutID)
+			if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 			{
-				_context->IASetInputLayout(_content->GetInputLayout(resources.inputLayoutID)->GetInputLayout());
-				_currInputLayoutID = resources.inputLayoutID;
+				ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
+				return false;
 			}
 
+			// Bind shared entity data, skip data irrelevant for shadow mapping
 			if (_currMeshID != resources.meshID)
 			{
 				loadedMesh = _content->GetMesh(resources.meshID);
 				//if (!loadedMesh->BindMeshBuffers(_context, sizeof(float) * 4, 0)) // Only bind position
-				// TODO: Verify that stride works as expected
+				// TODO: Check if stride works as expected
 				if (!loadedMesh->BindMeshBuffers(_context))
 				{ 
 					ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
@@ -258,7 +270,7 @@ bool Graphics::RenderShadowCasters()
 			}
 
 			// Bind private entity data
-			if (!static_cast<Entity *>(instance.subject)->BindBuffers(_context))
+			if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
 			{
 				ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
 				return false;
@@ -316,50 +328,69 @@ bool Graphics::RenderGeometry()
 		return false;
 	}
 
+	// Bind geometry stage resources
+	const UINT ilID = _content->GetInputLayoutID("IL_Fallback");
+	if (_currInputLayoutID != ilID)
+	{
+		_context->IASetInputLayout(_content->GetInputLayout(ilID)->GetInputLayout());
+		_currInputLayoutID = ilID;
+	}
+
+	const UINT vsID = _content->GetShaderID("VS_Geometry");
+	if (_currVsID != vsID)
+	{
+		if (!_content->GetShader(vsID)->BindShader(_context))
+		{
+			ErrMsg("Failed to bind geometry vertex shader!");
+			return false;
+		}
+		_currVsID = vsID;
+	}
+
+	const UINT psID = _content->GetShaderID("PS_Geometry");
+	if (_currPsID != psID)
+	{
+		if (!_content->GetShader(psID)->BindShader(_context))
+		{
+			ErrMsg("Failed to bind geometry pixel shader!");
+			return false;
+		}
+		_currPsID = psID;
+	}
+
+	const UINT ssID = _content->GetSamplerID("SS_Fallback");
+	if (_currSamplerID != ssID)
+	{
+		ID3D11SamplerState *const ss = _content->GetSampler(ssID)->GetSamplerState();
+		_context->PSSetSamplers(0, 1, &ss);
+		_currSamplerID = ssID;
+	}
+
+
 	const MeshD3D11 *loadedMesh = nullptr;
 
-	UINT i = 0;
+	UINT entity_i = 0;
 	for (const auto &[resources, instance] : _currCamera->GetRenderQueue())
 	{
-		// Bind shared entity data
-		if (_currInputLayoutID != resources.inputLayoutID)
+		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 		{
-			_context->IASetInputLayout(_content->GetInputLayout(resources.inputLayoutID)->GetInputLayout());
-			_currInputLayoutID = resources.inputLayoutID;
+			ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
+			return false;
 		}
 
+		// Bind shared entity data
 		if (_currMeshID != resources.meshID)
 		{
 			loadedMesh = _content->GetMesh(resources.meshID);
 			if (!loadedMesh->BindMeshBuffers(_context))
 			{
-				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", i));
+				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
 				return false;
 			}
 			_currMeshID = resources.meshID;
 		}
 		else if (loadedMesh == nullptr)
 			loadedMesh = _content->GetMesh(resources.meshID);
-
-		if (_currVsID != resources.vsID)
-		{
-			if (!_content->GetShader(resources.vsID)->BindShader(_context))
-			{
-				ErrMsg(std::format("Failed to bind vertex shader for instance #{}!", i));
-				return false;
-			}
-			_currVsID = resources.vsID;
-		}
-
-		if (_currPsID != resources.psID)
-		{
-			if (!_content->GetShader(resources.psID)->BindShader(_context))
-			{
-				ErrMsg(std::format("Failed to bind pixel shader for instance #{}!", i));
-				return false;
-			}
-			_currPsID = resources.psID;
-		}
 
 		if (_currTexID != resources.texID)
 		{
@@ -368,38 +399,31 @@ bool Graphics::RenderGeometry()
 			_currTexID = resources.texID;
 		}
 
-		if (_currSamplerID != resources.samplerID)
-		{
-			ID3D11SamplerState *const ss = _content->GetSampler(resources.samplerID)->GetSamplerState();
-			_context->PSSetSamplers(0, 1, &ss);
-			_currSamplerID = resources.samplerID;
-		}
-
 		// Bind private entity data
-		if (!static_cast<Entity *>(instance.subject)->BindBuffers(_context))
+		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
 		{
-			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", i));
+			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
 			return false;
 		}
 
 		// Perform draw calls
 		if (loadedMesh == nullptr)
 		{
-			ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", i));
+			ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", entity_i));
 			return false;
 		}
 
 		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
-		for (size_t j = 0; j < subMeshCount; j++)
+		for (size_t i = 0; i < subMeshCount; i++)
 		{
-			if (!loadedMesh->PerformSubMeshDrawCall(_context, j))
+			if (!loadedMesh->PerformSubMeshDrawCall(_context, i))
 			{
-				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", i, j));
+				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, i));
 				return false;
 			}
 		}
 
-		i++;
+		entity_i++;
 	}
 
 	// Unbind render targets
