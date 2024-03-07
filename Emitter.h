@@ -31,6 +31,8 @@ private:
 	EmitterData _settings = { };
 	std::vector<Particle *> _liveParticles, _deadParticles;
 
+	StructuredBufferD3D11 _particleBuffer;
+
 public:
 	explicit Emitter(UINT id, const DirectX::BoundingBox &bounds);
 

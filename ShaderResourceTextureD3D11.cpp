@@ -47,6 +47,23 @@ bool ShaderResourceTextureD3D11::Initialize(ID3D11Device *device, const UINT wid
 	return true;
 }
 
+bool ShaderResourceTextureD3D11::Initialize(ID3D11Device *device, const D3D11_TEXTURE2D_DESC &textureDesc, const D3D11_SUBRESOURCE_DATA *srData)
+{
+	if (FAILED(device->CreateTexture2D(&textureDesc, srData, &_texture)))
+	{
+		ErrMsg("Failed to create texture2D!");
+		return false;
+	}
+
+	if (FAILED(device->CreateShaderResourceView(_texture, nullptr, &_srv)))
+	{
+		ErrMsg("Failed to create shader resource view!");
+		return false;
+	}
+
+	return true;
+}
+
 
 ID3D11ShaderResourceView *ShaderResourceTextureD3D11::GetSRV() const
 {

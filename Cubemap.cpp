@@ -8,10 +8,10 @@ Cubemap::Cubemap()
 	_cameras.fill(nullptr);
 }
 
-Cubemap::Cubemap(ID3D11Device *device, const float nearZ, const float farZ, const XMFLOAT4A &initialPosition)
+Cubemap::Cubemap(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const XMFLOAT4A &initialPosition)
 {
-	if (!Initialize(device, nearZ, farZ, initialPosition))
-		ErrMsg("Failed to setup cubemap cameras in constructor!");
+	if (!Initialize(device, resolution, nearZ, farZ, initialPosition))
+		ErrMsg("Failed to setup cubemap cameras from constructor!");
 }
 
 Cubemap::~Cubemap()
@@ -23,7 +23,7 @@ Cubemap::~Cubemap()
 	}
 }
 
-bool Cubemap::Initialize(ID3D11Device *device, const float nearZ, const float farZ, const XMFLOAT4A &initialPosition)
+bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const XMFLOAT4A &initialPosition)
 {
 	const ProjectionInfo projInfo {
 		XM_PIDIV2,
@@ -48,11 +48,32 @@ bool Cubemap::Initialize(ID3D11Device *device, const float nearZ, const float fa
 		}
 	}
 
-	_cameras[1]->LookX(XM_PIDIV2);
-	_cameras[2]->LookX(XM_PI);
-	_cameras[3]->LookX(-XM_PIDIV2);
-	_cameras[4]->LookY(-XM_PIDIV2);
-	_cameras[5]->LookY(XM_PIDIV2);
+	_cameras[1]->LookX(XM_PIDIV2 * 1);
+	_cameras[2]->LookX(XM_PIDIV2 * 2);
+	_cameras[3]->LookX(XM_PIDIV2 * 3);
+	_cameras[4]->LookY(XM_PIDIV2);
+	_cameras[5]->LookY(-XM_PIDIV2);
+
+
+	D3D11_TEXTURE2D_DESC textureDesc;
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+	textureDesc.Width = resolution;
+	textureDesc.Height = resolution;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 6;
+	textureDesc.Format = format;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	if (!_texture.Initialize(device, textureDesc, nullptr))
+	{
+		ErrMsg("Failed to initialize cubemap texture!");
+		return false;
+	}
 
 	return true;
 }

@@ -47,6 +47,13 @@ bool Emitter::BindBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}
 
+	ID3D11UnorderedAccessView *uav = _particleBuffer.GetUAV();
+	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+	context->Dispatch(std::ceil(_particleBuffer.GetNrOfElements() / 32.0f), 1, 1);
+
+	uav = nullptr;
+	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+
 	return true;
 }
 

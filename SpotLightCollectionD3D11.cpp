@@ -85,11 +85,8 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		return false;
 	}
 
-	if (!_lightBuffer.Initialize(device, 
-		sizeof(LightBuffer), 
-		lightCount, 
-		_bufferData.data(), 
-		true))
+	if (!_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount,
+		true, false, true, _bufferData.data()))
 	{
 		ErrMsg("Failed to initialize light buffer!");
 		return false;
