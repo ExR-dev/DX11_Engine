@@ -1,29 +1,17 @@
 
-cbuffer WorldMatrixBuffer : register(b0)
+struct Particle
 {
-	matrix worldMatrix;
-	matrix inverseTransposeWorldMatrix;
+	float3 position;
+	float3 velocity;
+	float3 color;
+	float size;
 };
 
-cbuffer ViewProjMatrixBuffer : register(b1)
-{
-    matrix viewProjMatrix;
-};
+StructuredBuffer<Particle> Particles : register(t0);
 
 
-struct VertexShaderInput
+float4 main(uint vertexID : SV_VertexID) : POSITION
 {
-	float3 position : POSITION;
-};
-
-struct VertexShaderOutput
-{
-	float4 position : POSITION;
-};
-
-VertexShaderOutput main(VertexShaderInput input)
-{
-	VertexShaderOutput output;
-	output.position = mul(mul(float4(input.position, 1.0f), worldMatrix), viewProjMatrix);
+	float4 output = float4(Particles[vertexID].position, Particles[vertexID].size);
 	return output;
 }

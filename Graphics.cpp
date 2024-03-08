@@ -432,7 +432,7 @@ bool Graphics::RenderGeometry()
 	if (emitterCount > 0)
 	{
 		// Bind particle emitter resources
-		const UINT particleInputLayoutID = _content->GetInputLayoutID("IL_Point");
+		const UINT particleInputLayoutID = _content->GetInputLayoutID("IL_Null");
 		if (_currInputLayoutID != particleInputLayoutID)
 		{
 			_context->IASetInputLayout(_content->GetInputLayout(particleInputLayoutID)->GetInputLayout());
@@ -458,7 +458,6 @@ bool Graphics::RenderGeometry()
 
 
 		// Render particle emitters
-
 		for (UINT i = 0; i < emitterCount; i++)
 		{
 			Emitter *emitter = static_cast<Emitter *>(emitters[i].subject);
@@ -469,21 +468,16 @@ bool Graphics::RenderGeometry()
 				return false;
 			}
 
-			if (!emitter->Render(_currCamera))
-			{
-				ErrMsg("Failed to render emitter!");
-				return false;
-			}
-
 			if (!emitter->PerformDrawCall(_context))
 			{
 				ErrMsg("Failed to perform emitter draw call!");
 				return false;
 			}
 		}
+
+		// Unbind geometry shader
+		_context->GSSetShader(nullptr, nullptr, 0);
 	}
-
-
 
 	// Unbind render targets
 	for (auto &rtv : rtvs)

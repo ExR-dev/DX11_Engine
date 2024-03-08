@@ -8,7 +8,8 @@ Emitter::Emitter(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id,
 
 }
 
-bool Emitter::Initialize(ID3D11Device *device, const EmitterData *settings)
+
+bool Emitter::Initialize(ID3D11Device *device, const EmitterData &settings)
 {
 	if (!Entity::Initialize(device))
 	{
@@ -16,11 +17,24 @@ bool Emitter::Initialize(ID3D11Device *device, const EmitterData *settings)
 		return false;
 	}
 
-	if (settings == nullptr)
+	if (!_emitterBuffer.Initialize(device, sizeof(EmitterData), &settings))
 	{
-		
+		ErrMsg("Failed to initialize emitter data buffer!");
+		return false;
 	}
 
+	Particle *particles = new Particle[settings.particleCount];
+	ZeroMemory(particles, sizeof(Particle) * settings.particleCount);
+
+	if (!_particleBuffer.Initialize(device, sizeof(Particle), 
+		settings.particleCount, true, true, true, particles))
+	{
+		ErrMsg("Failed to initialize emitter data buffer!");
+		delete[] particles;
+		return false;
+	}
+
+	delete[] particles;
 	return true;
 }
 
@@ -36,6 +50,13 @@ bool Emitter::Update(ID3D11DeviceContext *context, Time &time, const Input &inpu
 		return false;
 	}
 
+	ID3D11UnorderedAccessView *uav = _particleBuffer.GetUAV();
+	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+	context->Dispatch(std::ceil(static_cast<float>(_particleBuffer.GetNrOfElements()) / 32.0f), 1, 1);
+
+	uav = nullptr;
+	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+
 	return true;
 }
 
@@ -47,8 +68,8 @@ bool Emitter::BindBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}*/
 
-	/*ID3D11Buffer *const wmBuffer = _transform.GetConstantBuffer();
-	context->GSSetConstantBuffers(0, 1, &wmBuffer);*/
+	ID3D11ShaderResourceView *srv = _particleBuffer.GetSRV();
+	context->VSSetShaderResources(0, 1, &srv);
 
 	return true;
 }
@@ -61,23 +82,14 @@ bool Emitter::Render(CameraD3D11 *camera)
 		return false;
 	}
 
+	camera->QueueEmitter({ this, sizeof(Emitter) });
+
 	return true;
 }
 
-
-bool Emitter::UpdateParticles(ID3D11DeviceContext *context) const
-{
-	/*ID3D11UnorderedAccessView *uav = _particleBuffer.GetUAV();
-	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-	context->Dispatch(std::ceil(static_cast<float>(_particleBuffer.GetNrOfElements()) / 32.0f), 1, 1);
-
-	uav = nullptr;
-	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);*/
-	return true;
-}
 
 bool Emitter::PerformDrawCall(ID3D11DeviceContext* context) const
 {
-	//context->DrawIndexed(static_cast<UINT>(_nrOfIndices), static_cast<UINT>(_startIndex), 0);
+	context->Draw(static_cast<UINT>(_settings.particleCount), 0);
 	return true;
 }

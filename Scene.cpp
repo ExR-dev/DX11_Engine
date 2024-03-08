@@ -56,7 +56,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
-				{ 20.0f, 0.0f, 0.0f },	// color
+				{ 15.0f, 0.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.4f,				// angle
@@ -64,11 +64,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				8.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
-				{ 0.0f, 2.5f, -3.25f }	// initialPosition
+				{ 0.0f, 2.5f, -3.25f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },	// color
+				{ 0.0f, 15.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
@@ -76,11 +76,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				32.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
-				{ 0.0f, 3.5f, -3.25f }	// initialPosition
+				{ 0.0f, 3.5f, -3.25f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 20.0f },	// color
+				{ 0.0f, 0.0f, 15.0f },		// color
 				0.0f,						// rotationX
 				-0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
@@ -88,11 +88,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				128.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
-				{ 0.0f, 1.5f, -3.25f }	// initialPosition
+				{ 0.0f, 1.5f, -3.25f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 25.0f },	// color
+				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
@@ -147,7 +147,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	// Create model
 	{
 		constexpr UINT
-			meshID = 6,
+			meshID = 7,
 			textureID = 7;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
@@ -179,6 +179,24 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
+
+	// Create emitter
+	{
+		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {1,1,1}), EntityType::EMITTER));
+
+		EmitterData emitterData = { };
+		emitterData.particleCount = 128;
+		emitterData.particleRate = 32;
+		emitterData.lifetimeRange = { 0.0f, 1.0f };
+		emitterData.speedRange = { 0.0f, 1.0f };
+		emitterData.sizeRange = { 0.0f, 1.0f };
+
+		if (!emitter->Initialize(_device, emitterData))
+		{
+			ErrMsg("Failed to initialize emitter!");
+			return false;
+		}
+	}
 	
 	_initialized = true;
 	return true;
@@ -191,17 +209,17 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 
-	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
+	/*_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
 	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
 
 	_spotLights->GetLightCamera(1)->MoveRight(time.deltaTime * -1.5f * -1.4786f);
 	_spotLights->GetLightCamera(1)->LookX(time.deltaTime * 0.5f * -1.4786f);
 
 	_spotLights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f * 1.84248f);
-	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f * 1.84248f);
+	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f * 1.84248f);*/
 	
 
-	if (input.IsInFocus()) // Handle user input
+	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
 		static UINT
 			selectedMeshID = 0,
@@ -280,100 +298,103 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 		}
 
-		if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
-			currSelection++;
-		if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
-			currSelection--;
+		if (input.IsCursorLocked())
+		{
+			if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
+				currSelection++;
+			if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
+				currSelection--;
 
-		float currSpeed = 3.0f;
-		if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
-			currSpeed = 6.5f;
-		if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
-			currSpeed = 0.5f;
+			float currSpeed = 3.0f;
+			if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
+				currSpeed = 6.5f;
+			if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
+				currSpeed = 0.5f;
 
-		if (currSelection == -1)
-		{ // Move camera
-			if (input.GetKey(KeyCode::D) == KeyState::Held)
-				_currCameraPtr->MoveRight(time.deltaTime * currSpeed);
-			else if (input.GetKey(KeyCode::A) == KeyState::Held)
-				_currCameraPtr->MoveRight(-time.deltaTime * currSpeed);
+			if (currSelection == -1)
+			{ // Move camera
+				if (input.GetKey(KeyCode::D) == KeyState::Held)
+					_currCameraPtr->MoveRight(time.deltaTime * currSpeed);
+				else if (input.GetKey(KeyCode::A) == KeyState::Held)
+					_currCameraPtr->MoveRight(-time.deltaTime * currSpeed);
 
-			if (input.GetKey(KeyCode::Space) == KeyState::Held)
-				_currCameraPtr->MoveUp(time.deltaTime * currSpeed);
-			else if (input.GetKey(KeyCode::X) == KeyState::Held)
-				_currCameraPtr->MoveUp(-time.deltaTime * currSpeed);
+				if (input.GetKey(KeyCode::Space) == KeyState::Held)
+					_currCameraPtr->MoveUp(time.deltaTime * currSpeed);
+				else if (input.GetKey(KeyCode::X) == KeyState::Held)
+					_currCameraPtr->MoveUp(-time.deltaTime * currSpeed);
 
-			if (input.GetKey(KeyCode::W) == KeyState::Held)
-				_currCameraPtr->MoveForward(time.deltaTime * currSpeed);
-			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-				_currCameraPtr->MoveForward(-time.deltaTime * currSpeed);
+				if (input.GetKey(KeyCode::W) == KeyState::Held)
+					_currCameraPtr->MoveForward(time.deltaTime * currSpeed);
+				else if (input.GetKey(KeyCode::S) == KeyState::Held)
+					_currCameraPtr->MoveForward(-time.deltaTime * currSpeed);
 
-			const MouseState mState = input.GetMouse();
-			if (mState.dx != 0) _currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
-			if (mState.dy != 0) _currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
-		}
-		else
-		{ // Move selected entity
-			static bool isRotating = false;
-			if (input.GetKey(KeyCode::R) == KeyState::Pressed)
-				isRotating = !isRotating;
-			static bool isScaling = false;
-			if (input.GetKey(KeyCode::T) == KeyState::Pressed)
-				isScaling = !isScaling;
-
-			XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
-			bool doMove = false;
-
-			if (input.GetKey(KeyCode::D) == KeyState::Held)
-			{
-				transformationVector.x += time.deltaTime * currSpeed;
-				doMove = true;
+				const MouseState mState = input.GetMouse();
+				if (mState.dx != 0) _currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
+				if (mState.dy != 0) _currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
 			}
-			else if (input.GetKey(KeyCode::A) == KeyState::Held)
-			{
-				transformationVector.x -= time.deltaTime * currSpeed;
-				doMove = true;
-			}
+			else
+			{ // Move selected entity
+				static bool isRotating = false;
+				if (input.GetKey(KeyCode::R) == KeyState::Pressed)
+					isRotating = !isRotating;
+				static bool isScaling = false;
+				if (input.GetKey(KeyCode::T) == KeyState::Pressed)
+					isScaling = !isScaling;
 
-			if (input.GetKey(KeyCode::Space) == KeyState::Held)
-			{
-				transformationVector.y += time.deltaTime * currSpeed;
-				doMove = true;
-			}
-			else if (input.GetKey(KeyCode::X) == KeyState::Held)
-			{
-				transformationVector.y -= time.deltaTime * currSpeed;
-				doMove = true;
-			}
+				XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
+				bool doMove = false;
 
-			if (input.GetKey(KeyCode::W) == KeyState::Held)
-			{
-				transformationVector.z += time.deltaTime * currSpeed;
-				doMove = true;
-			}
-			else if (input.GetKey(KeyCode::S) == KeyState::Held)
-			{
-				transformationVector.z -= time.deltaTime * currSpeed;
-				doMove = true;
-			}
-
-			if (doMove)
-			{
-				Entity *ent = _sceneHolder.GetEntity(currSelection);
-				Transform *entityTransform = ent->GetTransform();
-
-				if (isRotating)
-					entityTransform->Rotate(transformationVector);
-				else if (isScaling)
-					entityTransform->ScaleAbsolute(transformationVector);
-				else
-					entityTransform->Move(transformationVector);
-
-
-				if (!_sceneHolder.UpdateEntityPosition(ent))
+				if (input.GetKey(KeyCode::D) == KeyState::Held)
 				{
-					ErrMsg("Failed to update entity position!");
-					return false;
+					transformationVector.x += time.deltaTime * currSpeed;
+					doMove = true;
+				}
+				else if (input.GetKey(KeyCode::A) == KeyState::Held)
+				{
+					transformationVector.x -= time.deltaTime * currSpeed;
+					doMove = true;
+				}
+
+				if (input.GetKey(KeyCode::Space) == KeyState::Held)
+				{
+					transformationVector.y += time.deltaTime * currSpeed;
+					doMove = true;
+				}
+				else if (input.GetKey(KeyCode::X) == KeyState::Held)
+				{
+					transformationVector.y -= time.deltaTime * currSpeed;
+					doMove = true;
+				}
+
+				if (input.GetKey(KeyCode::W) == KeyState::Held)
+				{
+					transformationVector.z += time.deltaTime * currSpeed;
+					doMove = true;
+				}
+				else if (input.GetKey(KeyCode::S) == KeyState::Held)
+				{
+					transformationVector.z -= time.deltaTime * currSpeed;
+					doMove = true;
+				}
+
+				if (doMove)
+				{
+					Entity *ent = _sceneHolder.GetEntity(currSelection);
+					Transform *entityTransform = ent->GetTransform();
+
+					if (isRotating)
+						entityTransform->Rotate(transformationVector);
+					else if (isScaling)
+						entityTransform->ScaleAbsolute(transformationVector);
+					else
+						entityTransform->Move(transformationVector);
+
+
+					if (!_sceneHolder.UpdateEntityPosition(ent))
+					{
+						ErrMsg("Failed to update entity position!");
+						return false;
+					}
 				}
 			}
 		}
@@ -386,7 +407,6 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		ErrMsg("Failed to scale light frustums to camera!");
 		return false;
 	}
-
 
 	if (!_camera->UpdateBuffers(context))
 	{
@@ -403,6 +423,12 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	if (!_cubemap.UpdateBuffers(context))
 	{
 		ErrMsg("Failed to update cubemap buffers!");
+		return false;
+	}
+
+	if (!_content->GetShader("CS_Particle")->BindShader(context))
+	{
+		ErrMsg(std::format("Failed to bind particle compute shader!"));
 		return false;
 	}
 
@@ -576,6 +602,10 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		}
 
 	time.TakeSnapshot("FrustumCullSpotlights");
+
+
+
+
 	return true;
 }
 

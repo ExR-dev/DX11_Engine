@@ -37,6 +37,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"ControlChair",
 		"ControlDesk",
 		"CharacterSculptLow0",
+		"CharacterSculptLow1",
 	};
 
 	for (const std::string &meshName : meshNames)
@@ -123,28 +124,26 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	const std::vector<Semantic> fallbackInputLayout{
+	const std::vector<Semantic> fallbackInputLayout {
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
-		{ "NORMAL",	DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
 	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, geometryVShaderID) == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add fallback input layout!");
+		ErrMsg("Failed to add IL_Fallback!");
 		return false;
 	}
 
 
-	/*const std::vector<Semantic> pointInputLayout{
-		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
-	};
+	const std::vector<Semantic> nullInputLayout { };
 
-	if (_content.AddInputLayout(_device, "IL_Point", pointInputLayout, particleVShaderID) == CONTENT_LOAD_ERROR)
+	if (_content.AddInputLayout(_device, "IL_Null", nullInputLayout, particleVShaderID) == CONTENT_LOAD_ERROR)
 	{
-		ErrMsg("Failed to add point input layout!");
+		ErrMsg("Failed to add IL_Null!");
 		return false;
-	}*/
+	}
 
 	return true;
 }

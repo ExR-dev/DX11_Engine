@@ -269,7 +269,7 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 	if (_cameraGSBuffer != nullptr)
 	{
-		const GeometryBufferData bufferData = { GetViewMatrix(), _transform.GetPosition() };
+		const GeometryBufferData bufferData = { viewProjMatrix, _transform.GetPosition() };
 		if (!_cameraGSBuffer->UpdateBuffer(context, &bufferData))
 		{
 			ErrMsg("Failed to update camera GS buffer!");

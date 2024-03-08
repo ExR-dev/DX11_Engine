@@ -3,6 +3,7 @@
 #include "Entity.h"
 #include "Object.h"
 //#include "Octree.h"
+#include "Emitter.h"
 #include "Quadtree.h"
 
 
@@ -11,22 +12,27 @@ class SceneHolder
 private:
 	struct SceneEntity
 	{
+		EntityType _type = EntityType::OBJECT;
+
 		union
 		{
-			Object *item = nullptr;
-			//Emitter *item = nullptr;
+			Object *object = nullptr;
+			Emitter *emitter;
 			//Light *item = nullptr;
-		};
+		} _item;
 
 		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds, EntityType type)
 		{
+			_type = type;
+
 			switch (type)
 			{
 				case EntityType::OBJECT:
-					item = new Object(id, bounds);
+					_item.object = new Object(id, bounds);
 					break;
 
 				case EntityType::EMITTER:
+					_item.emitter = new Emitter(id, bounds);
 					break;
 
 				case EntityType::LIGHT:
@@ -35,7 +41,21 @@ private:
 		}
 
 		~SceneEntity()
-		{ delete item; }
+		{
+			switch (_type)
+			{
+				case EntityType::OBJECT:
+					delete _item.object;
+					break;
+
+				case EntityType::EMITTER:
+					delete _item.emitter;
+					break;
+
+				case EntityType::LIGHT:
+					break;
+			}
+		}
 
 		SceneEntity(const SceneEntity &other) = delete;
 		SceneEntity &operator=(const SceneEntity &other) = delete;
