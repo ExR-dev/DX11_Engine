@@ -7,13 +7,11 @@
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
 {
-	for (const ShadowCamera &shadowCamera : _shadowCameras)
-	{
-		if (shadowCamera.rasterizerState != nullptr)
-			shadowCamera.rasterizerState->Release();
+	if (_rasterizerState != nullptr)
+		_rasterizerState->Release();
 
+	for (const ShadowCamera &shadowCamera : _shadowCameras)
 		delete shadowCamera.camera;
-	}
 }
 
 bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightData &lightInfo)
@@ -27,28 +25,8 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		const SpotLightData::PerLightInfo iLightInfo = lightInfo.perLightInfo.at(i);
 
-		_shadowCameras.push_back({ nullptr, nullptr, true });
+		_shadowCameras.push_back({ nullptr, true });
 		ShadowCamera &shadowCamera = _shadowCameras.back();
-
-
-		D3D11_RASTERIZER_DESC rasterizerDesc = { };
-		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-		rasterizerDesc.CullMode = D3D11_CULL_BACK;
-		rasterizerDesc.FrontCounterClockwise = false;
-		rasterizerDesc.DepthBias = 1;
-		rasterizerDesc.DepthBiasClamp = 0.0025f;
-		rasterizerDesc.SlopeScaledDepthBias = 2.0f;
-		rasterizerDesc.DepthClipEnable = false;
-		rasterizerDesc.ScissorEnable = false;
-		rasterizerDesc.MultisampleEnable = false;
-		rasterizerDesc.AntialiasedLineEnable = false;
-
-		if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &shadowCamera.rasterizerState)))
-		{
-			ErrMsg(std::format("Failed to create rasterizer state for spotlight #{}!", i));
-			return false;
-		}
-
 
 		shadowCamera.camera = new CameraD3D11(
 			device,
@@ -59,7 +37,6 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
 		shadowCamera.camera->LookX(iLightInfo.rotationX);
-
 
 		XMFLOAT4A dir = shadowCamera.camera->GetForward();
 
@@ -73,6 +50,24 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		lightBuffer.direction = { dir.x, dir.y, dir.z };
 
 		_bufferData.push_back(lightBuffer);
+	}
+
+	D3D11_RASTERIZER_DESC rasterizerDesc = { };
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.FrontCounterClockwise = false;
+	rasterizerDesc.DepthBias = 1;
+	rasterizerDesc.DepthBiasClamp = 0.0025f;
+	rasterizerDesc.SlopeScaledDepthBias = 2.0f;
+	rasterizerDesc.DepthClipEnable = false;
+	rasterizerDesc.ScissorEnable = false;
+	rasterizerDesc.MultisampleEnable = false;
+	rasterizerDesc.AntialiasedLineEnable = false;
+
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_rasterizerState)))
+	{
+		ErrMsg("Failed to create rasterizer state for spotlights!");
+		return false;
 	}
 
 	if (!_shadowMaps.Initialize(device, 
@@ -175,6 +170,11 @@ UINT SpotLightCollectionD3D11::GetNrOfLights() const
 	return static_cast<UINT>(_bufferData.size());
 }
 
+CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const
+{
+	return _shadowCameras.at(lightIndex).camera;
+}
+
 ID3D11DepthStencilView *SpotLightCollectionD3D11::GetShadowMapDSV(const UINT lightIndex) const
 {
 	return _shadowMaps.GetDSV(lightIndex);
@@ -190,14 +190,9 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 	return _lightBuffer.GetSRV();
 }
 
-ID3D11RasterizerState *SpotLightCollectionD3D11::GetLightRasterizer(const UINT lightIndex) const
+ID3D11RasterizerState *SpotLightCollectionD3D11::GetRasterizerState() const
 {
-	return _shadowCameras.at(lightIndex).rasterizerState;
-}
-
-CameraD3D11 *SpotLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const
-{
-	return _shadowCameras.at(lightIndex).camera;
+	return _rasterizerState;
 }
 
 const D3D11_VIEWPORT &SpotLightCollectionD3D11::GetViewport() const

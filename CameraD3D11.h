@@ -20,6 +20,12 @@ struct ProjectionInfo
 	float farZ = 50.0f;
 };
 
+struct GeometryBufferData
+{
+	XMFLOAT4X4A viewMatrix;
+	XMFLOAT4A position;
+};
+
 struct LightingBufferData
 {
 	float lightPos[4];
@@ -33,7 +39,7 @@ struct LightingBufferData
 		const std::array<float, 4> &diffuseColour, 
 		const std::array<float, 4> &specularColour)
 	{
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; i++)
 		{
 			lightPos[i] = lightPosition[i];
 			ambCol[i] = ambientColour[i];
@@ -77,9 +83,11 @@ private:
 	bool _recalculateFrustum = true;
 
 	ConstantBufferD3D11 _cameraVSBuffer;
+	ConstantBufferD3D11 *_cameraGSBuffer = nullptr;
 	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
 	bool _isDirty = true;
 
+	std::vector<RenderInstance> _particleEmitters;
 	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 	UINT _lastCullCount = 0;
 
@@ -120,6 +128,7 @@ public:
 	[[nodiscard]] XMFLOAT4X4A GetViewMatrix() const;
 	[[nodiscard]] XMFLOAT4X4A GetProjectionMatrix() const;
 	[[nodiscard]] XMFLOAT4X4A GetViewProjectionMatrix() const;
+	[[nodiscard]] const ProjectionInfo &GetCurrProjectionInfo() const;
 
 	[[nodiscard]] bool FitPlanesToPoints(const std::vector<XMFLOAT4A> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
@@ -129,12 +138,16 @@ public:
 
 	void StoreFrustum(DirectX::BoundingFrustum &frustum);
 
+	void QueueEmitter(const RenderInstance &emitter);
 	void QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance);
 	void ResetRenderQueue();
+
+	[[nodiscard]] const std::vector<RenderInstance> &GetEmitterQueue() const;
 	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetRenderQueue() const;
 	[[nodiscard]] UINT GetCullCount() const;
 
 	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;
+	[[nodiscard]] ID3D11Buffer *GetCameraGSBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraCSBuffer() const;
 };

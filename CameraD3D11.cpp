@@ -42,6 +42,8 @@ CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionI
 
 CameraD3D11::~CameraD3D11()
 {
+	delete _cameraGSBuffer;
+
 	delete _cameraCSBuffer;
 }
 
@@ -60,6 +62,14 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 
 	if (hasCSBuffer)
 	{
+		const GeometryBufferData bufferData = { GetViewMatrix(), _transform.GetPosition() };
+		_cameraGSBuffer = new ConstantBufferD3D11();
+		if (!_cameraGSBuffer->Initialize(device, sizeof(GeometryBufferData), &bufferData))
+		{
+			ErrMsg("Failed to initialize camera GS buffer!");
+			return false;
+		}
+
 		_cameraCSBuffer = new ConstantBufferD3D11();
 		if (!_cameraCSBuffer->Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
 		{
@@ -197,9 +207,18 @@ XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
 	return vpMatrix;
 }
 
+const ProjectionInfo &CameraD3D11::GetCurrProjectionInfo() const
+{
+	return _currProjInfo;
+}
+
 
 bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 {
+	const float
+		currNear = _currProjInfo.nearZ,
+		currFar = _currProjInfo.farZ;
+
 	const XMVECTOR origin = TO_CONST_VEC(_transform.GetPosition());
 	const XMVECTOR direction = TO_CONST_VEC(_transform.GetForward());
 
@@ -231,7 +250,8 @@ bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	_isDirty = true;
-	_recalculateFrustum = true;
+	if (abs(currNear - _currProjInfo.nearZ) + abs(currFar - _currProjInfo.farZ) > 0.01f)
+		_recalculateFrustum = true;
 	return true;
 }
 
@@ -245,6 +265,16 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	{
 		ErrMsg("Failed to update camera VS buffer!");
 		return false;
+	}
+
+	if (_cameraGSBuffer != nullptr)
+	{
+		const GeometryBufferData bufferData = { GetViewMatrix(), _transform.GetPosition() };
+		if (!_cameraGSBuffer->UpdateBuffer(context, &bufferData))
+		{
+			ErrMsg("Failed to update camera GS buffer!");
+			return false;
+		}
 	}
 
 	if (_cameraCSBuffer != nullptr)
@@ -267,6 +297,15 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
 	context->VSSetConstantBuffers(1, 1, &vpmBuffer);
 
+	if (_cameraGSBuffer == nullptr)
+	{
+		ErrMsg("Failed to bind geometry buffer, camera does not have that buffer!");
+		return false;
+	}
+
+	ID3D11Buffer *const camViewPosBuffer = GetCameraGSBuffer();
+	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
+
 	return true;
 }
 
@@ -274,7 +313,7 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 {
 	if (_cameraCSBuffer == nullptr)
 	{
-		ErrMsg("Failed to bind lighting buffers, camera does not have that buffer!");
+		ErrMsg("Failed to bind lighting buffer, camera does not have that buffer!");
 		return false;
 	}
 
@@ -297,6 +336,11 @@ void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum)
 }
 
 
+void CameraD3D11::QueueEmitter(const RenderInstance &emitter)
+{
+	_particleEmitters.push_back(emitter);
+}
+
 void CameraD3D11::QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance)
 {
 	_renderInstances.insert({ resources, instance });
@@ -306,6 +350,13 @@ void CameraD3D11::ResetRenderQueue()
 {
 	_lastCullCount = _renderInstances.size();
 	_renderInstances.clear();
+	_particleEmitters.clear();
+}
+
+
+const std::vector<RenderInstance> &CameraD3D11::GetEmitterQueue() const
+{
+	return _particleEmitters;
 }
 
 const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetRenderQueue() const
@@ -327,6 +378,14 @@ const Transform &CameraD3D11::GetTransform() const
 ID3D11Buffer *CameraD3D11::GetCameraVSBuffer() const
 {
 	return _cameraVSBuffer.GetBuffer();
+}
+
+ID3D11Buffer *CameraD3D11::GetCameraGSBuffer() const
+{
+	if (_cameraGSBuffer == nullptr)
+		return nullptr;
+
+	return _cameraGSBuffer->GetBuffer();
 }
 
 ID3D11Buffer *CameraD3D11::GetCameraCSBuffer() const

@@ -29,6 +29,8 @@ Input::~Input()
 
 bool Input::Update(const HWND window)
 {
+	_isInFocus = (window == GetFocus());
+
 	if (!GetWindowRect(window, _windRect))
 	{
 		ErrMsg("Failed to get window rectangle!");
@@ -100,6 +102,7 @@ MouseState Input::GetMouse() const
 }
 
 
+bool Input::IsInFocus() const { return _isInFocus; }
 bool Input::IsCursorLocked() const { return _cursorLocked; }
 bool Input::IsCursorVisible() const { return _cursorVisible; }
 

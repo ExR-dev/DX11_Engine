@@ -114,12 +114,14 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			texelPos = smUV00.xy * (float)smWidth,
 			fracTex = frac(texelPos);
 		
-		const float shadow = saturate(
+		/*const float shadow = saturate(
 			offsetAngle * lerp(
 				lerp(smResult00, smResult10, fracTex.x),
 				lerp(smResult01, smResult11, fracTex.x),
 				fracTex.y)
-		);
+		);*/
+
+		const float shadow = saturate(offsetAngle * smResult00);
 
 
 		// Apply lighting

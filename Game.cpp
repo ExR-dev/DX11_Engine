@@ -74,11 +74,27 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 	const UINT depthVShaderID = _content.AddShader(_device, "VS_Depth", ShaderType::VERTEX_SHADER, "Content\\VS_Depth.cso");
-	if (geometryVShaderID == CONTENT_LOAD_ERROR)
+	if (depthVShaderID == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add VS_Depth shader!");
 		return false;
 	}
+
+	const UINT particleVShaderID = _content.AddShader(_device, "VS_Particle", ShaderType::VERTEX_SHADER, "Content\\VS_Particle.cso");
+	if (particleVShaderID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add VS_Particle shader!");
+		return false;
+	}
+
+
+	const UINT billboardGShaderID = _content.AddShader(_device, "GS_Billboard", ShaderType::GEOMETRY_SHADER, "Content\\GS_Billboard.cso");
+	if (billboardGShaderID == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add GS_Billboard shader!");
+		return false;
+	}
+
 
 	if (_content.AddShader(_device, "PS_Geometry", ShaderType::PIXEL_SHADER, "Content\\PS_Geometry.cso") == CONTENT_LOAD_ERROR)
 	{
@@ -86,9 +102,16 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+
 	if (_content.AddShader(_device, "CS_Lighting", ShaderType::COMPUTE_SHADER, "Content\\CS_Lighting.cso") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add CS_Lighting shader!");
+		return false;
+	}
+
+	if (_content.AddShader(_device, "CS_Particle", ShaderType::COMPUTE_SHADER, "Content\\CS_Particle.cso") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add CS_Particle shader!");
 		return false;
 	}
 
@@ -102,7 +125,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 
 	const std::vector<Semantic> fallbackInputLayout{
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
-		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "NORMAL",	DXGI_FORMAT_R32G32B32_FLOAT },
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
@@ -111,6 +134,17 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		ErrMsg("Failed to add fallback input layout!");
 		return false;
 	}
+
+
+	/*const std::vector<Semantic> pointInputLayout{
+		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
+	};
+
+	if (_content.AddInputLayout(_device, "IL_Point", pointInputLayout, particleVShaderID) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add point input layout!");
+		return false;
+	}*/
 
 	return true;
 }

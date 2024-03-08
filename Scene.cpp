@@ -30,7 +30,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	_device = device;
 	_content = content;
 
-	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(32, 32, 32));
+	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 500, 150));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize scene holder!");
@@ -45,7 +45,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 	
-	if (!_cubemap.Initialize(device, 0.1f, 50.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
+	if (!_cubemap.Initialize(device, 1024, 0.1f, 50.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -56,11 +56,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
-				{ 10.0f, 0.0f, 0.0f },	// color
+				{ 20.0f, 0.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.4f,				// angle
-				0.5f,						// falloff
+				1.0f,						// falloff
 				8.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
@@ -68,7 +68,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 10.0f, 0.0f },	// color
+				{ 0.0f, 20.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
@@ -80,11 +80,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 10.0f },	// color
+				{ 0.0f, 0.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				-0.3f,						// rotationY
 				XM_PI * 0.4f,				// angle
-				2.0f,						// falloff
+				1.0f,						// falloff
 				128.0f,						// specularity
 				0.05f,						// projectionNearZ
 				30.0f,						// projectionFarZ
@@ -92,7 +92,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 20.0f },	// color
+				{ 20.0f, 20.0f, 25.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
@@ -134,14 +134,14 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = 2,
 			textureID = 2;
 
-		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
 		}
 
-		((Entity *)obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
 	// Create model
@@ -150,16 +150,16 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = 6,
 			textureID = 7;
 
-		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
 		}
 
-		((Entity *)obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
-		((Entity *)obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
-		((Entity *)obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}
 
 	// Create error
@@ -168,16 +168,16 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = 0,
 			textureID = 1;
 
-		Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
 		}
 
-		((Entity *)obj)->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
-		((Entity *)obj)->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
-		((Entity *)obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
 	
 	_initialized = true;
@@ -190,7 +190,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	if (!_initialized)
 		return false;
 
-	
+
 	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
 	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
 
@@ -201,37 +201,69 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f * 1.84248f);
 	
 
-	if (input.IsCursorLocked()) // Handle user input
+	if (input.IsInFocus()) // Handle user input
 	{
+		static UINT
+			selectedMeshID = 0,
+			selectedTextureID = 0;
+
+		if (input.GetKey(KeyCode::OemPlus) == KeyState::Pressed)
+		{
+			if (input.GetKey(KeyCode::M) == KeyState::Held)
+				selectedMeshID = (selectedMeshID + 1) % _content->GetMeshCount();
+			if (input.GetKey(KeyCode::T) == KeyState::Held)
+				selectedTextureID = (selectedTextureID + 1) % _content->GetTextureCount();
+		}
+
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
 		{ // Create 10 random entities
-			for (size_t i = 0; i < 10; i++)
+			for (size_t i = 0; i < 25; i++)
 			{
 				const UINT
 					meshID = rand() % _content->GetMeshCount(),
 					textureID = rand() % _content->GetTextureCount();
 
-				Object *obj = (Object *)_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT);
+				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 				if (!obj->Initialize(_device, meshID, textureID))
 				{
-					ErrMsg(std::format("Failed to initialize entity #{}!", ((Entity *)obj)->GetID()));
+					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 					return false;
 				}
 
-				((Entity *)obj)->GetTransform()->Move({
-					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 60.0f,
+				reinterpret_cast<Entity *>(obj)->GetTransform()->Move({
+					static_cast<float>((rand() % 2000) - 1000) / 10.0f,
+					static_cast<float>((rand() % 1000)) / 10.0f,
+					static_cast<float>((rand() % 2000) - 1000) / 10.0f,
 					0
 				});
 
-				((Entity *)obj)->GetTransform()->Rotate({
+				reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					0
 				});
 			}
+		}
+		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
+		{ // Create one random entity in front of the camera
+			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
+			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID))
+			{
+				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
+				return false;
+			}
+
+			XMFLOAT4A camForward = _currCameraPtr->GetForward();
+			*reinterpret_cast<XMVECTOR *>(&camForward) *= 3.0f;
+			*reinterpret_cast<XMVECTOR *>(&camForward) += *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetPosition());
+
+			reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(camForward);
+			reinterpret_cast<Entity *>(obj)->GetTransform()->SetAxes(
+				_currCameraPtr->GetRight(),
+				_currCameraPtr->GetUp(),
+				_currCameraPtr->GetForward()
+			);
 		}
 
 		static int currSelection = -1;
@@ -253,9 +285,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
 			currSelection--;
 
-		float currSpeed = 2.5f;
+		float currSpeed = 3.0f;
 		if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
-			currSpeed = 4.5f;
+			currSpeed = 6.5f;
 		if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
 			currSpeed = 0.5f;
 
@@ -349,11 +381,11 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 
 	//if (!_spotLights->ScaleLightFrustumsToCamera(*_currCameraPtr))
-	/*if (!_spotLights->ScaleLightFrustumsToCamera(*_camera))
+	if (!_spotLights->ScaleLightFrustumsToCamera(*_camera))
 	{
 		ErrMsg("Failed to scale light frustums to camera!");
 		return false;
-	}*/
+	}
 
 
 	if (!_camera->UpdateBuffers(context))
@@ -467,13 +499,16 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		}
 	}
 
-	const UINT spotlightCount = _spotLights->GetNrOfLights();
+	const int spotlightCount = static_cast<int>(_spotLights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullSpotlights");
 
 	if (_doMultiThread)
 		#pragma omp parallel for num_threads(2)
 		for (int i = 0; i < spotlightCount; i++)
 		{
+			if (!_spotLights->IsEnabled(i))
+				continue; // Skip frustum culling if the spotlight is disabled
+
 			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
 
 			std::vector<Entity *> entitiesToCastShadows;
@@ -487,7 +522,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				_spotLights->SetEnabled(i, false);
 				continue;
 			}
-			_spotLights->SetEnabled(i, true);
+			//_spotLights->SetEnabled(i, true);
 
 			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
 			{
@@ -557,6 +592,17 @@ bool Scene::RenderUI()
 
 	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
 		_doMultiThread = !_doMultiThread;
+
+	ImGui::Separator();
+
+	char nearPlane[16]{}, farPlane[16]{};
+	for (int i = 0; i < _spotLights->GetNrOfLights(); i++)
+	{
+		const ProjectionInfo projInfo = _spotLights->GetLightCamera(i)->GetCurrProjectionInfo();
+		snprintf(nearPlane, sizeof(nearPlane), "%.2f", projInfo.nearZ);
+		snprintf(farPlane, sizeof(farPlane), "%.1f", projInfo.farZ);
+		ImGui::Text(std::format("({}:{}) Planes Spotlight #{}", nearPlane, farPlane, i).c_str());
+	}
 
 	return true;
 }

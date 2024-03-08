@@ -5,23 +5,8 @@
 
 struct EmitterData
 {
-	UINT maxParticles;
-
-	float (*lifetimeFunc)(float, float);
-	float minLifetime, maxLifetime;
-
-	float (*sizeFunc)(float, float);
-	float minSize, maxSize;
-
-	float (*speedFunc)(float, float);
-	float minSpeed, maxSpeed;
-};
-
-struct Particle
-{
-	DirectX::XMFLOAT3 position;
-	DirectX::XMFLOAT3 velocity;
-	float age;
+	UINT particleCount, particleRate;
+	XMFLOAT2A lifetimeRange, sizeRange, speedRange;
 };
 
 
@@ -29,8 +14,6 @@ class Emitter final : Entity
 {
 private:
 	EmitterData _settings = { };
-	std::vector<Particle *> _liveParticles, _deadParticles;
-
 	StructuredBufferD3D11 _particleBuffer;
 
 public:
@@ -43,4 +26,7 @@ public:
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, Time &time, const Input &input) override;
 	[[nodiscard]] bool BindBuffers(ID3D11DeviceContext *context) const override;
 	[[nodiscard]] bool Render(CameraD3D11 *camera) override;
+
+	[[nodiscard]] bool UpdateParticles(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool PerformDrawCall(ID3D11DeviceContext *context) const;
 };

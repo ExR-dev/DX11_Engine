@@ -13,9 +13,9 @@ private:
 	{
 		union
 		{
-			Object *item;
-			//Emitter *item;
-			//Light *item;
+			Object *item = nullptr;
+			//Emitter *item = nullptr;
+			//Light *item = nullptr;
 		};
 
 		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds, EntityType type)

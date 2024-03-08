@@ -218,7 +218,8 @@ private:
 
     bool
 		_cursorLocked = false,
-		_cursorVisible = true;
+		_cursorVisible = true,
+		_isInFocus = false;
 
 public:
     Input();
@@ -233,6 +234,7 @@ public:
 	[[nodiscard]] KeyState GetKey(KeyCode keyCode) const;
     [[nodiscard]] MouseState GetMouse() const;
 
+    [[nodiscard]] bool IsInFocus() const;
     [[nodiscard]] bool IsCursorLocked() const;
     [[nodiscard]] bool IsCursorVisible() const;
 

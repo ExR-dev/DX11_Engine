@@ -4,6 +4,7 @@
 
 #include "ErrMsg.h"
 #include "Entity.h"
+#include "Emitter.h"
 #include "D3D11Helper.h"
 #include "Object.h"
 
@@ -219,6 +220,7 @@ bool Graphics::RenderShadowCasters()
 	_context->PSSetShader(nullptr, nullptr, 0);
 
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_context->RSSetState(_currSpotLightCollection->GetRasterizerState());
 	_context->RSSetViewports(1, &_currSpotLightCollection->GetViewport());
 
 	const MeshD3D11 *loadedMesh = nullptr;
@@ -243,8 +245,6 @@ bool Graphics::RenderShadowCasters()
 			ErrMsg(std::format("Failed to bind shadow-camera buffers for spotlight #{}!", spotlight_i));
 			return false;
 		}
-
-		_context->RSSetState(_currSpotLightCollection->GetLightRasterizer(spotlight_i));
 
 		UINT entity_i = 0;
 		for (const auto &[resources, instance] : spotlightCamera->GetRenderQueue())
@@ -329,11 +329,11 @@ bool Graphics::RenderGeometry()
 	}
 
 	// Bind geometry stage resources
-	const UINT ilID = _content->GetInputLayoutID("IL_Fallback");
-	if (_currInputLayoutID != ilID)
+	const UINT geometryInputLayoutID = _content->GetInputLayoutID("IL_Fallback");
+	if (_currInputLayoutID != geometryInputLayoutID)
 	{
-		_context->IASetInputLayout(_content->GetInputLayout(ilID)->GetInputLayout());
-		_currInputLayoutID = ilID;
+		_context->IASetInputLayout(_content->GetInputLayout(geometryInputLayoutID)->GetInputLayout());
+		_currInputLayoutID = geometryInputLayoutID;
 	}
 
 	const UINT vsID = _content->GetShaderID("VS_Geometry");
@@ -425,6 +425,65 @@ bool Graphics::RenderGeometry()
 
 		entity_i++;
 	}
+
+
+	const std::vector<RenderInstance> emitters = _currCamera->GetEmitterQueue();
+	const UINT emitterCount = emitters.size();
+	if (emitterCount > 0)
+	{
+		// Bind particle emitter resources
+		const UINT particleInputLayoutID = _content->GetInputLayoutID("IL_Point");
+		if (_currInputLayoutID != particleInputLayoutID)
+		{
+			_context->IASetInputLayout(_content->GetInputLayout(particleInputLayoutID)->GetInputLayout());
+			_currInputLayoutID = particleInputLayoutID;
+		}
+
+		const UINT particleVsID = _content->GetShaderID("VS_Particle");
+		if (_currVsID != particleVsID)
+		{
+			if (!_content->GetShader(particleVsID)->BindShader(_context))
+			{
+				ErrMsg("Failed to bind particle vertex shader!");
+				return false;
+			}
+			_currVsID = particleVsID;
+		}
+
+		if (!_content->GetShader(_content->GetShaderID("GS_Billboard"))->BindShader(_context))
+		{
+			ErrMsg("Failed to bind billboard geometry shader!");
+			return false;
+		}
+
+
+		// Render particle emitters
+
+		for (UINT i = 0; i < emitterCount; i++)
+		{
+			Emitter *emitter = static_cast<Emitter *>(emitters[i].subject);
+
+			if (!emitter->BindBuffers(_context))
+			{
+				ErrMsg("Failed to bind emitter buffers!");
+				return false;
+			}
+
+			if (!emitter->Render(_currCamera))
+			{
+				ErrMsg("Failed to render emitter!");
+				return false;
+			}
+
+			if (!emitter->PerformDrawCall(_context))
+			{
+				ErrMsg("Failed to perform emitter draw call!");
+				return false;
+			}
+		}
+	}
+
+
 
 	// Unbind render targets
 	for (auto &rtv : rtvs)

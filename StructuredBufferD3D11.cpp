@@ -29,7 +29,7 @@ bool StructuredBufferD3D11::Initialize(ID3D11Device *device, const UINT sizeOfEl
 	_nrOfElements = nrOfElementsInBuffer;
 
 	D3D11_BUFFER_DESC structuredBufferDesc;
-	structuredBufferDesc.ByteWidth = _elementSize * _nrOfElements;
+	structuredBufferDesc.ByteWidth = _elementSize * static_cast<UINT>(_nrOfElements);
 	structuredBufferDesc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE;
 	structuredBufferDesc.BindFlags = hasSRV ? D3D11_BIND_SHADER_RESOURCE : 0;
 	structuredBufferDesc.BindFlags |= hasUAV ? D3D11_BIND_UNORDERED_ACCESS : 0;
@@ -61,7 +61,7 @@ bool StructuredBufferD3D11::Initialize(ID3D11Device *device, const UINT sizeOfEl
 		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 		srvDesc.Buffer.FirstElement = 0;
-		srvDesc.Buffer.NumElements = _nrOfElements;
+		srvDesc.Buffer.NumElements = static_cast<UINT>(_nrOfElements);
 
 		if (FAILED(device->CreateShaderResourceView(_buffer, &srvDesc, &_srv)))
 		{
@@ -76,7 +76,7 @@ bool StructuredBufferD3D11::Initialize(ID3D11Device *device, const UINT sizeOfEl
 		uavDesc.Format = DXGI_FORMAT_UNKNOWN;
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		uavDesc.Buffer.FirstElement = 0;
-		uavDesc.Buffer.NumElements = _nrOfElements;
+		uavDesc.Buffer.NumElements = static_cast<UINT>(_nrOfElements);
 		uavDesc.Buffer.Flags = 0;
 
 		if (FAILED(device->CreateUnorderedAccessView(_buffer, &uavDesc, &_uav)))

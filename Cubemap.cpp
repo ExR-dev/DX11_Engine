@@ -61,7 +61,7 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 	textureDesc.Height = resolution;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 6;
-	textureDesc.Format = format;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
