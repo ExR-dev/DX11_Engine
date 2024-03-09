@@ -185,17 +185,19 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {1,1,1}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
-		emitterData.particleCount = 128;
-		emitterData.particleRate = 32;
-		emitterData.lifetimeRange = { 0.0f, 1.0f };
-		emitterData.speedRange = { 0.0f, 1.0f };
-		emitterData.sizeRange = { 0.0f, 1.0f };
+		emitterData.particleCount = 512;
+		emitterData.particleRate = 1;
+		emitterData.lifetime = 1.0f;
+		//emitterData.speedRange = { 0.0f, 1.0f };
+		//emitterData.sizeRange = { 0.0f, 1.0f };
 
 		if (!emitter->Initialize(_device, emitterData))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
 		}
+
+		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 4.0f, 0.0f, 0 });
 	}
 	
 	_initialized = true;
@@ -334,6 +336,25 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 			else
 			{ // Move selected entity
+				static bool relativeToCamera = false;
+				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
+					relativeToCamera = !relativeToCamera;
+
+				XMVECTOR right, up, forward;
+
+				if (relativeToCamera)
+				{
+					right = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetRight());
+					up = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetUp());
+					forward = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetForward());
+				}
+				else
+				{
+					right = XMVectorSet(1, 0, 0, 0);
+					up = XMVectorSet(0, 1, 0, 0);
+					forward = XMVectorSet(0, 0, 1, 0);
+				}
+
 				static bool isRotating = false;
 				if (input.GetKey(KeyCode::R) == KeyState::Pressed)
 					isRotating = !isRotating;
@@ -341,39 +362,39 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				if (input.GetKey(KeyCode::T) == KeyState::Pressed)
 					isScaling = !isScaling;
 
-				XMFLOAT4A transformationVector = { 0, 0, 0, 0 };
+				XMVECTOR transformationVector = XMVectorZero();
 				bool doMove = false;
 
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
 				{
-					transformationVector.x += time.deltaTime * currSpeed;
+					transformationVector += right * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 				else if (input.GetKey(KeyCode::A) == KeyState::Held)
 				{
-					transformationVector.x -= time.deltaTime * currSpeed;
+					transformationVector -= right * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 
 				if (input.GetKey(KeyCode::Space) == KeyState::Held)
 				{
-					transformationVector.y += time.deltaTime * currSpeed;
+					transformationVector += up * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 				else if (input.GetKey(KeyCode::X) == KeyState::Held)
 				{
-					transformationVector.y -= time.deltaTime * currSpeed;
+					transformationVector -= up * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 
 				if (input.GetKey(KeyCode::W) == KeyState::Held)
 				{
-					transformationVector.z += time.deltaTime * currSpeed;
+					transformationVector += forward * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 				else if (input.GetKey(KeyCode::S) == KeyState::Held)
 				{
-					transformationVector.z -= time.deltaTime * currSpeed;
+					transformationVector -= forward * time.deltaTime * currSpeed;
 					doMove = true;
 				}
 
@@ -383,11 +404,11 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					Transform *entityTransform = ent->GetTransform();
 
 					if (isRotating)
-						entityTransform->Rotate(transformationVector);
+						entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
 					else if (isScaling)
-						entityTransform->ScaleAbsolute(transformationVector);
+						entityTransform->ScaleAbsolute(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
 					else
-						entityTransform->Move(transformationVector);
+						entityTransform->Move(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
 
 
 					if (!_sceneHolder.UpdateEntityPosition(ent))

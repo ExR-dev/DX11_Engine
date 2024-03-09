@@ -432,22 +432,31 @@ bool Graphics::RenderGeometry()
 	if (emitterCount > 0)
 	{
 		// Bind particle emitter resources
-		const UINT particleInputLayoutID = _content->GetInputLayoutID("IL_Null");
-		if (_currInputLayoutID != particleInputLayoutID)
-		{
-			_context->IASetInputLayout(_content->GetInputLayout(particleInputLayoutID)->GetInputLayout());
-			_currInputLayoutID = particleInputLayoutID;
-		}
+		_context->IASetInputLayout(nullptr);
+		_currInputLayoutID = CONTENT_LOAD_ERROR;
 
-		const UINT particleVsID = _content->GetShaderID("VS_Particle");
-		if (_currVsID != particleVsID)
+		_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+		const UINT particleVShaderID = _content->GetShaderID("VS_Particle");
+		if (_currVsID != particleVShaderID)
 		{
-			if (!_content->GetShader(particleVsID)->BindShader(_context))
+			if (!_content->GetShader(particleVShaderID)->BindShader(_context))
 			{
 				ErrMsg("Failed to bind particle vertex shader!");
 				return false;
 			}
-			_currVsID = particleVsID;
+			_currVsID = particleVShaderID;
+		}
+
+		const UINT particlePShaderID = _content->GetShaderID("PS_Particle");
+		if (_currPsID != particlePShaderID)
+		{
+			if (!_content->GetShader(particlePShaderID)->BindShader(_context))
+			{
+				ErrMsg("Failed to bind particle pixel shader!");
+				return false;
+			}
+			_currPsID = particlePShaderID;
 		}
 
 		if (!_content->GetShader(_content->GetShaderID("GS_Billboard"))->BindShader(_context))
@@ -477,6 +486,9 @@ bool Graphics::RenderGeometry()
 
 		// Unbind geometry shader
 		_context->GSSetShader(nullptr, nullptr, 0);
+
+		ID3D11ShaderResourceView *nullSRV = nullptr;
+		_context->VSSetShaderResources(0, 1, &nullSRV);
 	}
 
 	// Unbind render targets

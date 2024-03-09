@@ -30,12 +30,13 @@ bool StructuredBufferD3D11::Initialize(ID3D11Device *device, const UINT sizeOfEl
 
 	D3D11_BUFFER_DESC structuredBufferDesc;
 	structuredBufferDesc.ByteWidth = _elementSize * static_cast<UINT>(_nrOfElements);
-	structuredBufferDesc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE;
+	structuredBufferDesc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : ((hasSRV && hasUAV) ? D3D11_USAGE_DEFAULT : D3D11_USAGE_IMMUTABLE);
 	structuredBufferDesc.BindFlags = hasSRV ? D3D11_BIND_SHADER_RESOURCE : 0;
 	structuredBufferDesc.BindFlags |= hasUAV ? D3D11_BIND_UNORDERED_ACCESS : 0;
 	structuredBufferDesc.CPUAccessFlags = dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
 	structuredBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	structuredBufferDesc.StructureByteStride = _elementSize;
+
 
 	D3D11_SUBRESOURCE_DATA srData = { };
 	const D3D11_SUBRESOURCE_DATA *srDataPtr = nullptr;

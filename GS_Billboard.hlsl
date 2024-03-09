@@ -11,37 +11,57 @@ struct GeometryShaderOutput
 	float4 world_position : POSITION;
 	float3 normal : NORMAL;
 	float2 tex_coord : TEXCOORD;
+	
+	//float4 world_position : POSITION;
+	//float3 normal : NORMAL;
+	//float3 color : COLOR;
 };
 
+
+/*struct ParticleIn
+{
+	float3 position : POSITION;
+	float3 color : COLOR;
+	float size : SIZE;
+};*/
 
 [maxvertexcount(6)]
 void main(
 	point float4 input[1] : POSITION, 
+	//point ParticleIn input[1], 
 	inout TriangleStream<GeometryShaderOutput> output)
 {
-	const float3
+	float3
 		frontVec = normalize(input[0].xyz - cam_position.xyz),
 		rightVec = normalize(cross(frontVec, float3(0, 1, 0))),
 		upVec = normalize(cross(frontVec, rightVec));
 
+	rightVec *= input[0].w;
+	upVec *= input[0].w;
+
 	GeometryShaderOutput newVertex;
-	newVertex.normal = frontVec;
+	newVertex.position = float4(input[0].xyz, 0);
+	newVertex.normal = -frontVec;
+	//newVertex.color = float3(1,1,1);
 
 	// Top left
 	newVertex.world_position = float4(input[0].xyz - rightVec + upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(0, 1);
 	output.Append(newVertex);
 
 	// Bottom right
 	newVertex.world_position = float4(input[0].xyz + rightVec - upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(1, 0);
 	output.Append(newVertex);
 
 	// Bottom left
 	newVertex.world_position = float4(input[0].xyz - rightVec - upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(0, 0);
 	output.Append(newVertex);
 
@@ -50,18 +70,21 @@ void main(
 	// Top left
 	newVertex.world_position = float4(input[0].xyz - rightVec + upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(0, 1);
 	output.Append(newVertex);
 
 	// Top right
 	newVertex.world_position = float4(input[0].xyz + rightVec + upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(1, 1);
 	output.Append(newVertex);
 
 	// Bottom right
 	newVertex.world_position = float4(input[0].xyz + rightVec - upVec, 1.0f); 
 	newVertex.position = mul(newVertex.world_position, view_projection);
+	newVertex.world_position = float4(input[0].xyz, 0);
 	newVertex.tex_coord = float2(1, 0);
 	output.Append(newVertex);
 }

@@ -51,7 +51,7 @@ bool ConstantBufferD3D11::Initialize(ID3D11Device *device, const size_t byteSize
 {
 	if (_buffer != nullptr)
 	{
-		ErrMsg("Vertex buffer is already initialized!");
+		ErrMsg("Constant buffer is already initialized!");
 		return false;
 	}
 

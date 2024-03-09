@@ -103,6 +103,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	if (_content.AddShader(_device, "PS_Particle", ShaderType::PIXEL_SHADER, "Content\\PS_Particle.cso") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add PS_Particle shader!");
+		return false;
+	}
+
 
 	if (_content.AddShader(_device, "CS_Lighting", ShaderType::COMPUTE_SHADER, "Content\\CS_Lighting.cso") == CONTENT_LOAD_ERROR)
 	{
@@ -137,13 +143,13 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	const std::vector<Semantic> nullInputLayout { };
+	/*const std::vector<Semantic> nullInputLayout { };
 
 	if (_content.AddInputLayout(_device, "IL_Null", nullInputLayout, particleVShaderID) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add IL_Null!");
 		return false;
-	}
+	}*/
 
 	return true;
 }

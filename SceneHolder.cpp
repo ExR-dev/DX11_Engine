@@ -24,8 +24,18 @@ bool SceneHolder::Update()
 {
 	for (const UINT i : _treeInsertionQueue)
 	{
-		Entity *entity = (Entity*)_entities[i]->item;
+		Entity *entity = nullptr;
+		switch (_entities[i]->_type)
+		{
+			case EntityType::OBJECT:
+				entity = reinterpret_cast<Entity *>(_entities[i]->_item.object);
+				break;
 
+			case EntityType::EMITTER:
+				entity = reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
+				break;
+		}
+		
 		DirectX::BoundingBox entityBounds;
 		entity->StoreBounds(entityBounds);
 
@@ -43,9 +53,18 @@ Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityT
 	SceneEntity *newEntity = new SceneEntity(static_cast<UINT>(_entities.size()), bounds, type);
 	_entities.push_back(newEntity);
 
-	_treeInsertionQueue.push_back(((Entity *)newEntity->item)->GetID());
+	switch (type)
+	{
+		case EntityType::OBJECT:
+			_treeInsertionQueue.push_back((reinterpret_cast<Entity *>(newEntity->_item.object))->GetID());
+			return reinterpret_cast<Entity *>(_entities.back()->_item.object);
 
-	return (Entity *)_entities.back()->item;
+		case EntityType::EMITTER:
+			_treeInsertionQueue.push_back((reinterpret_cast<Entity *>(newEntity->_item.emitter))->GetID());
+			return reinterpret_cast<Entity *>(_entities.back()->_item.emitter);
+	}
+
+	return nullptr;
 }
 
 bool SceneHolder::RemoveEntity(Entity *entity)
@@ -59,7 +78,17 @@ bool SceneHolder::RemoveEntity(Entity *entity)
 		return false;
 	}
 
-	std::erase_if(_entities, [entity](const SceneEntity *item) { return ((Entity *)item->item) == entity; });
+	switch (entity->GetType())
+	{
+		case EntityType::OBJECT:
+			std::erase_if(_entities, [entity](const SceneEntity *item) { return reinterpret_cast<Entity *>(item->_item.object) == entity; });
+			break;
+
+		case EntityType::EMITTER:
+			std::erase_if(_entities, [entity](const SceneEntity *item) { return reinterpret_cast<Entity *>(item->_item.emitter) == entity; });
+			break;
+	}
+
 	return true;
 }
 
@@ -71,7 +100,16 @@ bool SceneHolder::RemoveEntity(const UINT id)
 		return false;
 	}
 
-	return RemoveEntity((Entity *)_entities[id]->item);
+	switch (_entities[id]->_type)
+	{
+		case EntityType::OBJECT:
+			return RemoveEntity(reinterpret_cast<Entity *>(_entities[id]->_item.object));
+
+		case EntityType::EMITTER:
+			return RemoveEntity(reinterpret_cast<Entity *>(_entities[id]->_item.emitter));
+	}
+
+	return false;
 }
 
 
@@ -99,7 +137,16 @@ Entity *SceneHolder::GetEntity(const UINT id) const
 		return nullptr;
 	}
 
-	return ((Entity *)_entities[id]->item);
+	switch (_entities[id]->_type)
+	{
+		case EntityType::OBJECT:
+			return reinterpret_cast<Entity *>(_entities[id]->_item.object);
+
+		case EntityType::EMITTER:
+			return reinterpret_cast<Entity *>(_entities[id]->_item.emitter);
+	}
+
+	return nullptr;
 }
 
 UINT SceneHolder::GetEntityCount() const
@@ -110,7 +157,14 @@ UINT SceneHolder::GetEntityCount() const
 void SceneHolder::GetEntities(std::vector<Entity *> entities) const
 {
 	for (const SceneEntity *ent : _entities)
-		entities.push_back((Entity *)ent->item);
+		switch (ent->_type)
+		{
+			case EntityType::OBJECT:
+				entities.push_back(reinterpret_cast<Entity *>(ent->_item.object));
+
+			case EntityType::EMITTER:
+				entities.push_back(reinterpret_cast<Entity *>(ent->_item.emitter));
+		}
 }
 
 
