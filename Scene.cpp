@@ -128,7 +128,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 
-	// Create room entity
+	// Create room
 	{
 		constexpr UINT
 			meshID = 2,
@@ -188,16 +188,30 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		emitterData.particleCount = 512;
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 1.0f;
-		//emitterData.speedRange = { 0.0f, 1.0f };
-		//emitterData.sizeRange = { 0.0f, 1.0f };
 
-		if (!emitter->Initialize(_device, emitterData))
+		if (!emitter->Initialize(_device, emitterData, 10))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
 		}
 
 		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 4.0f, 0.0f, 0 });
+	}
+
+	// Create transparent
+	{
+		constexpr UINT
+			meshID = 6,
+			textureID = 8;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, true))
+		{
+			ErrMsg("Failed to initialize transparent object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.5f, 1.0f, 4.0f, 0 });
 	}
 	
 	_initialized = true;
@@ -227,7 +241,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			selectedMeshID = 0,
 			selectedTextureID = 0;
 
-		if (input.GetKey(KeyCode::OemPlus) == KeyState::Pressed)
+		if (input.GetKey(KeyCode::Up) == KeyState::Pressed)
 		{
 			if (input.GetKey(KeyCode::M) == KeyState::Held)
 				selectedMeshID = (selectedMeshID + 1) % _content->GetMeshCount();
@@ -244,7 +258,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					textureID = rand() % _content->GetTextureCount();
 
 				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, meshID, textureID))
+				if (!obj->Initialize(_device, meshID, textureID, (textureID >= 8)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 					return false;
@@ -268,7 +282,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one random entity in front of the camera
 			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID))
+			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID, (selectedTextureID >= 8)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 				return false;

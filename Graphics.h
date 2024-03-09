@@ -28,8 +28,10 @@ private:
 	IDXGISwapChain *_swapChain		= nullptr;
 	ID3D11RenderTargetView *_rtv	= nullptr;
 	ID3D11Texture2D	*_dsTexture		= nullptr;
-	ID3D11DepthStencilView *_dsView = nullptr;
-	ID3D11UnorderedAccessView *_uav = nullptr;
+	ID3D11DepthStencilView *_dsView	= nullptr;
+	ID3D11UnorderedAccessView *_uav	= nullptr;
+	ID3D11BlendState *_tbs			= nullptr;
+	ID3D11DepthStencilState *_tdss	= nullptr;
 	D3D11_VIEWPORT _viewport		= { };
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
@@ -53,6 +55,7 @@ private:
 	[[nodiscard]] bool RenderShadowCasters();
 	[[nodiscard]] bool RenderGeometry();
 	[[nodiscard]] bool RenderLighting() const;
+	[[nodiscard]] bool RenderTransparency();
 
 	[[nodiscard]] bool ResetRenderState();
 

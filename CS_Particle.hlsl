@@ -1,31 +1,19 @@
 
 cbuffer EmitterData : register(b0)
 {
-	uint
-		particle_count,
-		particle_rate;
-	float
-		lifetime, p1;
-	//float2
-	//	size_range,
-	//	speed_range;
-};
-
-cbuffer Time : register(b1)
-{
-	float time, dTime, p2, p3;
+	uint particle_count;
+	uint particle_rate;
+	float lifetime;
+	float deltaTime;
 };
 
 struct Particle
 {
-	float3
-		position,
-		velocity,
-		color;
-	float
-		size,
-		lifetime,
-		padding;
+	float3 position;
+	float3 velocity;
+	float4 color;
+	float size;
+	float lifetime;
 };
 
 RWStructuredBuffer<Particle> Particles : register(u0);
@@ -37,8 +25,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	Particle currParticle = Particles[DTid.x];
 
 	// Update
-	currParticle.position += currParticle.velocity * dTime;
-	currParticle.lifetime += dTime;
+	currParticle.position += currParticle.velocity * deltaTime;
+	currParticle.lifetime += deltaTime;
 
 	if (currParticle.lifetime >= lifetime)
 	{

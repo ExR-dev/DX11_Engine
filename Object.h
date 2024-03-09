@@ -10,10 +10,12 @@ private:
 		_meshID = CONTENT_LOAD_ERROR,
 		_texID = CONTENT_LOAD_ERROR;
 
+	bool _isTransparent = false;
+
 public:
 	explicit Object(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT meshID, UINT texID);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT meshID, UINT texID, bool isTransparent = false);
 
 	[[nodiscard]] EntityType GetType() const override;
 

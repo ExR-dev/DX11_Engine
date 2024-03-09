@@ -8,7 +8,7 @@ Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, b
 
 }
 
-bool Object::Initialize(ID3D11Device *device, const UINT meshID, const UINT texID)
+bool Object::Initialize(ID3D11Device *device, const UINT meshID, const UINT texID, const bool isTransparent)
 {
 	if (!Entity::Initialize(device))
 	{
@@ -18,6 +18,7 @@ bool Object::Initialize(ID3D11Device *device, const UINT meshID, const UINT texI
 
 	_meshID = meshID;
 	_texID = texID;
+	_isTransparent = isTransparent;
 
 	return true;
 }
@@ -71,6 +72,10 @@ bool Object::Render(CameraD3D11 *camera)
 		sizeof(Object)
 	};
 
-	camera->QueueRenderInstance(resources, instance);
+	if (_isTransparent)
+		camera->QueueTransparent(resources, instance);
+	else
+		camera->QueueGeometry(resources, instance);
+
 	return true;
 }

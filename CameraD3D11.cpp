@@ -336,37 +336,52 @@ void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum)
 }
 
 
-void CameraD3D11::QueueEmitter(const RenderInstance &emitter)
+void CameraD3D11::QueueGeometry(const ResourceGroup &resources, const RenderInstance &instance)
 {
-	_particleEmitters.push_back(emitter);
+	_geometryRenderQueue.insert({ resources, instance });
 }
 
-void CameraD3D11::QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance)
+void CameraD3D11::QueueTransparent(const ResourceGroup &resources, const RenderInstance &instance)
 {
-	_renderInstances.insert({ resources, instance });
+	_transparentRenderQueue.insert({ resources, instance });
+}
+
+void CameraD3D11::QueueEmitter(const ResourceGroup &resources, const RenderInstance &instance)
+{
+	_particleRenderQueue.insert({ resources, instance });
 }
 
 void CameraD3D11::ResetRenderQueue()
 {
-	_lastCullCount = _renderInstances.size();
-	_renderInstances.clear();
-	_particleEmitters.clear();
+	_lastCullCount = 
+		_geometryRenderQueue.size() + 
+		_transparentRenderQueue.size() + 
+		_particleRenderQueue.size();
+
+	_geometryRenderQueue.clear();
+	_transparentRenderQueue.clear();
+	_particleRenderQueue.clear();
 }
 
-
-const std::vector<RenderInstance> &CameraD3D11::GetEmitterQueue() const
-{
-	return _particleEmitters;
-}
-
-const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetRenderQueue() const
-{
-	return _renderInstances;
-}
 
 UINT CameraD3D11::GetCullCount() const
 {
 	return _lastCullCount;
+}
+
+const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetGeometryQueue() const
+{
+	return _geometryRenderQueue;
+}
+
+const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetTransparentQueue() const
+{
+	return _transparentRenderQueue;
+}
+
+const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetParticleQueue() const
+{
+	return _particleRenderQueue;
 }
 
 

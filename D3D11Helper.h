@@ -13,4 +13,6 @@
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView,
 	ID3D11UnorderedAccessView *&uav,
+	ID3D11BlendState *&blendState,
+	ID3D11DepthStencilState *&depthStencilState,
 	D3D11_VIEWPORT &viewport);

@@ -57,6 +57,9 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"texture4",
 		"texture5",
 		"CharacterSculptLow0Texture1",
+		"Transparent",
+		"Transparent2",
+		"Particle",
 	};
 
 	for (const std::string &textureName : textureNames)
@@ -89,8 +92,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	}
 
 
-	const UINT billboardGShaderID = _content.AddShader(_device, "GS_Billboard", ShaderType::GEOMETRY_SHADER, "Content\\GS_Billboard.cso");
-	if (billboardGShaderID == CONTENT_LOAD_ERROR)
+	if (_content.AddShader(_device, "GS_Billboard", ShaderType::GEOMETRY_SHADER, "Content\\GS_Billboard.cso") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add GS_Billboard shader!");
 		return false;
@@ -100,6 +102,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	if (_content.AddShader(_device, "PS_Geometry", ShaderType::PIXEL_SHADER, "Content\\PS_Geometry.cso") == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add PS_Geometry shader!");
+		return false;
+	}
+
+	if (_content.AddShader(_device, "PS_Transparent", ShaderType::PIXEL_SHADER, "Content\\PS_Transparent.cso") == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add PS_Transparent shader!");
 		return false;
 	}
 

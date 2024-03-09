@@ -161,9 +161,11 @@ void SceneHolder::GetEntities(std::vector<Entity *> entities) const
 		{
 			case EntityType::OBJECT:
 				entities.push_back(reinterpret_cast<Entity *>(ent->_item.object));
+				break;
 
 			case EntityType::EMITTER:
 				entities.push_back(reinterpret_cast<Entity *>(ent->_item.emitter));
+				break;
 		}
 }
 

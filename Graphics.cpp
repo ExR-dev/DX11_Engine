@@ -15,6 +15,12 @@
 
 Graphics::~Graphics()
 {
+	if (_tdss != nullptr)
+		_tdss->Release();
+
+	if (_tbs != nullptr)
+		_tbs->Release();
+
 	if (_uav != nullptr)
 		_uav->Release();
 
@@ -30,14 +36,14 @@ Graphics::~Graphics()
 	if (_swapChain != nullptr)
 		_swapChain->Release();
 
-#ifdef _DEBUG
+// #ifdef _DEBUG
 	if (_isSetup)
 	{
 		ImGui_ImplDX11_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
 	}
-#endif // _DEBUG
+// #endif // _DEBUG
 }
 
 
@@ -51,7 +57,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	}
 
 	if (!SetupD3D11(width, height, window, device, immediateContext, 
-			_swapChain, _rtv, _dsTexture, _dsView, _uav, _viewport))
+			_swapChain, _rtv, _dsTexture, _dsView, _uav, _tbs, _tdss, _viewport))
 	{
 		ErrMsg("Failed to setup d3d11!");
 		return false;
@@ -186,6 +192,12 @@ bool Graphics::EndSceneRender(Time &time)
 		return false;
 	}
 
+	if (!RenderTransparency())
+	{
+		ErrMsg("Failed to render transparency!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -247,7 +259,7 @@ bool Graphics::RenderShadowCasters()
 		}
 
 		UINT entity_i = 0;
-		for (const auto &[resources, instance] : spotlightCamera->GetRenderQueue())
+		for (const auto &[resources, instance] : spotlightCamera->GetGeometryQueue())
 		{
 			if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 			{
@@ -366,11 +378,9 @@ bool Graphics::RenderGeometry()
 		_currSamplerID = ssID;
 	}
 
-
 	const MeshD3D11 *loadedMesh = nullptr;
-
 	UINT entity_i = 0;
-	for (const auto &[resources, instance] : _currCamera->GetRenderQueue())
+	for (const auto &[resources, instance] : _currCamera->GetGeometryQueue())
 	{
 		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 		{
@@ -378,7 +388,7 @@ bool Graphics::RenderGeometry()
 			return false;
 		}
 
-		// Bind shared entity data
+		// Bind shared geometry resources
 		if (_currMeshID != resources.meshID)
 		{
 			loadedMesh = _content->GetMesh(resources.meshID);
@@ -399,7 +409,7 @@ bool Graphics::RenderGeometry()
 			_currTexID = resources.texID;
 		}
 
-		// Bind private entity data
+		// Bind private entity resources
 		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
 		{
 			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
@@ -426,70 +436,139 @@ bool Graphics::RenderGeometry()
 		entity_i++;
 	}
 
-
-	const std::vector<RenderInstance> emitters = _currCamera->GetEmitterQueue();
-	const UINT emitterCount = emitters.size();
-	if (emitterCount > 0)
+	/*entity_i = 0;
+	for (const auto &[resources, instance] : _currCamera->GetTransparentQueue())
 	{
-		// Bind particle emitter resources
-		_context->IASetInputLayout(nullptr);
-		_currInputLayoutID = CONTENT_LOAD_ERROR;
-
-		_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-
-		const UINT particleVShaderID = _content->GetShaderID("VS_Particle");
-		if (_currVsID != particleVShaderID)
+		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 		{
-			if (!_content->GetShader(particleVShaderID)->BindShader(_context))
-			{
-				ErrMsg("Failed to bind particle vertex shader!");
-				return false;
-			}
-			_currVsID = particleVShaderID;
-		}
-
-		const UINT particlePShaderID = _content->GetShaderID("PS_Particle");
-		if (_currPsID != particlePShaderID)
-		{
-			if (!_content->GetShader(particlePShaderID)->BindShader(_context))
-			{
-				ErrMsg("Failed to bind particle pixel shader!");
-				return false;
-			}
-			_currPsID = particlePShaderID;
-		}
-
-		if (!_content->GetShader(_content->GetShaderID("GS_Billboard"))->BindShader(_context))
-		{
-			ErrMsg("Failed to bind billboard geometry shader!");
+			ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
 			return false;
 		}
 
-
-		// Render particle emitters
-		for (UINT i = 0; i < emitterCount; i++)
+		// Bind shared geometry resources
+		if (_currMeshID != resources.meshID)
 		{
-			Emitter *emitter = static_cast<Emitter *>(emitters[i].subject);
-
-			if (!emitter->BindBuffers(_context))
+			loadedMesh = _content->GetMesh(resources.meshID);
+			if (!loadedMesh->BindMeshBuffers(_context))
 			{
-				ErrMsg("Failed to bind emitter buffers!");
+				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
 				return false;
 			}
+			_currMeshID = resources.meshID;
+		}
+		else if (loadedMesh == nullptr)
+			loadedMesh = _content->GetMesh(resources.meshID);
 
-			if (!emitter->PerformDrawCall(_context))
+		if (_currTexID != resources.texID)
+		{
+			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+			_context->PSSetShaderResources(0, 1, &srv);
+			_currTexID = resources.texID;
+		}
+
+		// Bind private entity resources
+		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
+		{
+			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
+			return false;
+		}
+
+		// Perform draw calls
+		if (loadedMesh == nullptr)
+		{
+			ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", entity_i));
+			return false;
+		}
+
+		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
+		for (size_t i = 0; i < subMeshCount; i++)
+		{
+			if (!loadedMesh->PerformSubMeshDrawCall(_context, i))
 			{
-				ErrMsg("Failed to perform emitter draw call!");
+				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, i));
 				return false;
 			}
 		}
 
-		// Unbind geometry shader
+		entity_i++;
+	}
+
+	bool firstEmitter = true;
+	entity_i = 0;
+	for (const auto &[resources, instance] : _currCamera->GetParticleQueue())
+	{
+		// Bind shared emitter resources
+		if (firstEmitter)
+		{
+			firstEmitter = false;
+
+			_context->IASetInputLayout(nullptr);
+			_currInputLayoutID = CONTENT_LOAD_ERROR;
+
+			_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+			const UINT particleVShaderID = _content->GetShaderID("VS_Particle");
+			if (_currVsID != particleVShaderID)
+			{
+				if (!_content->GetShader(particleVShaderID)->BindShader(_context))
+				{
+					ErrMsg("Failed to bind particle vertex shader!");
+					return false;
+				}
+				_currVsID = particleVShaderID;
+			}
+
+			const UINT particlePShaderID = _content->GetShaderID("PS_Particle");
+			if (_currPsID != particlePShaderID)
+			{
+				if (!_content->GetShader(particlePShaderID)->BindShader(_context))
+				{
+					ErrMsg("Failed to bind particle pixel shader!");
+					return false;
+				}
+				_currPsID = particlePShaderID;
+			}
+
+			if (!_content->GetShader(_content->GetShaderID("GS_Billboard"))->BindShader(_context))
+			{
+				ErrMsg("Failed to bind billboard geometry shader!");
+				return false;
+			}
+		}
+
+		if (resources.texID != CONTENT_LOAD_ERROR)
+			if (_currTexID != resources.texID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+				_context->PSSetShaderResources(0, 1, &srv);
+				_currTexID = resources.texID;
+			}
+
+		// Bind private emitter resources
+		if (!static_cast<Emitter *>(instance.subject)->BindBuffers(_context))
+		{
+			ErrMsg("Failed to bind emitter buffers!");
+			return false;
+		}
+
+		if (!static_cast<Emitter *>(instance.subject)->PerformDrawCall(_context))
+		{
+			ErrMsg("Failed to perform emitter draw call!");
+			return false;
+		}
+
+		entity_i++;
+	}
+
+	if (!firstEmitter)
+	{
+		// Unbind particle resources
 		_context->GSSetShader(nullptr, nullptr, 0);
 
 		ID3D11ShaderResourceView *nullSRV = nullptr;
 		_context->VSSetShaderResources(0, 1, &nullSRV);
-	}
+	}*/
+
 
 	// Unbind render targets
 	for (auto &rtv : rtvs)
@@ -546,6 +625,211 @@ bool Graphics::RenderLighting() const
 	return true;
 }
 
+bool Graphics::RenderTransparency()
+{
+	ID3D11DepthStencilState *prevStencilState;
+	UINT prevStencilRef = 0;
+	_context->OMGetDepthStencilState(&prevStencilState, &prevStencilRef);
+	_context->OMSetDepthStencilState(_tdss, 0);
+
+	ID3D11BlendState *prevBlendState;
+	FLOAT prevBlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	UINT prevSampleMask = 0;
+	_context->OMGetBlendState(&prevBlendState, prevBlendFactor, &prevSampleMask);
+
+	constexpr float transparentBlendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	_context->OMSetBlendState(_tbs, transparentBlendFactor, 0xffffffff);
+
+	_context->OMSetRenderTargets(1, &_rtv, _dsView);
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_context->RSSetViewports(1, &_viewport);
+	_context->RSSetState(nullptr); // TODO: Does this work?
+
+	// Bind camera data
+	if (!_currCamera->BindGeometryBuffers(_context))
+	{
+		ErrMsg("Failed to bind camera buffers!");
+		return false;
+	}
+
+	// Bind transparency stage resources
+	const UINT transparencyInputLayoutID = _content->GetInputLayoutID("IL_Fallback");
+	if (_currInputLayoutID != transparencyInputLayoutID)
+	{
+		_context->IASetInputLayout(_content->GetInputLayout(transparencyInputLayoutID)->GetInputLayout());
+		_currInputLayoutID = transparencyInputLayoutID;
+	}
+
+	const UINT vsID = _content->GetShaderID("VS_Geometry");
+	if (_currVsID != vsID)
+	{
+		if (!_content->GetShader(vsID)->BindShader(_context))
+		{
+			ErrMsg("Failed to bind geometry vertex shader!");
+			return false;
+		}
+		_currVsID = vsID;
+	}
+
+	const UINT psID = _content->GetShaderID("PS_Transparent");
+	if (_currPsID != psID)
+	{
+		if (!_content->GetShader(psID)->BindShader(_context))
+		{
+			ErrMsg("Failed to bind transparent pixel shader!");
+			return false;
+		}
+		_currPsID = psID;
+	}
+
+	const UINT ssID = _content->GetSamplerID("SS_Fallback");
+	if (_currSamplerID != ssID)
+	{
+		ID3D11SamplerState *const ss = _content->GetSampler(ssID)->GetSamplerState();
+		_context->PSSetSamplers(0, 1, &ss);
+		_currSamplerID = ssID;
+	}
+
+	const MeshD3D11 *loadedMesh = nullptr;
+	UINT entity_i = 0;
+	for (const auto &[resources, instance] : _currCamera->GetTransparentQueue())
+	{
+		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
+		{
+			ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
+			return false;
+		}
+
+		// Bind shared geometry resources
+		if (_currMeshID != resources.meshID)
+		{
+			loadedMesh = _content->GetMesh(resources.meshID);
+			if (!loadedMesh->BindMeshBuffers(_context))
+			{
+				ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
+				return false;
+			}
+			_currMeshID = resources.meshID;
+		}
+		else if (loadedMesh == nullptr)
+			loadedMesh = _content->GetMesh(resources.meshID);
+
+		if (_currTexID != resources.texID)
+		{
+			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+			_context->PSSetShaderResources(0, 1, &srv);
+			_currTexID = resources.texID;
+		}
+
+		// Bind private entity resources
+		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
+		{
+			ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
+			return false;
+		}
+
+		// Perform draw calls
+		if (loadedMesh == nullptr)
+		{
+			ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", entity_i));
+			return false;
+		}
+
+		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
+		for (size_t i = 0; i < subMeshCount; i++)
+		{
+			if (!loadedMesh->PerformSubMeshDrawCall(_context, i))
+			{
+				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, i));
+				return false;
+			}
+		}
+
+		entity_i++;
+	}
+
+	bool firstEmitter = true;
+	entity_i = 0;
+	for (const auto &[resources, instance] : _currCamera->GetParticleQueue())
+	{
+		// Bind shared emitter resources
+		if (firstEmitter)
+		{
+			firstEmitter = false;
+
+			_context->IASetInputLayout(nullptr);
+			_currInputLayoutID = CONTENT_LOAD_ERROR;
+
+			_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+			const UINT particleVShaderID = _content->GetShaderID("VS_Particle");
+			if (_currVsID != particleVShaderID)
+			{
+				if (!_content->GetShader(particleVShaderID)->BindShader(_context))
+				{
+					ErrMsg("Failed to bind particle vertex shader!");
+					return false;
+				}
+				_currVsID = particleVShaderID;
+			}
+
+			const UINT particlePShaderID = _content->GetShaderID("PS_Particle");
+			if (_currPsID != particlePShaderID)
+			{
+				if (!_content->GetShader(particlePShaderID)->BindShader(_context))
+				{
+					ErrMsg("Failed to bind particle pixel shader!");
+					return false;
+				}
+				_currPsID = particlePShaderID;
+			}
+
+			if (!_content->GetShader(_content->GetShaderID("GS_Billboard"))->BindShader(_context))
+			{
+				ErrMsg("Failed to bind billboard geometry shader!");
+				return false;
+			}
+		}
+
+		if (resources.texID != CONTENT_LOAD_ERROR)
+			if (_currTexID != resources.texID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+				_context->PSSetShaderResources(0, 1, &srv);
+				_currTexID = resources.texID;
+			}
+
+		// Bind private emitter resources
+		if (!static_cast<Emitter *>(instance.subject)->BindBuffers(_context))
+		{
+			ErrMsg("Failed to bind emitter buffers!");
+			return false;
+		}
+
+		if (!static_cast<Emitter *>(instance.subject)->PerformDrawCall(_context))
+		{
+			ErrMsg("Failed to perform emitter draw call!");
+			return false;
+		}
+
+		entity_i++;
+	}
+
+	if (!firstEmitter)
+	{
+		// Unbind particle resources
+		_context->GSSetShader(nullptr, nullptr, 0);
+
+		ID3D11ShaderResourceView *nullSRV = nullptr;
+		_context->VSSetShaderResources(0, 1, &nullSRV);
+	}
+
+
+	_context->OMSetBlendState(prevBlendState, prevBlendFactor, prevSampleMask);
+	_context->OMSetDepthStencilState(prevStencilState, prevStencilRef);
+	return true;
+}
+
 
 bool Graphics::BeginUIRender() const
 {
@@ -565,11 +849,11 @@ bool Graphics::RenderUI(Time &time) const
 	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
 	ImGui::Text(std::format("fps: {}", fps).c_str());
 
-	ImGui::Text(std::format("Main Draws: {}", _currCamera->GetRenderQueue().size()).c_str());
+	ImGui::Text(std::format("Main Draws: {}", _currCamera->GetCullCount()).c_str());
 	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 	{
 		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
-		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetRenderQueue().size()).c_str());
+		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());
 	}
 
 	return true;

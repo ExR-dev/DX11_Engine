@@ -87,9 +87,10 @@ private:
 	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
 	bool _isDirty = true;
 
-	std::vector<RenderInstance> _particleEmitters;
-	std::multimap<ResourceGroup, RenderInstance> _renderInstances; // Let batching be handled by multimap
 	UINT _lastCullCount = 0;
+	std::multimap<ResourceGroup, RenderInstance> _geometryRenderQueue; // Let batching be handled by multimap
+	std::multimap<ResourceGroup, RenderInstance> _transparentRenderQueue;
+	std::multimap<ResourceGroup, RenderInstance> _particleRenderQueue;
 
 
 	void Move(float amount, const XMFLOAT4A &direction);
@@ -138,13 +139,15 @@ public:
 
 	void StoreFrustum(DirectX::BoundingFrustum &frustum);
 
-	void QueueEmitter(const RenderInstance &emitter);
-	void QueueRenderInstance(const ResourceGroup &resources, const RenderInstance &instance);
+	void QueueGeometry(const ResourceGroup &resources, const RenderInstance &instance);
+	void QueueTransparent(const ResourceGroup &resources, const RenderInstance &instance);
+	void QueueEmitter(const ResourceGroup &resources, const RenderInstance &instance);
 	void ResetRenderQueue();
 
-	[[nodiscard]] const std::vector<RenderInstance> &GetEmitterQueue() const;
-	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetRenderQueue() const;
 	[[nodiscard]] UINT GetCullCount() const;
+	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetGeometryQueue() const;
+	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetTransparentQueue() const;
+	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetParticleQueue() const;
 
 	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;

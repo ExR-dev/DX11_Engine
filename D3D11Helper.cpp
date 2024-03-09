@@ -5,7 +5,7 @@
 
 
 bool CreateInterfaces(
-	UINT width, UINT height, HWND window,
+	const UINT width, const UINT height, const HWND window,
 	ID3D11Device *&device, 
 	ID3D11DeviceContext *&immediateContext, 
 	IDXGISwapChain *&swapChain)
@@ -36,16 +36,14 @@ bool CreateInterfaces(
 	UINT flags = 0;
 #endif
 
-	D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
+	constexpr D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
 
-	HRESULT hr = D3D11CreateDeviceAndSwapChain(
-		nullptr, D3D_DRIVER_TYPE_HARDWARE, 
-		nullptr, flags, featureLevels, 
-		1, D3D11_SDK_VERSION, &swapChainDesc, 
+	return SUCCEEDED(D3D11CreateDeviceAndSwapChain(
+		nullptr, D3D_DRIVER_TYPE_HARDWARE,
+		nullptr, flags, featureLevels,
+		1, D3D11_SDK_VERSION, &swapChainDesc,
 		&swapChain, &device, nullptr, &immediateContext
-	);
-
-	return !(FAILED(hr));
+	));
 }
 
 bool CreateRenderTargetView(
@@ -86,7 +84,7 @@ bool CreateRenderTargetView(
 }
 
 bool CreateDepthStencil(
-	ID3D11Device *device, UINT width, UINT height, 
+	ID3D11Device *device, const UINT width, const UINT height, 
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView)
 {
@@ -109,13 +107,68 @@ bool CreateDepthStencil(
 		return false;
 	}
 
-	HRESULT hr = device->CreateDepthStencilView(dsTexture, nullptr, &dsView);
-	return !(FAILED(hr));
+	return SUCCEEDED(device->CreateDepthStencilView(dsTexture, nullptr, &dsView));
 }
 
-void SetViewport(
-	D3D11_VIEWPORT &viewport, 
-	UINT width, UINT height)
+bool CreateBlendState(ID3D11Device *device, ID3D11BlendState *&blendState)
+{
+	D3D11_BLEND_DESC blendDesc = { };
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_MAX;
+
+	/*blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;*/
+
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	if (FAILED(device->CreateBlendState(&blendDesc, &blendState)))
+	{
+		ErrMsg("Failed to create blend state!");
+		return false;
+	}
+
+	return true;
+}
+
+bool CreateDepthStencilState(ID3D11Device *device, ID3D11DepthStencilState *&depthStencilState)
+{
+	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = { };
+	depthStencilDesc.DepthEnable = true;
+	//depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthStencilDesc.StencilEnable = false;
+	depthStencilDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	depthStencilDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+
+	if (FAILED(device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState)))
+	{
+		ErrMsg("Failed to create depth stencil state!");
+		return false;
+	}
+
+	return true;
+}
+
+void SetViewport(D3D11_VIEWPORT &viewport, const UINT width, const UINT height)
 {
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
@@ -127,7 +180,7 @@ void SetViewport(
 
 
 bool SetupD3D11(
-	UINT width, UINT height, HWND window, 
+	const UINT width, const UINT height, const HWND window, 
 	ID3D11Device *&device,
 	ID3D11DeviceContext *&immediateContext, 
 	IDXGISwapChain *&swapChain, 
@@ -135,6 +188,8 @@ bool SetupD3D11(
 	ID3D11Texture2D *&dsTexture, 
 	ID3D11DepthStencilView *&dsView, 
 	ID3D11UnorderedAccessView *&uav, 
+	ID3D11BlendState *&blendState,
+	ID3D11DepthStencilState *&depthStencilState,
 	D3D11_VIEWPORT &viewport)
 {
 	if (!CreateInterfaces(width, height, window, device, immediateContext, swapChain))
@@ -152,6 +207,18 @@ bool SetupD3D11(
 	if (!CreateDepthStencil(device, width, height, dsTexture, dsView))
 	{
 		ErrMsg("Error creating depth stencil view!");
+		return false;
+	}
+
+	if (!CreateBlendState(device, blendState))
+	{
+		ErrMsg("Error creating blend state!");
+		return false;
+	}
+
+	if (!CreateDepthStencilState(device, depthStencilState))
+	{
+		ErrMsg("Error creating depth stencil state!");
 		return false;
 	}
 
