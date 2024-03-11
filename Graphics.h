@@ -46,6 +46,8 @@ private:
 		_currVsID			= CONTENT_LOAD_ERROR,
 		_currPsID			= CONTENT_LOAD_ERROR,
 		_currTexID			= CONTENT_LOAD_ERROR,
+		_currNormalID		= CONTENT_LOAD_ERROR,
+		_currSpecularID		= CONTENT_LOAD_ERROR,
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 

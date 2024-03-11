@@ -14,7 +14,7 @@
 
 struct ProjectionInfo
 {
-	float fovAngleY = 80.0f * (XM_PI / 180.0f);
+	float fovAngleY = 80.0f * (DirectX::XM_PI / 180.0f);
 	float aspectRatio = 1.0f;
 	float nearZ = 0.1f;
 	float farZ = 50.0f;
@@ -22,8 +22,8 @@ struct ProjectionInfo
 
 struct GeometryBufferData
 {
-	XMFLOAT4X4A viewMatrix;
-	XMFLOAT4A position;
+	DirectX::XMFLOAT4X4A viewMatrix;
+	DirectX::XMFLOAT4A position;
 };
 
 struct LightingBufferData
@@ -54,14 +54,22 @@ struct ResourceGroup
 {
 	UINT
 		meshID = CONTENT_LOAD_ERROR,
-		texID = CONTENT_LOAD_ERROR;
+		texID = CONTENT_LOAD_ERROR,
+		normalID = CONTENT_LOAD_ERROR,
+		specularID = CONTENT_LOAD_ERROR;
 
 	bool operator<(const ResourceGroup &other) const
 	{
 		if (meshID != other.meshID)
 			return meshID < other.meshID;
 
-		return texID < other.texID;
+		if (texID != other.texID)
+			return texID < other.texID;
+
+		if (normalID != other.normalID)
+			return normalID < other.normalID;
+
+		return specularID < other.specularID;
 	}
 };
 
@@ -93,14 +101,14 @@ private:
 	std::multimap<ResourceGroup, RenderInstance> _particleRenderQueue;
 
 
-	void Move(float amount, const XMFLOAT4A &direction);
-	void MoveLocal(float amount, const XMFLOAT4A &direction);
+	void Move(float amount, const DirectX::XMFLOAT4A &direction);
+	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
 
 
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
 	~CameraD3D11();
 	CameraD3D11(const CameraD3D11 &other) = delete;
 	CameraD3D11 &operator=(const CameraD3D11 &other) = delete;
@@ -108,7 +116,7 @@ public:
 	CameraD3D11 &operator=(CameraD3D11 &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const XMFLOAT4A &initialPosition = XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);
@@ -121,17 +129,17 @@ public:
 	void LookX(float amount);
 	void LookY(float amount);
 
-	[[nodiscard]] const XMFLOAT4A &GetPosition() const;
-	[[nodiscard]] const XMFLOAT4A &GetForward() const;
-	[[nodiscard]] const XMFLOAT4A &GetRight() const;
-	[[nodiscard]] const XMFLOAT4A &GetUp() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
 
-	[[nodiscard]] XMFLOAT4X4A GetViewMatrix() const;
-	[[nodiscard]] XMFLOAT4X4A GetProjectionMatrix() const;
-	[[nodiscard]] XMFLOAT4X4A GetViewProjectionMatrix() const;
+	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewMatrix() const;
+	[[nodiscard]] DirectX::XMFLOAT4X4A GetProjectionMatrix() const;
+	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewProjectionMatrix() const;
 	[[nodiscard]] const ProjectionInfo &GetCurrProjectionInfo() const;
 
-	[[nodiscard]] bool FitPlanesToPoints(const std::vector<XMFLOAT4A> &points);
+	[[nodiscard]] bool FitPlanesToPoints(const std::vector<DirectX::XMFLOAT4A> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;

@@ -38,6 +38,8 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"ControlDesk",
 		"CharacterSculptLow0",
 		"CharacterSculptLow1",
+		"Plane",
+		"Sphere",
 	};
 
 	for (const std::string &meshName : meshNames)
@@ -49,6 +51,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 
 
 	const std::vector<std::string> textureNames = {
+		// Opaque
 		"Error",
 		"Fallback",
 		"texture1",
@@ -57,15 +60,39 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"texture4",
 		"texture5",
 		"CharacterSculptLow0Texture1",
+		"Sphere",
+		"Default",
+		"Black",
+		"Fade",
+
+		//Transparent
 		"Transparent",
 		"Transparent2",
 		"Particle",
 	};
 
 	for (const std::string &textureName : textureNames)
-		if (_content.AddTexture(_device, std::format("Tex_{}", textureName), std::format("Content\\{}.png", textureName).c_str()) == CONTENT_LOAD_ERROR)
+		if (_content.AddTexture(_device, std::format("Tex_{}", textureName), 
+			std::format("Content\\{}.png", textureName).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add Tex_{}!", textureName));
+			return false;
+		}
+
+	struct TextureMapData { TextureType type; std::string name; };
+	const std::vector<TextureMapData> textureMapNames = {
+		{ TextureType::NORMAL,		"Default_Normal" },
+		{ TextureType::NORMAL,		"texture3_Normal" },
+		{ TextureType::SPECULAR,	"Default_Specular" },
+		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
+		{ TextureType::SPECULAR,	"Fade" },
+	};
+
+	for (const TextureMapData &textureMap : textureMapNames)
+		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name), 
+			textureMap.type, std::format("Content\\{}.png", textureMap.name).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
 			return false;
 		}
 
@@ -141,6 +168,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	const std::vector<Semantic> fallbackInputLayout {
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
 		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "TANGENT",	DXGI_FORMAT_R32G32B32_FLOAT },
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 

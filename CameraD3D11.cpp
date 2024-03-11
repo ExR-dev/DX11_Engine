@@ -5,6 +5,9 @@
 #include "ErrMsg.h"
 
 
+using namespace DirectX;
+
+
 #define TO_VEC(x)		( *reinterpret_cast<XMVECTOR *>(&(x))		)
 #define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
 
@@ -319,6 +322,7 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 
 	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
 	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
+	context->PSSetConstantBuffers(1, 1, &camPosBuffer);
 
 	return true;
 }

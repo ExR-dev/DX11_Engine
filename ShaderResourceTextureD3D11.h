@@ -3,6 +3,15 @@
 #include <d3d11_4.h>
 
 
+enum class TextureType
+{
+	DEFAULT = 0,
+	NORMAL = 1,
+	SPECULAR = 2,
+	EMISSION = 3,
+};
+
+
 class ShaderResourceTextureD3D11
 {
 private:

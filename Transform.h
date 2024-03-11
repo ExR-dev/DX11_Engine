@@ -4,13 +4,13 @@
 
 #include "ConstantBufferD3D11.h"
 
-using namespace DirectX;
+//using namespace DirectX;
 
 
 class Transform
 {
 private:
-	XMFLOAT4A
+	DirectX::XMFLOAT4A
 		_right		= { 1.0f, 0.0f, 0.0f, 0.0f },
 		_up			= { 0.0f, 1.0f, 0.0f, 0.0f },
 		_forward	= { 0.0f, 0.0f, 1.0f, 0.0f },
@@ -26,7 +26,7 @@ private:
 
 public:
 	Transform() = default;
-	explicit Transform(ID3D11Device *device, const XMMATRIX &worldMatrix = XMMatrixIdentity());
+	explicit Transform(ID3D11Device *device, const DirectX::XMMATRIX &worldMatrix = DirectX::XMMatrixIdentity());
 	~Transform() = default;
 	Transform(const Transform &other) = delete;
 	Transform &operator=(const Transform &other) = delete;
@@ -34,31 +34,31 @@ public:
 	Transform &operator=(Transform &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
-	[[nodiscard]] bool Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirectX::XMMATRIX& worldMatrix);
 
-	void Move(const XMFLOAT4A &movement);
-	void Rotate(const XMFLOAT4A &rotation);
-	void ScaleAbsolute(const XMFLOAT4A &scale);
+	void Move(const DirectX::XMFLOAT4A &movement);
+	void Rotate(const DirectX::XMFLOAT4A &rotation);
+	void ScaleAbsolute(const DirectX::XMFLOAT4A &scale);
 
-	void MoveLocal(const XMFLOAT4A &movement);
-	void RotateLocal(const XMFLOAT4A &rotation);
-	void ScaleRelative(const XMFLOAT4A &scale);
+	void MoveLocal(const DirectX::XMFLOAT4A &movement);
+	void RotateLocal(const DirectX::XMFLOAT4A &rotation);
+	void ScaleRelative(const DirectX::XMFLOAT4A &scale);
 
-	void RotateByQuaternion(const XMVECTOR &quaternion);
+	void RotateByQuaternion(const DirectX::XMVECTOR &quaternion);
 
-	void SetPosition(const XMFLOAT4A &position);
-	void SetScale(const XMFLOAT4A &scale);
-	void SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward);
+	void SetPosition(const DirectX::XMFLOAT4A &position);
+	void SetScale(const DirectX::XMFLOAT4A &scale);
+	void SetAxes(const DirectX::XMFLOAT4A &right, const DirectX::XMFLOAT4A &up, const DirectX::XMFLOAT4A &forward);
 
-	[[nodiscard]] const XMFLOAT4A &GetPosition() const;
-	[[nodiscard]] const XMFLOAT4A &GetScale() const;
-	[[nodiscard]] const XMFLOAT4A &GetRight() const;
-	[[nodiscard]] const XMFLOAT4A &GetUp() const;
-	[[nodiscard]] const XMFLOAT4A &GetForward() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetScale() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
 
 	[[nodiscard]] bool GetDirty() const;
 
 	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
-	[[nodiscard]] XMMATRIX GetWorldMatrix() const;
+	[[nodiscard]] DirectX::XMMATRIX GetWorldMatrix() const;
 };

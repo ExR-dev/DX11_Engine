@@ -78,6 +78,7 @@ public:
 	[[nodiscard]] bool ScaleLightFrustumsToCamera(const CameraD3D11 &viewCamera);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 	[[nodiscard]] bool BindCSBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindPSBuffers(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] UINT GetNrOfLights() const;
 	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex) const;

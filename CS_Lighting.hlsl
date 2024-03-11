@@ -1,10 +1,11 @@
 
 static const float EPSILON = 0.00001f;
+static const float NORMAL_OFFSET = 0.005f;
 
 RWTexture2D<unorm float4> BackBufferUAV : register(u0);
 
 Texture2D<float4> PositionGBuffer : register(t0); // w is unused
-Texture2D<float4> ColorGBuffer : register(t1); // w is unused, could be used for emission
+Texture2D<float4> ColorGBuffer : register(t1); // w is specularity
 Texture2D<float4> NormalGBuffer : register(t2); // w is unused
 
 
@@ -46,6 +47,7 @@ float3 ACESFilm(const float3 x)
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
+	const float specularity = (1.0f / pow(1.0f + EPSILON - ColorGBuffer[DTid.xy].w, 1.5f));
 	const float3
 		pos = PositionGBuffer[DTid.xy].xyz,
 		col = ColorGBuffer[DTid.xy].xyz,
@@ -84,12 +86,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Calculate Blinn-Phong shading
 		const float3 diffuseCol = light.color.xyz * max(dot(norm, toLightDir), 0.0f);
 		
-		const float specFactor = pow(saturate(dot(norm, halfwayDir)), light.specularity);
-		const float3 specularCol = float3(1.0f, 1.0f, 1.0f) * smoothstep(0, 1, specFactor);
+		const float specFactor = pow(saturate(dot(norm, halfwayDir)), specularity);
+		const float3 specularCol = light.specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
 
 
 		// Calculate shadow projection
-		const float4 fragPosLightClip = mul(float4(pos, 1.0f), light.vp_matrix);
+		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
 		const float3
@@ -120,7 +122,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
 				lerp(smResult01, smResult11, fracTex.x),
 				fracTex.y)
 		);
-
 		//const float shadow = saturate(offsetAngle * smResult00);
 
 
@@ -129,7 +130,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
 
-	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
-	BackBufferUAV[DTid.xy] = float4(saturate(result), 1.0f);
+	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
+	BackBufferUAV[DTid.xy] = float4(result, 1.0f);
 
+	//BackBufferUAV[DTid.xy] = float4(norm * 0.5f + float3(0.5f, 0.5f, 0.5f), 1.0f);
+	//BackBufferUAV[DTid.xy] = float4(abs(norm), 1.0f);
+	//BackBufferUAV[DTid.xy] = float4(norm, 1.0f);
 }

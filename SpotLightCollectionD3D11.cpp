@@ -164,6 +164,17 @@ bool SpotLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) const
 	return true;
 }
 
+bool SpotLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
+	context->PSSetShaderResources(1, 1, &lightBufferSRV);
+
+	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
+	context->PSSetShaderResources(2, 1, &shadowMapSRV);
+
+	return true;
+}
+
 
 UINT SpotLightCollectionD3D11::GetNrOfLights() const
 {

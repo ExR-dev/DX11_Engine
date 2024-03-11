@@ -20,20 +20,24 @@ struct FormattedVertex {
 	float 
 		px, py, pz,
 		nx, ny, nz,
+		tx, ty, tz,
 		u, v;
 
 	FormattedVertex() :
 	px(0.0f), py(0.0f), pz(0.0f),
 	nx(0.0f), ny(0.0f), nz(0.0f),
+	tx(0.0f), ty(0.0f), tz(0.0f),
 	u(0.0f), v(0.0f)
 	{ }
 
 	FormattedVertex(
 		const float px, const float py, const float pz, 
 		const float nx, const float ny, const float nz, 
+		const float tx, const float ty, const float tz, 
 		const float u, const float v) :
 	px(px), py(py), pz(pz),
 	nx(nx), ny(ny), nz(nz),
+	tx(tx), ty(ty), tz(tz),
 	u(u), v(v)
 	{ }
 
@@ -46,6 +50,10 @@ struct FormattedVertex {
 		if (nx != other.nx) return false;
 		if (ny != other.ny) return false;
 		if (nz != other.nz) return false;
+
+		if (tx != other.tx) return false;
+		if (ty != other.ty) return false;
+		if (tz != other.tz) return false;
 
 		if (u != other.u) return false;
 		if (v != other.v) return false;
@@ -237,8 +245,83 @@ static void FormatRawMesh(
 			formattedVertices.emplace_back(
 				rP.x, rP.y, rP.z,
 				rN.x, rN.y, rN.z,
+				0,	  0,    0,
 				rT.u, rT.v
 			);
+		}
+
+		// Generate tangents
+		for (size_t triIndex = 0; triIndex < groupSize; triIndex += 3)
+		{
+			FormattedVertex *verts[3] = {
+				&formattedVertices.at(triIndex + 0),
+				&formattedVertices.at(triIndex + 1),
+				&formattedVertices.at(triIndex + 2)
+			};
+
+			const DirectX::XMFLOAT3A
+				v0		= { verts[0]->px,	verts[0]->py,	verts[0]->pz },
+				v1		= { verts[1]->px,	verts[1]->py,	verts[1]->pz },
+				v2		= { verts[2]->px,	verts[2]->py,	verts[2]->pz },
+				edge1	= { v1.x - v0.x,	v1.y - v0.y,	v1.z - v0.z  },
+				edge2	= { v2.x - v0.x,	v2.y - v0.y,	v2.z - v0.z  };
+
+			const DirectX::XMFLOAT2A
+				uv0			= { verts[0]->u,	verts[0]->v   },
+				uv1			= { verts[1]->u,	verts[1]->v   },
+				uv2			= { verts[2]->u,	verts[2]->v   },
+				deltaUV1	= { uv1.x - uv0.x,	uv1.y - uv0.y },
+				deltaUV2	= { uv2.x - uv0.x,	uv2.y - uv0.y };
+
+			const float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+			DirectX::XMFLOAT4A tangent = {
+				f * (edge1.x * deltaUV2.y - edge2.x * deltaUV1.y),
+				f * (edge1.y * deltaUV2.y - edge2.y * deltaUV1.y),
+				f * (edge1.z * deltaUV2.y - edge2.z * deltaUV1.y),
+				0.0f
+			};
+
+			//*reinterpret_cast<DirectX::XMVECTOR *>(&tangent) = DirectX::XMVector3Normalize(*reinterpret_cast<DirectX::XMVECTOR *>(&tangent));
+
+			/*DirectX::XMFLOAT4A midNormal = {
+				(verts[0]->nx + verts[1]->nx + verts[2]->nx) / 3.0f,
+				(verts[0]->ny + verts[1]->ny + verts[2]->ny) / 3.0f,
+				(verts[0]->nz + verts[1]->nz + verts[2]->nz) / 3.0f,
+				0.0f
+			};
+			*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal) = DirectX::XMVector3Normalize(*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal));
+
+			float diff = std::abs(DirectX::XMVectorGetX(DirectX::XMVector3Dot(*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal), *reinterpret_cast<DirectX::XMVECTOR *>(&tangent))));
+			if (diff > 0.1f)
+			{
+				printf("");
+			}*/
+
+			for (size_t i = 0; i < 3; i++)
+			{
+				/*DirectX::XMFLOAT4A
+					normal = { verts[i]->nx, verts[i]->ny, verts[i]->nz, 0 },
+					biTangent,
+					newTangent;
+
+				*reinterpret_cast<DirectX::XMVECTOR *>(&biTangent) = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(
+					*reinterpret_cast<DirectX::XMVECTOR *>(&normal), 
+					*reinterpret_cast<DirectX::XMVECTOR *>(&tangent)
+				));
+
+				*reinterpret_cast<DirectX::XMVECTOR *>(&newTangent) = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(
+					*reinterpret_cast<DirectX::XMVECTOR *>(&normal),
+					*reinterpret_cast<DirectX::XMVECTOR *>(&biTangent)
+				));
+
+				verts[i]->tx = newTangent.x;
+				verts[i]->ty = newTangent.y;
+				verts[i]->tz = newTangent.z;*/
+
+				verts[i]->tx = tangent.x;
+				verts[i]->ty = tangent.y;
+				verts[i]->tz = tangent.z;
+			}
 		}
 	}
 }

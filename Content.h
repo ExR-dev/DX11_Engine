@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <string>
-#include <wrl.h>
 
 #include "InputLayoutD3D11.h"
 #include "ShaderD3D11.h"
@@ -10,8 +9,6 @@
 #include "SamplerD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
 
-
-using Microsoft::WRL::ComPtr;
 
 constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
 
@@ -64,6 +61,22 @@ struct Texture
 	Texture &operator=(Texture &&other) = delete;
 };
 
+struct TextureMap
+{
+	std::string name;
+	UINT id;
+	ShaderResourceTextureD3D11 data;
+
+
+	TextureMap(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	~TextureMap() = default;
+
+	TextureMap(const TextureMap &other) = delete;
+	TextureMap &operator=(const TextureMap &other) = delete;
+	TextureMap(TextureMap &&other) = delete;
+	TextureMap &operator=(TextureMap &&other) = delete;
+};
+
 struct Sampler
 {
 	std::string name;
@@ -104,6 +117,7 @@ private:
 	std::vector<Mesh *> _meshes; 
 	std::vector<Shader *> _shaders;
 	std::vector<Texture *> _textures;
+	std::vector<TextureMap *> _textureMaps;
 	std::vector<Sampler *> _samplers;
 	std::vector<InputLayout *> _inputLayouts;
 
@@ -125,6 +139,9 @@ public:
 
 	UINT AddTexture(ID3D11Device *device, const std::string &name, UINT width, UINT height, const void *dataPtr);
 	UINT AddTexture(ID3D11Device *device, const std::string &name, const char *path);
+
+	UINT AddTextureMap(ID3D11Device *device, const std::string &name, TextureType mapType, UINT width, UINT height, const void *dataPtr);
+	UINT AddTextureMap(ID3D11Device *device, const std::string &name, TextureType mapType, const char *path);
 
 	UINT AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode,
 		const std::optional<std::array<float, 4>> &borderColors = std::nullopt);
@@ -149,6 +166,10 @@ public:
 	[[nodiscard]] UINT GetTextureID(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
+
+	[[nodiscard]] UINT GetTextureMapID(const std::string &name) const;
+	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(const std::string &name) const;
+	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(UINT id) const;
 
 	[[nodiscard]] UINT GetSamplerID(const std::string &name) const;
 	[[nodiscard]] SamplerD3D11 *GetSampler(const std::string &name) const;

@@ -39,7 +39,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	if (!_camera->Initialize(device, 
 		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
-		{ 0.0f, 1.5f, -1.0f, 0.0f }))
+		{ 0.0f, 2.0f, -2.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
@@ -55,52 +55,64 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const SpotLightData spotLightInfo = {
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 15.0f, 0.0f, 0.0f },		// color
-				0.0f,						// rotationX
+				XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
-				XM_PI * 0.4f,				// angle
+				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				8.0f,						// specularity
+				32.0f,						// specularity
 				0.05f,						// projectionNearZ
-				30.0f,						// projectionFarZ
-				{ 0.0f, 2.5f, -3.25f }		// initialPosition
+				35.0f,						// projectionFarZ
+				{ -3.0f, 2.0f, 0.0f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 15.0f, 0.0f },		// color
 				0.0f,						// rotationX
-				0.3f,						// rotationY
-				XM_PI * 0.4f,				// angle
+				-XM_PIDIV2,					// rotationY
+				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
 				32.0f,						// specularity
 				0.05f,						// projectionNearZ
-				30.0f,						// projectionFarZ
-				{ 0.0f, 3.5f, -3.25f }		// initialPosition
+				35.0f,						// projectionFarZ
+				{ 0.0f, -1.0f, 0.0f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 0.0f, 15.0f },		// color
 				0.0f,						// rotationX
-				-0.3f,						// rotationY
-				XM_PI * 0.4f,				// angle
+				0.0f,						// rotationY
+				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				128.0f,						// specularity
+				32.0f,						// specularity
 				0.05f,						// projectionNearZ
-				30.0f,						// projectionFarZ
-				{ 0.0f, 1.5f, -3.25f }		// initialPosition
+				35.0f,						// projectionFarZ
+				{ 0.0f, 2.0f, -3.0f }		// initialPosition
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 20.0f },	// color
+				{ 25.0f, 25.0f, 25.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
+				XM_PI * 0.4f,				// angle
+				1.0f,						// falloff
+				512.0f,						// specularity
+				0.05f,						// projectionNearZ
+				25.0f,						// projectionFarZ
+				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+			},*/
+
+			SpotLightData::PerLightInfo {
+				{ 15.0f, 15.0f, 15.0f },	// color
+				XM_PIDIV2,					// rotationX
+				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				1024.0f,					// specularity
+				64.0f,						// specularity
 				0.05f,						// projectionNearZ
-				30.0f,						// projectionFarZ
-				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+				35.0f,						// projectionFarZ
+				{ -3.0f, 2.0f, 0.0f }		// initialPosition
 			},
 		}
 	};
@@ -145,13 +157,15 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create model
-	{
-		constexpr UINT
-			meshID = 7,
-			textureID = 7;
+	/*{
+		const UINT
+			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
+			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
+			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Fade");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
@@ -160,16 +174,35 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+	}*/
+
+	// Create sphere
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_Black"),
+			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Fade");
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		{
+			ErrMsg("Failed to initialize model object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 2.0f, 3.0f, 0 });
 	}
 
 	// Create error
 	{
-		constexpr UINT
+		const UINT
 			meshID = 0,
-			textureID = 1;
+			textureID = content->GetTextureID("Tex_Default"),//content->GetTextureID("Tex_Fallback");
+			normalID = content->GetTextureMapID("TexMap_texture3_Normal");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
@@ -180,29 +213,29 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
 
-	// Create emitter
+	/*// Create emitter
 	{
 		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {1,1,1}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
-		emitterData.particleCount = 512;
+		emitterData.particleCount = 4096;
 		emitterData.particleRate = 1;
-		emitterData.lifetime = 1.0f;
+		emitterData.lifetime = 5.0f;
 
-		if (!emitter->Initialize(_device, emitterData, 10))
+		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Particle")))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 4.0f, 0.0f, 0 });
+		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0 });
 	}
 
 	// Create transparent
 	{
-		constexpr UINT
-			meshID = 6,
-			textureID = 8;
+		const UINT
+			meshID = 3,
+			textureID = content->GetTextureID("Tex_Transparent");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, true))
@@ -212,7 +245,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.5f, 1.0f, 4.0f, 0 });
-	}
+	}*/
 	
 	_initialized = true;
 	return true;
@@ -225,14 +258,14 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 
-	/*_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
-	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
+	/*_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
+	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
 
-	_spotLights->GetLightCamera(1)->MoveRight(time.deltaTime * -1.5f * -1.4786f);
-	_spotLights->GetLightCamera(1)->LookX(time.deltaTime * 0.5f * -1.4786f);
+	_spotLights->GetLightCamera(1)->LookY(time.deltaTime * 0.5f);
+	_spotLights->GetLightCamera(1)->MoveUp(time.deltaTime * 1.5f);
 
-	_spotLights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f * 1.84248f);
-	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f * 1.84248f);*/
+	_spotLights->GetLightCamera(2)->LookY(time.deltaTime * 0.5f);
+	_spotLights->GetLightCamera(2)->MoveUp(time.deltaTime * 1.5f);*/
 	
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
@@ -249,6 +282,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				selectedTextureID = (selectedTextureID + 1) % _content->GetTextureCount();
 		}
 
+		const UINT transparentStart = _content->GetTextureID("Tex_Transparent");
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
 		{ // Create 10 random entities
 			for (size_t i = 0; i < 25; i++)
@@ -258,7 +292,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					textureID = rand() % _content->GetTextureCount();
 
 				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, meshID, textureID, (textureID >= 8)))
+				if (!obj->Initialize(_device, meshID, textureID, (textureID >= transparentStart)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 					return false;
@@ -282,7 +316,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one random entity in front of the camera
 			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID, (selectedTextureID >= 8)))
+			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID, (selectedTextureID >= transparentStart)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 				return false;

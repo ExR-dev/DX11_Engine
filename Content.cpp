@@ -20,13 +20,15 @@ Content::~Content()
 	for (const Texture *texture : _textures)
 		delete texture;
 
+	for (const TextureMap *textureMap : _textureMaps)
+		delete textureMap;
+
 	for (const Sampler *sampler : _samplers)
 		delete sampler;
 
 	for (const InputLayout *inputLayout : _inputLayouts)
 		delete inputLayout;
 }
-
 
 
 UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const MeshData &meshData)
@@ -174,7 +176,124 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 }
 
 
-UINT Content::AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode, const std::optional<std::array<float, 4>> &borderColors)
+UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const TextureType mapType, const UINT width, const UINT height, const void *dataPtr)
+{
+	const UINT id = static_cast<UINT>(_textureMaps.size());
+	for (UINT i = 0; i < id; i++)
+	{
+		if (_textureMaps.at(i)->name == name)
+			return i;
+	}
+
+	D3D11_TEXTURE2D_DESC textureDesc = { };
+	textureDesc.Width = width;
+	textureDesc.Height = height;
+	textureDesc.ArraySize = 1;
+	textureDesc.MipLevels = 1;
+	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+
+	D3D11_SUBRESOURCE_DATA srData = { };
+	srData.pSysMem = dataPtr;
+	srData.SysMemSlicePitch = 0;
+
+	switch (mapType)
+	{
+		case TextureType::SPECULAR:
+			textureDesc.Format = DXGI_FORMAT_R8_UNORM;
+			srData.SysMemPitch = width * sizeof(unsigned char);
+			break;
+
+		default:
+			textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			srData.SysMemPitch = width * sizeof(unsigned char) * 4;
+			break;
+	}
+
+	TextureMap *addedTextureMap = new TextureMap(name, id);
+	if (!addedTextureMap->data.Initialize(device, textureDesc, &srData))
+	{
+		ErrMsg("Failed to initialize added texture map!");
+		delete addedTextureMap;
+		return CONTENT_LOAD_ERROR;
+	}
+	_textureMaps.push_back(addedTextureMap);
+
+	return id;
+}
+
+UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const TextureType mapType, const char *path)
+{
+	const UINT id = static_cast<UINT>(_textureMaps.size());
+	for (UINT i = 0; i < id; i++)
+	{
+		if (_textureMaps.at(i)->name == name)
+			return i;
+	}
+
+	UINT width, height;
+	std::vector<unsigned char> texData, texMapData;
+
+	if (!LoadTextureFromFile(path, width, height, texData))
+	{
+		ErrMsg("Failed to load texture map from file!");
+		return CONTENT_LOAD_ERROR;
+	}
+
+	D3D11_TEXTURE2D_DESC textureDesc = { };
+	textureDesc.Width = width;
+	textureDesc.Height = height;
+	textureDesc.ArraySize = 1;
+	textureDesc.MipLevels = 1;
+	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+
+	D3D11_SUBRESOURCE_DATA srData = { };
+	srData.SysMemSlicePitch = 0;
+
+	switch (mapType)
+	{
+		case TextureType::SPECULAR:
+			textureDesc.Format = DXGI_FORMAT_R8_UNORM;
+			srData.SysMemPitch = width * sizeof(unsigned char);
+
+			for (size_t i = 0; i < texData.size(); i += 4)
+				texMapData.push_back(texData.at(i));
+			break;
+
+		default:
+			textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			srData.SysMemPitch = width * sizeof(unsigned char) * 4;
+
+			texMapData.insert(texMapData.end(), texData.begin(), texData.end());
+			break;
+	}
+
+	srData.pSysMem = texMapData.data();
+
+	TextureMap *addedTextureMap = new TextureMap(name, id);
+	if (!addedTextureMap->data.Initialize(device, textureDesc, &srData))
+	{
+		ErrMsg("Failed to initialize added texture map!");
+		delete addedTextureMap;
+		return CONTENT_LOAD_ERROR;
+	}
+	_textureMaps.push_back(addedTextureMap);
+
+	return id;
+}
+
+
+UINT Content::AddSampler(ID3D11Device *device, const std::string &name, const D3D11_TEXTURE_ADDRESS_MODE adressMode, 
+	const std::optional<std::array<float, 4>> &borderColors)
 {
 	const UINT id = static_cast<UINT>(_samplers.size());
 	for (UINT i = 0; i < id; i++)
@@ -372,6 +491,43 @@ ShaderResourceTextureD3D11 *Content::GetTexture(const UINT id) const
 		return nullptr;
 
 	return &_textures.at(id)->data;
+}
+
+
+UINT Content::GetTextureMapID(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_textureMaps.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_textureMaps.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
+
+ShaderResourceTextureD3D11 *Content::GetTextureMap(const std::string &name) const
+{
+	const UINT count = static_cast<UINT>(_textureMaps.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_textureMaps.at(i)->name == name)
+			return &_textureMaps.at(i)->data;
+	}
+
+	return nullptr;
+}
+
+ShaderResourceTextureD3D11 *Content::GetTextureMap(const UINT id) const
+{
+	if (id == CONTENT_LOAD_ERROR)
+		return nullptr;
+	if (_textureMaps.size() <= id)
+		return nullptr;
+
+	return &_textureMaps.at(id)->data;
 }
 
 

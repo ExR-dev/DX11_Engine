@@ -8,7 +8,10 @@ Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, b
 
 }
 
-bool Object::Initialize(ID3D11Device *device, const UINT meshID, const UINT texID, const bool isTransparent)
+bool Object::Initialize(ID3D11Device *device, 
+	const UINT meshID, const UINT texID, 
+	const UINT normalID, const UINT specularID,
+	const bool isTransparent)
 {
 	if (!Entity::Initialize(device))
 	{
@@ -18,6 +21,8 @@ bool Object::Initialize(ID3D11Device *device, const UINT meshID, const UINT texI
 
 	_meshID = meshID;
 	_texID = texID;
+	_normalID = normalID;
+	_specularID = specularID;
 	_isTransparent = isTransparent;
 
 	return true;
@@ -51,6 +56,9 @@ bool Object::BindBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}
 
+	ID3D11Buffer *const wmBuffer = _transform.GetConstantBuffer();
+	context->PSSetConstantBuffers(0, 1, &wmBuffer);
+
 	return true;
 }
 
@@ -65,6 +73,8 @@ bool Object::Render(CameraD3D11 *camera)
 	const ResourceGroup resources = {
 		_meshID,
 		_texID,
+		_normalID,
+		_specularID,
 	};
 
 	const RenderInstance instance = {

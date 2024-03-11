@@ -8,14 +8,18 @@ class Object final : Entity
 private:
 	UINT
 		_meshID = CONTENT_LOAD_ERROR,
-		_texID = CONTENT_LOAD_ERROR;
+		_texID = CONTENT_LOAD_ERROR,
+		_normalID = CONTENT_LOAD_ERROR,
+		_specularID = CONTENT_LOAD_ERROR;
 
 	bool _isTransparent = false;
 
 public:
 	explicit Object(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT meshID, UINT texID, bool isTransparent = false);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT meshID, UINT texID, 
+		UINT normalID = CONTENT_LOAD_ERROR, UINT specularID = CONTENT_LOAD_ERROR,
+		bool isTransparent = false);
 
 	[[nodiscard]] EntityType GetType() const override;
 

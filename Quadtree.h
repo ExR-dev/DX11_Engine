@@ -10,8 +10,8 @@
 class Quadtree
 {
 private:
-	static constexpr UINT _MAX_ITEMS_IN_NODE = 8;
-	static constexpr UINT _MAX_DEPTH = 3;
+	static constexpr UINT MAX_ITEMS_IN_NODE = 24;
+	static constexpr UINT MAX_DEPTH = 5;
 
 
 	struct Node
@@ -62,7 +62,7 @@ private:
 
 			if (isLeaf)
 			{
-				if (depth >= _MAX_DEPTH || data.size() < _MAX_ITEMS_IN_NODE)
+				if (depth >= MAX_DEPTH || data.size() < MAX_ITEMS_IN_NODE)
 				{
 					data.push_back(item);
 					return true;
@@ -98,9 +98,8 @@ private:
 					children[i]->Remove(item, itemBounds, depth + 1, skipIntersection);
 			}
 
-			bool gotHomogenousItems = false;
 			std::vector<Entity *> containingItems;
-
+			containingItems.reserve(MAX_ITEMS_IN_NODE);
 			for (int i = 0; i < 4; i++)
 				if (children[i] != nullptr)
 				{
@@ -115,11 +114,13 @@ private:
 								continue;
 
 							if (std::ranges::find(containingItems, childItem) == containingItems.end())
-								containingItems.push_back(childItem);
-						}
+							{
+								if (containingItems.size() >= MAX_ITEMS_IN_NODE)
+									return;
 
-						if (containingItems.size() > _MAX_ITEMS_IN_NODE)
-							return;
+								containingItems.push_back(childItem);
+							}
+						}
 					}
 				}
 
@@ -136,8 +137,11 @@ private:
 		}
 
 
-		void AddToVector(std::vector<Entity *> &containingItems, const UINT depth) const
+		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, const UINT depth = 0) const
 		{
+			if (!frustum.Intersects(bounds))
+				return;
+
 			if (isLeaf)
 			{
 				for (Entity *item : data)
@@ -157,45 +161,7 @@ private:
 				if (children[i] == nullptr)
 					continue;
 
-				children[i]->AddToVector(containingItems, depth + 1);
-			}
-		}
-
-		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, UINT depth = 0) const
-		{
-			switch (frustum.Contains(bounds))
-			{
-			case DISJOINT:
-				return;
-
-			case CONTAINS:
-				AddToVector(containingItems, depth + 1);
-				return;
-
-			case INTERSECTS:
-				if (isLeaf)
-				{
-					for (Entity *item : data)
-					{
-						if (item == nullptr)
-							continue;
-
-						if (std::ranges::find(containingItems, item) == containingItems.end())
-							containingItems.push_back(item);
-					}
-
-					return;
-				}
-
-				for (int i = 0; i < 4; i++)
-				{
-					if (children[i] == nullptr)
-						continue;
-
-					children[i]->FrustumCull(frustum, containingItems, depth + 1);
-				}
-				
-				break;
+				children[i]->FrustumCull(frustum, containingItems, depth + 1);
 			}
 		}
 	};

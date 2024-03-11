@@ -31,17 +31,38 @@ bool Emitter::Initialize(ID3D11Device *device, const EmitterData &settings, cons
 
 	for (int i = 0; i < settings.particleCount; i++)
 	{
-		particles[i].position = {
-			(float)((rand() % 2000) - 1000) / 250.0f,
-			(float)((rand() % 2000) - 1000) / 250.0f,
-			(float)((rand() % 2000) - 1000) / 250.0f
+		/*particles[i].position = {
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f
 		};
 
-		//particles[i].velocity = {
-		//	(float)((rand() % 2000) - 1000) / 1000.0f,
-		//	(float)((rand() % 2000) - 1000) / 1000.0f,
-		//	(float)((rand() % 2000) - 1000) / 1000.0f
-		//};
+		particles[i].velocity = {
+			(float)((rand() % 2000) - 1000) / 3000.0f,
+			(float)((rand() % 2000) - 1000) / 3000.0f,
+			(float)((rand() % 2000) - 1000) / 3000.0f
+		};*/
+
+		particles[i].startPos = {
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			0
+		};
+
+		/*particles[i].endPos = {
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			(float)((rand() % 2000) - 1000) / 66.66f,
+			0
+		};*/
+
+		particles[i].endPos = {
+			particles[i].startPos.x + (float)((rand() % 2000) - 1000) / 500.0f,
+			particles[i].startPos.y + (float)((rand() % 2000) - 1000) / 500.0f,
+			particles[i].startPos.z + (float)((rand() % 2000) - 1000) / 500.0f,
+			0
+		};
 
 		/*particles[i].color = {
 			(float)(rand() % 1000) / 1000.0f,
@@ -49,10 +70,12 @@ bool Emitter::Initialize(ID3D11Device *device, const EmitterData &settings, cons
 			(float)(rand() % 1000) / 1000.0f,
 			(float)(rand() % 1000) / 1000.0f
 		};*/
+
 		particles[i].color = { 1, 1, 1, 1 };
 
-		particles[i].size = (float)((rand() % 1000)) / 15000.0f + 0.01f;
-		particles[i].lifetime = (float)((rand() % 1000)) / 1000.0f;
+		//particles[i].position.w = 0.05f;
+		particles[i].position.w = (float)((rand() % 1000)) / 20000.0f + 0.01f; // size
+		particles[i].velocity.w = (float)((rand() % 1000)) / 1000.0f; // lifetime
 
 	}
 
@@ -86,21 +109,21 @@ bool Emitter::Update(ID3D11DeviceContext *context, Time &time, const Input &inpu
 		return false;
 	}
 
-	_emitterData.deltaTime = time.deltaTime;
+	_emitterData.deltaTime = time.time;
 	if (!_emitterBuffer.UpdateBuffer(context, &_emitterData))
 	{
 		ErrMsg("Failed to update time buffer!");
 		return false;
 	}
 
-	ID3D11Buffer *buf = _emitterBuffer.GetBuffer();
-	context->CSSetConstantBuffers(0, 1, &buf);
+	ID3D11Buffer *emitterBuffer = _emitterBuffer.GetBuffer();
+	context->CSSetConstantBuffers(0, 1, &emitterBuffer);
 
 	ID3D11UnorderedAccessView *uav = _particleBuffer.GetUAV();
 	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
 	context->Dispatch(std::ceil(static_cast<float>(_particleBuffer.GetNrOfElements()) / 32.0f), 1, 1);
-
+	
 	uav = nullptr;
 	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
