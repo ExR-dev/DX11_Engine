@@ -79,12 +79,14 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 			return false;
 		}
 
+
 	struct TextureMapData { TextureType type; std::string name; };
 	const std::vector<TextureMapData> textureMapNames = {
 		{ TextureType::NORMAL,		"Default_Normal" },
 		{ TextureType::NORMAL,		"texture3_Normal" },
 		{ TextureType::SPECULAR,	"Default_Specular" },
 		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
+		{ TextureType::SPECULAR,	"Black" },
 		{ TextureType::SPECULAR,	"Fade" },
 	};
 
@@ -97,65 +99,26 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		}
 
 
-	const UINT geometryVShaderID = _content.AddShader(_device, "VS_Geometry", ShaderType::VERTEX_SHADER, "Content\\VS_Geometry.cso");
-	if (geometryVShaderID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add VS_Geometry shader!");
-		return false;
-	}
+	struct ShaderData { ShaderType type; std::string name; };
+	const std::vector<ShaderData> shaderNames = {
+		{ ShaderType::VERTEX_SHADER,		"VS_Geometry" },
+		{ ShaderType::VERTEX_SHADER,		"VS_Depth" },
+		{ ShaderType::VERTEX_SHADER,		"VS_Particle" },
+		{ ShaderType::GEOMETRY_SHADER,		"GS_Billboard" },
+		{ ShaderType::PIXEL_SHADER,			"PS_Geometry" },
+		{ ShaderType::PIXEL_SHADER,			"PS_Transparent" },
+		{ ShaderType::PIXEL_SHADER,			"PS_Particle" },
+		{ ShaderType::COMPUTE_SHADER,		"CS_Lighting" },
+		{ ShaderType::COMPUTE_SHADER,		"CS_GBuffer" },
+		{ ShaderType::COMPUTE_SHADER,		"CS_Particle" },
+	};
 
-	const UINT depthVShaderID = _content.AddShader(_device, "VS_Depth", ShaderType::VERTEX_SHADER, "Content\\VS_Depth.cso");
-	if (depthVShaderID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add VS_Depth shader!");
-		return false;
-	}
-
-	const UINT particleVShaderID = _content.AddShader(_device, "VS_Particle", ShaderType::VERTEX_SHADER, "Content\\VS_Particle.cso");
-	if (particleVShaderID == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add VS_Particle shader!");
-		return false;
-	}
-
-
-	if (_content.AddShader(_device, "GS_Billboard", ShaderType::GEOMETRY_SHADER, "Content\\GS_Billboard.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add GS_Billboard shader!");
-		return false;
-	}
-
-
-	if (_content.AddShader(_device, "PS_Geometry", ShaderType::PIXEL_SHADER, "Content\\PS_Geometry.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add PS_Geometry shader!");
-		return false;
-	}
-
-	if (_content.AddShader(_device, "PS_Transparent", ShaderType::PIXEL_SHADER, "Content\\PS_Transparent.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add PS_Transparent shader!");
-		return false;
-	}
-
-	if (_content.AddShader(_device, "PS_Particle", ShaderType::PIXEL_SHADER, "Content\\PS_Particle.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add PS_Particle shader!");
-		return false;
-	}
-
-
-	if (_content.AddShader(_device, "CS_Lighting", ShaderType::COMPUTE_SHADER, "Content\\CS_Lighting.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add CS_Lighting shader!");
-		return false;
-	}
-
-	if (_content.AddShader(_device, "CS_Particle", ShaderType::COMPUTE_SHADER, "Content\\CS_Particle.cso") == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add CS_Particle shader!");
-		return false;
-	}
+	for (const ShaderData &shader : shaderNames)
+		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.name).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add {} shader!", shader.name));
+			return false;
+		}
 
 
 	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
@@ -172,20 +135,11 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
-	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, geometryVShaderID) == CONTENT_LOAD_ERROR)
+	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, _content.GetShaderID("VS_Geometry")) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add IL_Fallback!");
 		return false;
 	}
-
-
-	/*const std::vector<Semantic> nullInputLayout { };
-
-	if (_content.AddInputLayout(_device, "IL_Null", nullInputLayout, particleVShaderID) == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add IL_Null!");
-		return false;
-	}*/
 
 	return true;
 }

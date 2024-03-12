@@ -1,9 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <DirectXCollision.h>
 #include <vector>
-#include <omp.h>
+#include <DirectXCollision.h>
 
 #include "Entity.h"
 
@@ -11,13 +10,13 @@
 class Octree
 {
 private:
-	static constexpr UINT _MAX_ITEMS_IN_NODE = 8;
-	static constexpr UINT _MAX_DEPTH = 3;
-	static constexpr UINT _THREAD_DEPTH = 1;
+	static constexpr UINT MAX_ITEMS_IN_NODE = 16;
+	static constexpr UINT MAX_DEPTH = 5;
+
 
 	struct Node
 	{
-		std::vector<IEntity *> data;
+		std::vector<Entity *> data;
 		DirectX::BoundingBox bounds;
 		std::unique_ptr<Node> children[8];
 		bool isLeaf = true;
@@ -41,10 +40,10 @@ private:
 			children[7] = std::make_unique<Node>();
 
 			DirectX::BoundingBox::CreateFromPoints(children[0]->bounds, { min.x, min.y, min.z, 0 }, { center.x, center.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, min.y, min.z, 0 },	 { max.x, center.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, min.y, center.z, 0 },	 { center.x, center.y, max.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, min.y, min.z, 0 }, { max.x, center.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, min.y, center.z, 0 }, { center.x, center.y, max.z, 0 });
 			DirectX::BoundingBox::CreateFromPoints(children[3]->bounds, { center.x, min.y, center.z, 0 }, { max.x, center.y, max.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[4]->bounds, { min.x, center.y, min.z, 0 },	 { center.x, max.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[4]->bounds, { min.x, center.y, min.z, 0 }, { center.x, max.y, center.z, 0 });
 			DirectX::BoundingBox::CreateFromPoints(children[5]->bounds, { center.x, center.y, min.z, 0 }, { max.x, max.y, center.z, 0 });
 			DirectX::BoundingBox::CreateFromPoints(children[6]->bounds, { min.x, center.y, center.z, 0 }, { center.x, max.y, max.z, 0 });
 			DirectX::BoundingBox::CreateFromPoints(children[7]->bounds, { center.x, center.y, center.z, 0 }, { max.x, max.y, max.z, 0 });
@@ -64,14 +63,14 @@ private:
 		}
 
 
-		bool Insert(IEntity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0)
+		bool Insert(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0)
 		{
 			if (!bounds.Intersects(itemBounds))
 				return false;
 
 			if (isLeaf)
 			{
-				if (depth >= _MAX_DEPTH || data.size() < _MAX_ITEMS_IN_NODE)
+				if (depth >= MAX_DEPTH || data.size() < MAX_ITEMS_IN_NODE)
 				{
 					data.push_back(item);
 					return true;
@@ -89,7 +88,7 @@ private:
 			return true;
 		}
 
-		void Remove(IEntity *item, const DirectX::BoundingBox &itemBounds, const bool skipIntersection = false)
+		void Remove(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
 		{
 			if (!skipIntersection)
 				if (!bounds.Intersects(itemBounds))
@@ -97,19 +96,18 @@ private:
 
 			if (isLeaf)
 			{
-				std::erase_if(data, [item](const IEntity *otherItem) { return item == otherItem; });
+				std::erase_if(data, [item](const Entity *otherItem) { return item == otherItem; });
 				return;
 			}
 
 			for (int i = 0; i < 8; i++)
 			{
 				if (children[i] != nullptr)
-					children[i]->Remove(item, itemBounds, skipIntersection);
+					children[i]->Remove(item, itemBounds, depth + 1, skipIntersection);
 			}
 
-			bool gotHomogenousItems = false;
-			std::vector<IEntity *> containingItems;
-
+			std::vector<Entity *> containingItems;
+			containingItems.reserve(MAX_ITEMS_IN_NODE);
 			for (int i = 0; i < 8; i++)
 				if (children[i] != nullptr)
 				{
@@ -118,17 +116,19 @@ private:
 
 					if (!children[i]->data.empty())
 					{
-						for (IEntity *childItem : children[i]->data)
+						for (Entity *childItem : children[i]->data)
 						{
 							if (childItem == nullptr)
 								continue;
 
 							if (std::ranges::find(containingItems, childItem) == containingItems.end())
-								containingItems.push_back(childItem);
-						}
+							{
+								if (containingItems.size() >= MAX_ITEMS_IN_NODE)
+									return;
 
-						if (containingItems.size() > _MAX_ITEMS_IN_NODE)
-							return;
+								containingItems.push_back(childItem);
+							}
+						}
 					}
 				}
 
@@ -140,16 +140,16 @@ private:
 
 			isLeaf = true;
 			data.clear();
-			for (IEntity *newItem : containingItems)
+			for (Entity *newItem : containingItems)
 				data.push_back(newItem);
 		}
 
 
-		void AddToVector(std::vector<IEntity *> &containingItems) const
+		void AddToVector(std::vector<Entity *> &containingItems, const UINT depth) const
 		{
 			if (isLeaf)
 			{
-				for (IEntity *item : data)
+				for (Entity *item : data)
 				{
 					if (item == nullptr)
 						continue;
@@ -166,44 +166,44 @@ private:
 				if (children[i] == nullptr)
 					continue;
 
-				children[i]->AddToVector(containingItems);
+				children[i]->AddToVector(containingItems, depth + 1);
 			}
 		}
 
-		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems) const
+		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, const UINT depth = 0) const
 		{
 			switch (frustum.Contains(bounds))
 			{
-			case DISJOINT:
-				return;
+				case DISJOINT:
+					return;
 
-			case CONTAINS:
-				AddToVector(containingItems);
-				return;
+				case CONTAINS:
+					AddToVector(containingItems, depth + 1);
+					break;
 
-			case INTERSECTS:
-				if (isLeaf)
-				{
-					for (IEntity *item : data)
+				case INTERSECTS:
+					if (isLeaf)
 					{
-						if (item == nullptr)
-							continue;
+						for (Entity *item : data)
+						{
+							if (item == nullptr)
+								continue;
 
-						if (std::ranges::find(containingItems, item) == containingItems.end())
-							containingItems.push_back(item);
+							if (std::ranges::find(containingItems, item) == containingItems.end())
+								containingItems.push_back(item);
+						}
+
+						return;
 					}
 
-					return;
-				}
+					for (int i = 0; i < 8; i++)
+					{
+						if (children[i] == nullptr)
+							continue;
 
-				for (int i = 0; i < 8; i++)
-				{
-					if (children[i] == nullptr)
-						continue;
-
-					children[i]->FrustumCull(frustum, containingItems);
-				}
-				break;
+						children[i]->FrustumCull(frustum, containingItems, depth + 1);
+					}
+					break;
 			}
 		}
 	};
@@ -227,13 +227,13 @@ public:
 		return true;
 	}
 
-	void Insert(IEntity *data, const DirectX::BoundingBox &bounds) const
+	void Insert(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
 		if (_root != nullptr)
 			_root->Insert(data, bounds);
 	}
 
-	[[nodiscard]] bool Remove(IEntity *data, const DirectX::BoundingBox &bounds) const
+	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
 		if (_root == nullptr)
 			return false;
@@ -242,16 +242,16 @@ public:
 		return true;
 	}
 
-	[[nodiscard]] bool Remove(IEntity *data) const
+	[[nodiscard]] bool Remove(Entity *data) const
 	{
 		if (_root == nullptr)
 			return false;
 
-		_root->Remove(data, _root->bounds, true);
+		_root->Remove(data, _root->bounds, 0, true);
 		return true;
 	}
 
-	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<IEntity *> &containingItems) const
+	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 	{
 		if (_root == nullptr)
 			return false;

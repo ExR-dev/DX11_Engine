@@ -30,7 +30,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	_device = device;
 	_content = content;
 
-	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 500, 150));
+	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 150, 150));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize scene holder!");
@@ -45,7 +45,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 	
-	if (!_cubemap.Initialize(device, 1024, 0.1f, 50.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
+	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -125,7 +125,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	PointLightData pointLightInfo = { };
-	pointLightInfo.shadowCubeMapInfo.textureDimension = 1024;
+	pointLightInfo.shadowCubeMapInfo.textureDimension = 512;
 	pointLightInfo.perLightInfo.push_back({
 		{ 1.0f, 1.0f, 1.0f },
 		{ 0.0f, 0.0f, 0.0f },
@@ -142,12 +142,14 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create room
 	{
-		constexpr UINT
+		const UINT
 			meshID = 2,
-			textureID = 2;
+			textureID = 2,
+			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Black");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
@@ -198,11 +200,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	{
 		const UINT
 			meshID = 0,
-			textureID = content->GetTextureID("Tex_Default"),//content->GetTextureID("Tex_Fallback");
-			normalID = content->GetTextureMapID("TexMap_texture3_Normal");
+			textureID = content->GetTextureID("Tex_Fallback"),
+			normalID = content->GetTextureMapID("TexMap_texture3_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Black");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
@@ -270,6 +273,13 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
+		static bool useMainCamera = true;
+		if (input.GetKey(KeyCode::Z) == KeyState::Pressed)
+			useMainCamera = !useMainCamera;
+
+		CameraD3D11 *basisCamera = _currCameraPtr;
+		if (useMainCamera) basisCamera = _camera;
+
 		static UINT
 			selectedMeshID = 0,
 			selectedTextureID = 0;
@@ -284,8 +294,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 		const UINT transparentStart = _content->GetTextureID("Tex_Transparent");
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 10 random entities
-			for (size_t i = 0; i < 25; i++)
+		{ // Create 50 random entities
+			for (size_t i = 0; i < 50; i++)
 			{
 				const UINT
 					meshID = rand() % _content->GetMeshCount(),
@@ -322,15 +332,15 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				return false;
 			}
 
-			XMFLOAT4A camForward = _currCameraPtr->GetForward();
+			XMFLOAT4A camForward = basisCamera->GetForward();
 			*reinterpret_cast<XMVECTOR *>(&camForward) *= 3.0f;
-			*reinterpret_cast<XMVECTOR *>(&camForward) += *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetPosition());
+			*reinterpret_cast<XMVECTOR *>(&camForward) += *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetPosition());
 
 			reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(camForward);
 			reinterpret_cast<Entity *>(obj)->GetTransform()->SetAxes(
-				_currCameraPtr->GetRight(),
-				_currCameraPtr->GetUp(),
-				_currCameraPtr->GetForward()
+				basisCamera->GetRight(),
+				basisCamera->GetUp(),
+				basisCamera->GetForward()
 			);
 		}
 
@@ -364,23 +374,23 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			if (currSelection == -1)
 			{ // Move camera
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
-					_currCameraPtr->MoveRight(time.deltaTime * currSpeed);
+					basisCamera->MoveRight(time.deltaTime * currSpeed);
 				else if (input.GetKey(KeyCode::A) == KeyState::Held)
-					_currCameraPtr->MoveRight(-time.deltaTime * currSpeed);
+					basisCamera->MoveRight(-time.deltaTime * currSpeed);
 
 				if (input.GetKey(KeyCode::Space) == KeyState::Held)
-					_currCameraPtr->MoveUp(time.deltaTime * currSpeed);
+					basisCamera->MoveUp(time.deltaTime * currSpeed);
 				else if (input.GetKey(KeyCode::X) == KeyState::Held)
-					_currCameraPtr->MoveUp(-time.deltaTime * currSpeed);
+					basisCamera->MoveUp(-time.deltaTime * currSpeed);
 
 				if (input.GetKey(KeyCode::W) == KeyState::Held)
-					_currCameraPtr->MoveForward(time.deltaTime * currSpeed);
+					basisCamera->MoveForward(time.deltaTime * currSpeed);
 				else if (input.GetKey(KeyCode::S) == KeyState::Held)
-					_currCameraPtr->MoveForward(-time.deltaTime * currSpeed);
+					basisCamera->MoveForward(-time.deltaTime * currSpeed);
 
 				const MouseState mState = input.GetMouse();
-				if (mState.dx != 0) _currCameraPtr->LookX(static_cast<float>(mState.dx) / 360.0f);
-				if (mState.dy != 0) _currCameraPtr->LookY(static_cast<float>(mState.dy) / 360.0f);
+				if (mState.dx != 0) basisCamera->LookX(static_cast<float>(mState.dx) / 360.0f);
+				if (mState.dy != 0) basisCamera->LookY(static_cast<float>(mState.dy) / 360.0f);
 			}
 			else
 			{ // Move selected entity
@@ -392,9 +402,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 				if (relativeToCamera)
 				{
-					right = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetRight());
-					up = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetUp());
-					forward = *reinterpret_cast<const XMVECTOR *>(&_currCameraPtr->GetForward());
+					right = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetRight());
+					up = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetUp());
+					forward = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetForward());
 				}
 				else
 				{
@@ -565,17 +575,17 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	}
 
 
-	if (!graphics->SetCamera(_currCameraPtr))
+	if (!graphics->SetCameras(_camera, _currCameraPtr))
 	{
 		ErrMsg("Failed to set camera!");
 		return false;
 	}
 
 	std::vector<Entity *> entitiesToRender;
-	entitiesToRender.reserve(_currCameraPtr->GetCullCount());
+	entitiesToRender.reserve(_camera->GetCullCount());
 
 	DirectX::BoundingFrustum viewFrustum;
-	_currCameraPtr->StoreFrustum(viewFrustum);
+	_camera->StoreFrustum(viewFrustum);
 
 	time.TakeSnapshot("FrustumCull");
 	if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
@@ -587,7 +597,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 	for (Entity *ent : entitiesToRender)
 	{
-		if (!ent->Render(_currCameraPtr))
+		if (!ent->Render(_camera))
 		{
 			ErrMsg("Failed to render entity!");
 			return false;
@@ -682,12 +692,21 @@ bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
-	const XMFLOAT4A camPos = _currCameraPtr->GetPosition();
+	XMFLOAT4A camPos = _camera->GetPosition();
 	char camXCoord[32]{}, camYCoord[32]{}, camZCoord[32]{};
 	snprintf(camXCoord, sizeof(camXCoord), "%.2f", camPos.x);
 	snprintf(camYCoord, sizeof(camYCoord), "%.2f", camPos.y);
 	snprintf(camZCoord, sizeof(camZCoord), "%.2f", camPos.z);
-	ImGui::Text(std::format("Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
+	ImGui::Text(std::format("Main Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
+
+	if (_currCameraPtr != _camera && _currCameraPtr != nullptr)
+	{
+		camPos = _currCameraPtr->GetPosition();
+		snprintf(camXCoord, sizeof(camXCoord), "%.2f", camPos.x);
+		snprintf(camYCoord, sizeof(camYCoord), "%.2f", camPos.y);
+		snprintf(camZCoord, sizeof(camZCoord), "%.2f", camPos.z);
+		ImGui::Text(std::format("Virt Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
+	}
 
 	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
 		_doMultiThread = !_doMultiThread;

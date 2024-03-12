@@ -35,11 +35,15 @@ private:
 	D3D11_VIEWPORT _viewport		= { };
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
+	UINT _renderOutput = 0;
+
+	CameraD3D11
+		*_currMainCamera = nullptr,
+		*_currViewCamera = nullptr;
 
 	ConstantBufferD3D11 _globalLightBuffer;
-	CameraD3D11 *_currCamera = nullptr;
-	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
+	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 
 	UINT
 		_currMeshID			= CONTENT_LOAD_ERROR,
@@ -57,6 +61,7 @@ private:
 	[[nodiscard]] bool RenderShadowCasters();
 	[[nodiscard]] bool RenderGeometry();
 	[[nodiscard]] bool RenderLighting() const;
+	[[nodiscard]] bool RenderGBuffer(UINT bufferIndex) const;
 	[[nodiscard]] bool RenderTransparency();
 
 	[[nodiscard]] bool ResetRenderState();
@@ -73,7 +78,7 @@ public:
 	[[nodiscard]] ID3D11DepthStencilView *GetDsView() const;
 	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
-	[[nodiscard]] bool SetCamera(CameraD3D11 *camera);
+	[[nodiscard]] bool SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera = nullptr);
 	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
 	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
@@ -81,7 +86,7 @@ public:
 	[[nodiscard]] bool EndSceneRender(Time &time);
 
 	[[nodiscard]] bool BeginUIRender() const;
-	[[nodiscard]] bool RenderUI(Time &time) const;
+	[[nodiscard]] bool RenderUI(Time &time);
 	[[nodiscard]] bool EndUIRender() const;
 
 	[[nodiscard]] bool EndFrame();

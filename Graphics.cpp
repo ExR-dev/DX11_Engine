@@ -116,15 +116,19 @@ D3D11_VIEWPORT &Graphics::GetViewport()
 }
 
 
-bool Graphics::SetCamera(CameraD3D11 *camera)
+bool Graphics::SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera)
 {
-	if (camera == nullptr)
+	if (mainCamera == nullptr)
 	{
 		ErrMsg("Failed to set camera, camera is nullptr!");
 		return false;
 	}
+	
+	if (viewCamera == nullptr)
+		viewCamera = mainCamera;
 
-	_currCamera = camera;
+	_currMainCamera = mainCamera;
+	_currViewCamera = viewCamera;
 	return true;
 }
 
@@ -186,16 +190,28 @@ bool Graphics::EndSceneRender(Time &time)
 		return false;
 	}
 
-	if (!RenderLighting())
+	_renderOutput %= G_BUFFER_COUNT + 1;
+	if (_renderOutput == 0)
 	{
-		ErrMsg("Failed to render lighting!");
-		return false;
-	}
+		if (!RenderLighting())
+		{
+			ErrMsg("Failed to render lighting!");
+			return false;
+		}
 
-	if (!RenderTransparency())
+		if (!RenderTransparency())
+		{
+			ErrMsg("Failed to render transparency!");
+			return false;
+		}
+	}
+	else
 	{
-		ErrMsg("Failed to render transparency!");
-		return false;
+		if (!RenderGBuffer(_renderOutput - 1))
+		{
+			ErrMsg(std::format("Failed to render g-buffer #{}!", _renderOutput - 1));
+			return false;
+		}
 	}
 
 	return true;
@@ -334,7 +350,7 @@ bool Graphics::RenderGeometry()
 	_context->RSSetState(nullptr); // TODO: Does this work?
 
 	// Bind camera data
-	if (!_currCamera->BindGeometryBuffers(_context))
+	if (!_currViewCamera->BindGeometryBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		return false;
@@ -381,7 +397,7 @@ bool Graphics::RenderGeometry()
 	const MeshD3D11 *loadedMesh = nullptr;
 	bool firstEntity = true;
 	UINT entity_i = 0;
-	for (const auto &[resources, instance] : _currCamera->GetGeometryQueue())
+	for (const auto &[resources, instance] : _currMainCamera->GetGeometryQueue())
 	{
 		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 		{
@@ -525,7 +541,7 @@ bool Graphics::RenderLighting() const
 	_context->CSSetSamplers(0, 1, &ss);
 
 	// Bind camera lighting data
-	if (!_currCamera->BindLightingBuffers(_context))
+	if (!_currMainCamera->BindLightingBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		//return false;
@@ -537,6 +553,36 @@ bool Graphics::RenderLighting() const
 	// Unbind compute shader resources
 	memset(srvs, 0, sizeof(srvs));
 	_context->CSSetShaderResources(0, 3, srvs);
+
+	return true;
+}
+
+bool Graphics::RenderGBuffer(const UINT bufferIndex) const
+{
+	if (bufferIndex >= G_BUFFER_COUNT)
+	{
+		ErrMsg(std::format("Failed to render g-buffer #{}, index out of range!", bufferIndex));
+		return false;
+	}
+
+	if (!_content->GetShader("CS_GBuffer")->BindShader(_context))
+	{
+		ErrMsg("Failed to bind compute shader!");
+		return false;
+	}
+
+	_context->CSSetUnorderedAccessViews(0, 1, &_uav, nullptr);
+
+	// Bind g-buffer
+	ID3D11ShaderResourceView *srv = _gBuffers[bufferIndex].GetSRV();
+	_context->CSSetShaderResources(0, 1, &srv);
+
+	// Send execution command
+	_context->Dispatch(static_cast<UINT>(_viewport.Width / 8), static_cast<UINT>(_viewport.Height / 8), 1);
+
+	// Unbind g-buffer
+	srv = nullptr;
+	_context->CSSetShaderResources(0, 1, &srv);
 
 	return true;
 }
@@ -562,7 +608,7 @@ bool Graphics::RenderTransparency()
 	_context->RSSetState(nullptr); // TODO: Does this work?
 
 	// Bind camera data
-	if (!_currCamera->BindGeometryBuffers(_context))
+	if (!_currViewCamera->BindGeometryBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		return false;
@@ -618,7 +664,7 @@ bool Graphics::RenderTransparency()
 	}
 
 	// Bind camera lighting data
-	if (!_currCamera->BindLightingBuffers(_context))
+	if (!_currMainCamera->BindLightingBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		//return false;
@@ -626,7 +672,7 @@ bool Graphics::RenderTransparency()
 
 	const MeshD3D11 *loadedMesh = nullptr;
 	UINT entity_i = 0;
-	for (const auto &[resources, instance] : _currCamera->GetTransparentQueue())
+	for (const auto &[resources, instance] : _currMainCamera->GetTransparentQueue())
 	{
 		if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
 		{
@@ -684,7 +730,7 @@ bool Graphics::RenderTransparency()
 
 	bool firstEmitter = true;
 	entity_i = 0;
-	for (const auto &[resources, instance] : _currCamera->GetParticleQueue())
+	for (const auto &[resources, instance] : _currMainCamera->GetParticleQueue())
 	{
 		// Bind shared emitter resources
 		if (firstEmitter)
@@ -777,13 +823,22 @@ bool Graphics::BeginUIRender() const
 	return true;
 }
 
-bool Graphics::RenderUI(Time &time) const
+bool Graphics::RenderUI(Time &time)
 {
 	char fps[8]{};
 	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
 	ImGui::Text(std::format("fps: {}", fps).c_str());
 
-	ImGui::Text(std::format("Main Draws: {}", _currCamera->GetCullCount()).c_str());
+	std::string currRenderOutput;
+	if (_renderOutput == 1) currRenderOutput = "Positions";
+	if (_renderOutput == 2) currRenderOutput = "Colors";
+	if (_renderOutput == 3) currRenderOutput = "Normals";
+	else					currRenderOutput = "Default";
+
+	if (ImGui::Button(std::format("Render Output: {}", currRenderOutput).c_str()))
+		_renderOutput++;
+
+	ImGui::Text(std::format("Main Draws: {}", _currMainCamera->GetCullCount()).c_str());
 	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 	{
 		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
@@ -822,7 +877,7 @@ bool Graphics::EndFrame()
 
 bool Graphics::ResetRenderState()
 {
-	_currCamera->ResetRenderQueue();
+	_currMainCamera->ResetRenderQueue();
 
 	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 		_currSpotLightCollection->GetLightCamera(i)->ResetRenderQueue();

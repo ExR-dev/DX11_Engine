@@ -35,10 +35,10 @@ struct MeshData
 		ID3D11ShaderResourceView *ambientTextureSRV = nullptr;
 		ID3D11ShaderResourceView *diffuseTextureSRV = nullptr;
 		ID3D11ShaderResourceView *specularTextureSRV = nullptr;
-		DirectX::BoundingBox boundingBox;
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
+	DirectX::BoundingBox boundingBox;
 };
 
 class MeshD3D11

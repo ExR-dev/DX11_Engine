@@ -4,7 +4,7 @@
 
 
 bool SubMeshD3D11::Initialize(
-	const size_t startIndexValue, const size_t nrOfIndicesInSubMesh, const DirectX::BoundingBox &boundingBox,
+	const size_t startIndexValue, const size_t nrOfIndicesInSubMesh,
 	ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV, ID3D11ShaderResourceView *specularTextureSRV)
 {
 	if (_ambientTexture != nullptr)
@@ -26,8 +26,6 @@ bool SubMeshD3D11::Initialize(
 	_startIndex = startIndexValue;
 	_nrOfIndices = nrOfIndicesInSubMesh;
 
-	_boundingBox = boundingBox;
-
 	_ambientTexture = ambientTextureSRV;
 	_diffuseTexture = diffuseTextureSRV;
 	_specularTexture = specularTextureSRV;
@@ -42,11 +40,6 @@ bool SubMeshD3D11::PerformDrawCall(ID3D11DeviceContext *context) const
 	return true;
 }
 
-
-const DirectX::BoundingBox &SubMeshD3D11::GetBoundingBox() const
-{
-	return _boundingBox;
-}
 
 ID3D11ShaderResourceView *SubMeshD3D11::GetAmbientSRV() const
 {

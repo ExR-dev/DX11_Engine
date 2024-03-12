@@ -30,7 +30,6 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 		if (!subMesh.Initialize(
 			meshInfo.subMeshInfo.at(i).startIndexValue, 
 			meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh,
-			meshInfo.subMeshInfo.at(i).boundingBox,
 			nullptr, nullptr, nullptr)) // TODO
 		{
 			ErrMsg("Failed to initialize sub mesh!");
@@ -38,12 +37,9 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 		}
 
 		_subMeshes.push_back(subMesh);
-
-		if (i == 0)
-			_boundingBox = meshInfo.subMeshInfo.at(i).boundingBox;
-		else
-			DirectX::BoundingBox::CreateMerged(_boundingBox, _boundingBox, meshInfo.subMeshInfo.at(i).boundingBox);
 	}
+
+	_boundingBox = meshInfo.boundingBox;
 
 	return true;
 }

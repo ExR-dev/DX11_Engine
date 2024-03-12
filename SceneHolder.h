@@ -2,9 +2,9 @@
 
 #include "Entity.h"
 #include "Object.h"
-//#include "Octree.h"
 #include "Emitter.h"
-#include "Quadtree.h"
+//#include "Quadtree.h"
+#include "Octree.h"
 
 
 class SceneHolder
@@ -65,8 +65,8 @@ private:
 
 	std::vector<SceneEntity *> _entities;
 
-	//Octree _volumeTree;
-	Quadtree _volumeTree;
+	Octree _volumeTree;
+	//Quadtree _volumeTree;
 
 	std::vector<UINT> _treeInsertionQueue;
 

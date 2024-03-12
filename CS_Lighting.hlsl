@@ -84,10 +84,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		
 
 		// Calculate Blinn-Phong shading
-		const float3 diffuseCol = light.color.xyz * max(dot(norm, toLightDir), 0.0f);
+		float directionScalar = dot(norm, toLightDir);
+		const float3 diffuseCol = light.color.xyz * max(directionScalar, 0.0f);
 		
 		const float specFactor = pow(saturate(dot(norm, halfwayDir)), specularity);
-		const float3 specularCol = light.specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
+		//const float3 specularCol = light.specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
+		const float3 specularCol = (directionScalar > 0.0f ? 1.0f : 0.0f) * specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
 
 
 		// Calculate shadow projection

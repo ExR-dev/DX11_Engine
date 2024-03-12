@@ -394,30 +394,6 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		MeshData::SubMeshInfo subMeshInfo = { };
 		const std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
 
-		DirectX::XMFLOAT4A
-			min = {  FLT_MAX,  FLT_MAX,  FLT_MAX, 0 },
-			max = { -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 };
-
-		for (const uint32_t index : *currGroup)
-		{
-			const FormattedVertex *vData = &formattedVertices.at(index);
-
-			if		(vData->px < min.x) min.x = vData->px;
-			else if (vData->px > max.x) max.x = vData->px;
-
-			if		(vData->py < min.y) min.y = vData->py;
-			else if (vData->py > max.y) max.y = vData->py;
-
-			if		(vData->pz < min.z) min.z = vData->pz;
-			else if (vData->pz > max.z) max.z = vData->pz;
-		}
-
-		DirectX::BoundingBox().CreateFromPoints(
-			subMeshInfo.boundingBox, 
-			*reinterpret_cast<DirectX::XMVECTOR *>(&min), 
-			*reinterpret_cast<DirectX::XMVECTOR *>(&max)
-		);
-
 		subMeshInfo.startIndexValue = inlineIndices.size();
 		subMeshInfo.nrOfIndicesInSubMesh = currGroup->size();
 
@@ -432,6 +408,29 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		meshData.indexInfo.indexData,
 		inlineIndices.data(),
 		sizeof(uint32_t) * meshData.indexInfo.nrOfIndicesInBuffer
+	);
+
+	// Calculate bounds
+	DirectX::XMFLOAT4A
+		min = {  FLT_MAX,  FLT_MAX,  FLT_MAX, 0 },
+		max = { -FLT_MAX, -FLT_MAX, -FLT_MAX, 0 };
+
+	for (const FormattedVertex &vData : formattedVertices)
+	{
+		if (vData.px < min.x)		min.x = vData.px;
+		else if (vData.px > max.x)	max.x = vData.px;
+
+		if (vData.py < min.y)		min.y = vData.py;
+		else if (vData.py > max.y)	max.y = vData.py;
+
+		if (vData.pz < min.z)		min.z = vData.pz;
+		else if (vData.pz > max.z)	max.z = vData.pz;
+	}
+
+	DirectX::BoundingBox().CreateFromPoints(
+		meshData.boundingBox,
+		*reinterpret_cast<DirectX::XMVECTOR *>(&min),
+		*reinterpret_cast<DirectX::XMVECTOR *>(&max)
 	);
 }
 
