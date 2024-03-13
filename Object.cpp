@@ -25,6 +25,16 @@ bool Object::Initialize(ID3D11Device *device,
 	_specularID = specularID;
 	_isTransparent = isTransparent;
 
+	MaterialProperties materialProperties = { };
+	materialProperties.sampleNormal = _normalID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleSpecular = _specularID != CONTENT_LOAD_ERROR;
+
+	if (!_materialBuffer.Initialize(device, sizeof(MaterialProperties), &materialProperties))
+	{
+		ErrMsg("Failed to initialize material buffer!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -56,8 +66,8 @@ bool Object::BindBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}
 
-	ID3D11Buffer *const wmBuffer = _transform.GetConstantBuffer();
-	context->PSSetConstantBuffers(0, 1, &wmBuffer);
+	ID3D11Buffer *const materialBuffer = _materialBuffer.GetBuffer();
+	context->PSSetConstantBuffers(0, 1, &materialBuffer);
 
 	return true;
 }

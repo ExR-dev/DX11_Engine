@@ -5,10 +5,12 @@ Texture2D SpecularMap : register(t2);
 
 sampler Sampler : register(s0);
 
-cbuffer WorldMatrixBuffer : register(b0) // TODO: Move transformations back to vertex shader and remove this buffer
+
+cbuffer MaterialProperties : register(b0)
 {
-	matrix worldMatrix;
-	matrix inverseTransposeWorldMatrix;
+	int sampleNormal; // Use normal map if greater than zero.
+	int sampleSpecular; // Use specular map if greater than zero.
+	float padding[2];
 };
 
 struct PixelShaderInput
@@ -32,23 +34,20 @@ struct PixelShaderOutput
 PixelShaderOutput main(PixelShaderInput input)
 {
 	PixelShaderOutput output;
-	// TODO: Tangent bug has to do with the normal map, not the tangent space.
-	// TODO: Constant normal works as expected but texture with same value does not, find out why.
 
 	const float3 col = Texture.Sample(Sampler, input.tex_coord).xyz;
-	const float3 sampleNormal = NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f); 
-	//const float3 sampleNormal = float3(0.0f, 0.0f, 1.0f);
-	const float specularity = SpecularMap.Sample(Sampler, input.tex_coord).x;
 
-	//const float3x3 tbn = float3x3(input.tangent, input.bitangent, input.normal);
-	//const float3 wsNormal = mul(float4(mul(sampleNormal, tbn), 0.0f), inverseTransposeWorldMatrix).xyz;
-	//const float3 wsNormal = mul(float4(sampleNormal, 0.0f), inverseTransposeWorldMatrix).xyz;
-	//const float3 wsNormal = mul(sampleNormal, tbn);
-	const float3 wsNormal = mul(float4(input.normal, 0.0f), inverseTransposeWorldMatrix).xyz;
+	const float3 normal = (sampleNormal > 0)
+		? mul(NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f), float3x3(input.tangent, input.bitangent, input.normal))
+		: input.normal;
+
+	const float specularity = (sampleSpecular > 0)
+		? SpecularMap.Sample(Sampler, input.tex_coord).x
+		: 0.0f;
 
 	output.position = float4(input.world_position.xyz, 1.0f);
 	output.color = float4(col, specularity);
-	//output.normal = float4(wsNormal * 0.5f + float3(0.5f, 0.5f, 0.5f), 0.0f);
-	output.normal = float4(wsNormal, 0.0f);
+	output.normal = float4(normal, 0.0f);
+
 	return output;
 }

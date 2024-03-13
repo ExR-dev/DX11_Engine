@@ -103,8 +103,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				{ 0.0f, 20.0f, 0.0f }		// initialPosition
 			},*/
 
-			SpotLightData::PerLightInfo {
-				{ 15.0f, 15.0f, 15.0f },	// color
+			/*SpotLightData::PerLightInfo {
+				{ 17.0f, 17.0f, 17.0f },	// color
 				XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
@@ -113,6 +113,18 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.05f,						// projectionNearZ
 				35.0f,						// projectionFarZ
 				{ -3.0f, 2.0f, 0.0f }		// initialPosition
+			},*/
+
+			SpotLightData::PerLightInfo {
+				{ 5.0f, 5.0f, 5.0f },		// color
+				XM_PIDIV2,					// rotationX
+				0.3f,						// rotationY
+				XM_PI * 0.5f,				// angle
+				0.3f,						// falloff
+				32.0f,						// specularity
+				0.05f,						// projectionNearZ
+				35.0f,						// projectionFarZ
+				{ -9.0f, 4.0f, 0.0f }		// initialPosition
 			},
 		}
 	};
@@ -143,10 +155,13 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	// Create room
 	{
 		const UINT
-			meshID = 2,
-			textureID = 2,
-			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Black");
+			meshID = content->GetMeshID("Mesh_Room"),
+			//textureID = content->GetTextureID("Tex_texture1"),
+			//normalID = CONTENT_LOAD_ERROR,
+			//specularID = CONTENT_LOAD_ERROR;
+			textureID = content->GetTextureID("Tex_Bricks"),
+			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Bricks_Specular");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -163,8 +178,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		const UINT
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Fade");
+			normalID = CONTENT_LOAD_ERROR,
+			//normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			specularID = CONTENT_LOAD_ERROR;
+			//specularID = content->GetTextureMapID("TexMap_Fade");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -177,14 +194,15 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}*/
-
-	// Create sphere
+	
+	// Create normal-mapped cube
 	{
 		const UINT
-			meshID = content->GetMeshID("Mesh_Sphere"),
-			textureID = content->GetTextureID("Tex_Black"),
-			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Fade");
+			meshID = content->GetMeshID("Mesh_Fallback"),
+			textureID = content->GetTextureID("Tex_Bricks"),
+			//normalID = CONTENT_LOAD_ERROR,
+			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Bricks_Specular");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -193,16 +211,17 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 2.0f, 3.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 1.0f, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f, 0 });
 	}
 
 	// Create error
 	{
 		const UINT
-			meshID = 0,
+			meshID = content->GetMeshID("Mesh_Error"),
 			textureID = content->GetTextureID("Tex_Fallback"),
-			normalID = content->GetTextureMapID("TexMap_texture3_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Black");
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -216,9 +235,9 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
 	}
 
-	/*// Create emitter
+	// Create emitter
 	{
-		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {1,1,1}), EntityType::EMITTER));
+		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {15,15,15}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
 		emitterData.particleCount = 4096;
@@ -235,13 +254,15 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create transparent
-	{
+	/*{
 		const UINT
 			meshID = 3,
-			textureID = content->GetTextureID("Tex_Transparent");
+			textureID = content->GetTextureID("Tex_Transparent"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, true))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
 			return false;
@@ -261,6 +282,10 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 
+	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
+	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -4.5f);
+
+
 	/*_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
 	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -1.5f);
 
@@ -276,6 +301,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		static bool useMainCamera = true;
 		if (input.GetKey(KeyCode::Z) == KeyState::Pressed)
 			useMainCamera = !useMainCamera;
+		else if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+			useMainCamera = true;
 
 		CameraD3D11 *basisCamera = _currCameraPtr;
 		if (useMainCamera) basisCamera = _camera;
@@ -283,6 +310,12 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		static UINT
 			selectedMeshID = 0,
 			selectedTextureID = 0;
+
+		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+		{
+			selectedMeshID = 0;
+			selectedTextureID = 0;
+		}
 
 		if (input.GetKey(KeyCode::Up) == KeyState::Pressed)
 		{
@@ -357,6 +390,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				break;
 			}
 		}
+
+		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+			currSelection = -1;
 
 		if (input.IsCursorLocked())
 		{
@@ -536,7 +572,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		return false;
 
 	static bool hasSetCamera = false;
-	if (input.GetKey(KeyCode::V) == KeyState::Pressed)
+	if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
 		_currCamera = -2;
 
 	if (!hasSetCamera)
@@ -556,7 +592,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 		hasSetCamera = true;
 	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || input.GetKey(KeyCode::V) == KeyState::Pressed)
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || _currCamera == -2)
 	{ // Change camera
 		_currCamera++;
 

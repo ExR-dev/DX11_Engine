@@ -35,12 +35,11 @@ VertexShaderOutput main(VertexShaderInput input)
 	
 	output.world_position = mul(float4(input.position, 1.0f), worldMatrix);
 	output.position = mul(output.world_position, viewProjMatrix);
-	//output.normal = normalize(mul(float4(input.normal, 0.0f), inverseTransposeWorldMatrix).xyz);
-	//output.tangent = normalize(mul(float4(input.tangent, 0.0f), inverseTransposeWorldMatrix).xyz);
-	//output.tangent = normalize(output.tangent - dot(output.tangent, output.normal) * output.normal);
-	output.normal = normalize(input.normal);
-	output.tangent = normalize(input.tangent);
-	output.bitangent = cross(output.normal, output.tangent);
+
+	output.normal =  normalize(mul(float4(input.normal, 0.0f), inverseTransposeWorldMatrix).xyz);
+	output.tangent =  normalize(mul(float4(input.tangent, 0.0f), inverseTransposeWorldMatrix).xyz);
+	output.bitangent = normalize(cross(output.normal, output.tangent));
+
 	output.tex_coord = input.tex_coord;
 
 	return output;

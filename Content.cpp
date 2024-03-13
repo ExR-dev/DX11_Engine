@@ -68,6 +68,15 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 		return CONTENT_LOAD_ERROR;
 	}
 
+	/*std::string meshDebugPath = path;
+	meshDebugPath.replace(meshDebugPath.find_last_of('.'), 4, "_DEBUG.txt");
+
+	if (!WriteMeshToFile(meshDebugPath.c_str(), meshData))
+	{
+		ErrMsg("Failed to write mesh to file!");
+		return CONTENT_LOAD_ERROR;
+	}*/
+
 	Mesh *addedMesh = new Mesh(name, id);
 	if (!addedMesh->data.Initialize(device, meshData))
 	{

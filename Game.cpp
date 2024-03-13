@@ -32,6 +32,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	const std::vector<std::string> meshNames = {
 		"Error",
 		"Fallback",
+		"Cube",
 		"Room",
 		"SimpleSubmesh",
 		"ControlChair",
@@ -40,6 +41,8 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"CharacterSculptLow1",
 		"Plane",
 		"Sphere",
+		"IsoSphereEdged",
+		"IsoSphereSmooth",
 	};
 
 	for (const std::string &meshName : meshNames)
@@ -64,6 +67,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"Default",
 		"Black",
 		"Fade",
+		"Bricks",
 
 		//Transparent
 		"Transparent",
@@ -84,10 +88,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	const std::vector<TextureMapData> textureMapNames = {
 		{ TextureType::NORMAL,		"Default_Normal" },
 		{ TextureType::NORMAL,		"texture3_Normal" },
+		{ TextureType::NORMAL,		"Bricks_Normal" },
 		{ TextureType::SPECULAR,	"Default_Specular" },
 		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
 		{ TextureType::SPECULAR,	"Black" },
 		{ TextureType::SPECULAR,	"Fade" },
+		{ TextureType::SPECULAR,	"Bricks_Specular" },
 	};
 
 	for (const TextureMapData &textureMap : textureMapNames)
@@ -215,7 +221,7 @@ bool Game::Render(Time &time, const Input &input)
 		return false;
 	}
 
-
+	
 //#ifdef _DEBUG
 	if (!_graphics.BeginUIRender())
 	{

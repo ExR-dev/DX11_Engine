@@ -1,6 +1,6 @@
 
 static const float EPSILON = 0.00001f;
-static const float NORMAL_OFFSET = 0.005f;
+static const float NORMAL_OFFSET = 0.003f;
 
 RWTexture2D<unorm float4> BackBufferUAV : register(u0);
 
@@ -134,8 +134,4 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
 	BackBufferUAV[DTid.xy] = float4(result, 1.0f);
-
-	//BackBufferUAV[DTid.xy] = float4(norm * 0.5f + float3(0.5f, 0.5f, 0.5f), 1.0f);
-	//BackBufferUAV[DTid.xy] = float4(abs(norm), 1.0f);
-	//BackBufferUAV[DTid.xy] = float4(norm, 1.0f);
 }

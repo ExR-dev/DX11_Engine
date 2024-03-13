@@ -226,6 +226,7 @@ static void FormatRawMesh(
 	const std::vector<RawNormal> &vertexNormals,
 	const std::vector<std::vector<RawIndex>> &indexGroups)
 {
+	// Format vertices & index groups
 	const size_t groupCount = indexGroups.size();
 	for (size_t groupIndex = 0; groupIndex < groupCount; groupIndex++)
 	{
@@ -254,24 +255,28 @@ static void FormatRawMesh(
 		for (size_t triIndex = 0; triIndex < groupSize; triIndex += 3)
 		{
 			FormattedVertex *verts[3] = {
-				&formattedVertices.at(triIndex + 0),
-				&formattedVertices.at(triIndex + 1),
-				&formattedVertices.at(triIndex + 2)
+			&formattedVertices.at(triIndex + 0),
+			&formattedVertices.at(triIndex + 1),
+			&formattedVertices.at(triIndex + 2)
 			};
 
 			const DirectX::XMFLOAT3A
-				v0		= { verts[0]->px,	verts[0]->py,	verts[0]->pz },
-				v1		= { verts[1]->px,	verts[1]->py,	verts[1]->pz },
-				v2		= { verts[2]->px,	verts[2]->py,	verts[2]->pz },
-				edge1	= { v1.x - v0.x,	v1.y - v0.y,	v1.z - v0.z  },
-				edge2	= { v2.x - v0.x,	v2.y - v0.y,	v2.z - v0.z  };
+				v0 = { verts[0]->px, verts[0]->py, verts[0]->pz },
+				v1 = { verts[1]->px, verts[1]->py, verts[1]->pz },
+				v2 = { verts[2]->px, verts[2]->py, verts[2]->pz };
+
+			const DirectX::XMFLOAT3A
+				edge1 = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z },
+				edge2 = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
 
 			const DirectX::XMFLOAT2A
-				uv0			= { verts[0]->u,	verts[0]->v   },
-				uv1			= { verts[1]->u,	verts[1]->v   },
-				uv2			= { verts[2]->u,	verts[2]->v   },
-				deltaUV1	= { uv1.x - uv0.x,	uv1.y - uv0.y },
-				deltaUV2	= { uv2.x - uv0.x,	uv2.y - uv0.y };
+				uv0 = { verts[0]->u, verts[0]->v },
+				uv1 = { verts[1]->u, verts[1]->v },
+				uv2 = { verts[2]->u, verts[2]->v };
+
+			const DirectX::XMFLOAT2A
+				deltaUV1 = { uv1.x - uv0.x,	uv1.y - uv0.y },
+				deltaUV2 = { uv2.x - uv0.x,	uv2.y - uv0.y };
 
 			const float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 			DirectX::XMFLOAT4A tangent = {
@@ -281,91 +286,27 @@ static void FormatRawMesh(
 				0.0f
 			};
 
-			//*reinterpret_cast<DirectX::XMVECTOR *>(&tangent) = DirectX::XMVector3Normalize(*reinterpret_cast<DirectX::XMVECTOR *>(&tangent));
-
-			/*DirectX::XMFLOAT4A midNormal = {
-				(verts[0]->nx + verts[1]->nx + verts[2]->nx) / 3.0f,
-				(verts[0]->ny + verts[1]->ny + verts[2]->ny) / 3.0f,
-				(verts[0]->nz + verts[1]->nz + verts[2]->nz) / 3.0f,
-				0.0f
-			};
-			*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal) = DirectX::XMVector3Normalize(*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal));
-
-			float diff = std::abs(DirectX::XMVectorGetX(DirectX::XMVector3Dot(*reinterpret_cast<DirectX::XMVECTOR *>(&midNormal), *reinterpret_cast<DirectX::XMVECTOR *>(&tangent))));
-			if (diff > 0.1f)
-			{
-				printf("");
-			}*/
-
 			for (size_t i = 0; i < 3; i++)
 			{
-				/*DirectX::XMFLOAT4A
-					normal = { verts[i]->nx, verts[i]->ny, verts[i]->nz, 0 },
-					biTangent,
-					newTangent;
+				// Gram-Schmidt orthogonalization
+				const DirectX::XMFLOAT4A normal = { verts[i]->nx, verts[i]->ny, verts[i]->nz, 0.0f };
 
-				*reinterpret_cast<DirectX::XMVECTOR *>(&biTangent) = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(
-					*reinterpret_cast<DirectX::XMVECTOR *>(&normal), 
-					*reinterpret_cast<DirectX::XMVECTOR *>(&tangent)
-				));
+				const DirectX::XMVECTOR
+					n = *reinterpret_cast<const DirectX::XMVECTOR *>(&normal),
+					t = *reinterpret_cast<const DirectX::XMVECTOR *>(&tangent);
 
-				*reinterpret_cast<DirectX::XMVECTOR *>(&newTangent) = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(
-					*reinterpret_cast<DirectX::XMVECTOR *>(&normal),
-					*reinterpret_cast<DirectX::XMVECTOR *>(&biTangent)
-				));
+				const DirectX::XMVECTOR newTangentVec = DirectX::XMVector3Normalize(
+					DirectX::XMVectorSubtract(t,
+						DirectX::XMVectorScale(n,
+							DirectX::XMVectorGetX(
+								DirectX::XMVector3Dot(n, t)))));
+
+				const DirectX::XMFLOAT4A newTangent = *reinterpret_cast<const DirectX::XMFLOAT4A *>(&newTangentVec);
 
 				verts[i]->tx = newTangent.x;
 				verts[i]->ty = newTangent.y;
-				verts[i]->tz = newTangent.z;*/
-
-				verts[i]->tx = tangent.x;
-				verts[i]->ty = tangent.y;
-				verts[i]->tz = tangent.z;
+				verts[i]->tz = newTangent.z;
 			}
-		}
-	}
-}
-
-static void ResolveDuplicateVertices(
-	std::vector<FormattedVertex> &formattedVertices,
-	std::vector<std::vector<uint32_t>> &formattedIndexGroups)
-{
-	const auto vertBegin = formattedVertices.begin();
-	uint32_t vertCount = static_cast<uint32_t>(formattedVertices.size());
-
-	std::vector<uint32_t> vertexMap(vertCount, 0);
-	for (uint32_t i = 0; i < vertCount; (vertexMap.at(i) = i++)) { }
-
-	// Locate and erase duplicates
-	for (uint32_t i = 0; i < vertCount; i++)
-	{
-		const FormattedVertex checkedVert = formattedVertices.at(i);
-
-		for (uint32_t j = i + 1; j < vertCount; j++)
-		{
-			if (formattedVertices.at(j) == checkedVert)
-			{
-				vertexMap.at(j) = i;
-				formattedVertices.erase(vertBegin + j);
-
-				vertCount--;
-				j--;
-			}
-		}
-	}
-
-	const uint32_t groupCount = static_cast<uint32_t>(formattedIndexGroups.size());
-
-	// Remap indices
-	for (uint32_t group_i = 0; group_i < groupCount; group_i++)
-	{
-		std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
-		const uint32_t groupSize = static_cast<uint32_t>(currGroup->size());
-
-		for (uint32_t i = 0; i < groupSize; i++)
-		{
-			const uint32_t oldIndex = currGroup->at(i);
-			currGroup->at(i) = vertexMap.at(oldIndex);
 		}
 	}
 }
@@ -434,6 +375,7 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 	);
 }
 
+
 bool LoadMeshFromFile(const char *path, MeshData &meshData)
 {
 	if (meshData.vertexInfo.vertexData != nullptr || 
@@ -470,9 +412,6 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 
 	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups);
 
-	// TODO: Keep or discard?
-	// ResolveDuplicateVertices(formattedVertices, formattedIndexGroups); 
-
 	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups);
 
 	return true;	
@@ -504,6 +443,7 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 
 		fileStream << "\tPosition(" << vData->px << ", " << vData->py << ", " << vData->pz << ")\n";
 		fileStream << "\tNormal(" << vData->nx << ", " << vData->ny << ", " << vData->nz << ")\n";
+		fileStream << "\tTangent(" << vData->tx << ", " << vData->ty << ", " << vData->tz << ")\n";
 		fileStream << "\tTexCoord(" << vData->u << ", " << vData->v << ")\n";
 
 		fileStream << '\n';
@@ -518,6 +458,30 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 		const uint32_t *iData = &meshData.indexInfo.indexData[i*3];
 
 		fileStream << "indices " << i*3 << "-" << i*3+2 << "\t (" << iData[0] << "/" << iData[1] << "/" << iData[2] << ")\n";
+	}
+	fileStream << "--------------------------------------------\n\n";
+
+	fileStream << "---------------- Triangle Data ----------------\n";
+	fileStream << "count = " << meshData.indexInfo.nrOfIndicesInBuffer / 3 << '\n';
+
+	for (size_t i = 0; i < meshData.indexInfo.nrOfIndicesInBuffer / 3; i++)
+	{
+		const uint32_t *iData = &meshData.indexInfo.indexData[i*3];
+
+		fileStream << "Triangle " << i+1 << " {";
+
+		for (size_t j = 0; j < 3; j++)
+		{
+			const FormattedVertex *vData = &reinterpret_cast<FormattedVertex *>(meshData.vertexInfo.vertexData)[iData[j]];
+			fileStream << "\n\tv" << j << '\n';
+
+			fileStream << "\t\tP Vector3(" << vData->px << ", " << vData->py << ", " << vData->pz << ")\n";
+			fileStream << "\t\tN Vector3(" << vData->nx << ", " << vData->ny << ", " << vData->nz << ")\n";
+			fileStream << "\t\tT Vector3(" << vData->tx << ", " << vData->ty << ", " << vData->tz << ")\n";
+			fileStream << "\t\tu Vector3(" << vData->u << ", " << vData->v << ", 0)\n";
+		}
+
+		fileStream << "}\n\n";
 	}
 	fileStream << "--------------------------------------------\n\n\n";
 

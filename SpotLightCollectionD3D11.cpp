@@ -175,6 +175,22 @@ bool SpotLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
 	return true;
 }
 
+bool SpotLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) const
+{
+	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
+	context->CSSetShaderResources(3, 2, nullSRV);
+
+	return true;
+}
+
+bool SpotLightCollectionD3D11::UnbindPSBuffers(ID3D11DeviceContext *context) const
+{
+	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
+	context->PSSetShaderResources(1, 2, nullSRV);
+
+	return true;
+}
+
 
 UINT SpotLightCollectionD3D11::GetNrOfLights() const
 {

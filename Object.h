@@ -14,6 +14,8 @@ private:
 
 	bool _isTransparent = false;
 
+	ConstantBufferD3D11 _materialBuffer;
+
 public:
 	explicit Object(UINT id, const DirectX::BoundingBox &bounds);
 

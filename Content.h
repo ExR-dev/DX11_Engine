@@ -13,16 +13,22 @@
 constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
 
 
+struct MaterialProperties
+{
+	int sampleNormal; // Use normal map if greater than zero.
+	int sampleSpecular; // Use specular map if greater than zero.
+	float padding[2];
+};
+
+
 struct Mesh
 {
 	std::string name;
 	UINT id;
 	MeshD3D11 data;
 
-
 	Mesh(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~Mesh() = default;
-
 	Mesh(const Mesh &other) = delete;
 	Mesh &operator=(const Mesh &other) = delete;
 	Mesh(Mesh &&other) = delete;
@@ -35,10 +41,8 @@ struct Shader
 	UINT id;
 	ShaderD3D11 data;
 
-
 	Shader(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~Shader() = default;
-
 	Shader(const Shader &other) = delete;
 	Shader &operator=(const Shader &other) = delete;
 	Shader(Shader &&other) = delete;
@@ -51,10 +55,8 @@ struct Texture
 	UINT id;
 	ShaderResourceTextureD3D11 data;
 
-
 	Texture(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~Texture() = default;
-
 	Texture(const Texture &other) = delete;
 	Texture &operator=(const Texture &other) = delete;
 	Texture(Texture &&other) = delete;
@@ -67,10 +69,8 @@ struct TextureMap
 	UINT id;
 	ShaderResourceTextureD3D11 data;
 
-
 	TextureMap(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~TextureMap() = default;
-
 	TextureMap(const TextureMap &other) = delete;
 	TextureMap &operator=(const TextureMap &other) = delete;
 	TextureMap(TextureMap &&other) = delete;
@@ -83,10 +83,8 @@ struct Sampler
 	UINT id;
 	SamplerD3D11 data;
 
-
 	Sampler(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~Sampler() = default;
-
 	Sampler(const Sampler &other) = delete;
 	Sampler &operator=(const Sampler &other) = delete;
 	Sampler(Sampler &&other) = delete;
@@ -99,10 +97,8 @@ struct InputLayout
 	UINT id;
 	InputLayoutD3D11 data;
 
-
 	InputLayout(std::string name, const UINT id) : name(std::move(name)), id(id) { }
 	~InputLayout() = default;
-
 	InputLayout(const InputLayout &other) = delete;
 	InputLayout &operator=(const InputLayout &other) = delete;
 	InputLayout(InputLayout &&other) = delete;
