@@ -12,14 +12,6 @@ struct Particle
 	float4 color;
 	float4 startPos;
 	float4 endPos;
-
-	/*float3 position;
-	float3 velocity;
-	float4 color;
-	float4 startPos;
-	float4 endPos;
-	float size;
-	float lifetime;*/
 };
 
 StructuredBuffer<Particle> Particles : register(t0);

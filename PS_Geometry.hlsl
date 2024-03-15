@@ -6,7 +6,7 @@ Texture2D SpecularMap : register(t2);
 sampler Sampler : register(s0);
 
 
-cbuffer MaterialProperties : register(b0)
+cbuffer MaterialProperties : register(b2)
 {
 	int sampleNormal; // Use normal map if greater than zero.
 	int sampleSpecular; // Use specular map if greater than zero.

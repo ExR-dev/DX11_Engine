@@ -28,6 +28,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	// TODO: Add support for reading .mtl files.
 
 	const std::vector<std::string> meshNames = {
 		"Error",

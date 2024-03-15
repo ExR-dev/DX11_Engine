@@ -665,6 +665,22 @@ bool Graphics::RenderTransparency()
 		//return false;
 	}
 
+	static UINT defaultNormalID = _content->GetTextureMapID("TexMap_Default_Normal");
+	if (_currNormalID != defaultNormalID)
+	{
+		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultNormalID)->GetSRV();
+		_context->PSSetShaderResources(1, 1, &srv);
+		_currNormalID = defaultNormalID;
+	}
+
+	static UINT defaultSpecularID = _content->GetTextureMapID("TexMap_Default_Specular");
+	if (_currSpecularID != defaultSpecularID)
+	{
+		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultSpecularID)->GetSRV();
+		_context->PSSetShaderResources(2, 1, &srv);
+		_currSpecularID = defaultSpecularID;
+	}
+
 	const MeshD3D11 *loadedMesh = nullptr;
 	UINT entity_i = 0;
 	for (const auto &[resources, instance] : _currMainCamera->GetTransparentQueue())
@@ -695,6 +711,22 @@ bool Graphics::RenderTransparency()
 			_context->PSSetShaderResources(0, 1, &srv);
 			_currTexID = resources.texID;
 		}
+
+		if (resources.normalID != CONTENT_LOAD_ERROR)
+			if (_currNormalID != resources.normalID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.normalID)->GetSRV();
+				_context->PSSetShaderResources(1, 1, &srv);
+				_currNormalID = resources.normalID;
+			}
+
+		if (resources.specularID != CONTENT_LOAD_ERROR)
+			if (_currSpecularID != resources.specularID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.specularID)->GetSRV();
+				_context->PSSetShaderResources(2, 1, &srv);
+				_currSpecularID = resources.specularID;
+			}
 
 		// Bind private entity resources
 		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))

@@ -11,7 +11,7 @@ Cubemap::Cubemap()
 Cubemap::Cubemap(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const DirectX::XMFLOAT4A &initialPosition)
 {
 	if (!Initialize(device, resolution, nearZ, farZ, initialPosition))
-		ErrMsg("Failed to setup cubemap cameras from constructor!");
+		ErrMsg("Failed to initialize cubemap from constructor!");
 }
 
 Cubemap::~Cubemap()
@@ -48,11 +48,20 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 		}
 	}
 
-	_cameras[1]->LookX(DirectX::XM_PIDIV2 * 1);
+
+	_cameras[1]->LookX(DirectX::XM_PI);
+
+	_cameras[2]->LookY(DirectX::XM_PIDIV2);
+	_cameras[3]->LookY(-DirectX::XM_PIDIV2);
+
+	_cameras[4]->LookX(DirectX::XM_PIDIV2);
+	_cameras[5]->LookX(-DirectX::XM_PIDIV2);
+
+	/*_cameras[1]->LookX(DirectX::XM_PIDIV2 * 1);
 	_cameras[2]->LookX(DirectX::XM_PIDIV2 * 2);
 	_cameras[3]->LookX(DirectX::XM_PIDIV2 * 3);
 	_cameras[4]->LookY(DirectX::XM_PIDIV2);
-	_cameras[5]->LookY(-DirectX::XM_PIDIV2);
+	_cameras[5]->LookY(-DirectX::XM_PIDIV2);*/
 
 
 	D3D11_TEXTURE2D_DESC textureDesc;

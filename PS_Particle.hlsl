@@ -23,8 +23,8 @@ struct SpotLight
 	float3 light_position;
 };
 
-StructuredBuffer<SpotLight> SpotLights : register(t1);
-Texture2DArray<float> ShadowMaps : register(t2);
+StructuredBuffer<SpotLight> SpotLights : register(t3);
+Texture2DArray<float> ShadowMaps : register(t4);
 
 
 // Generic color-clamping algorithm, not mine but it looks good
@@ -36,11 +36,11 @@ float3 ACESFilm(const float3 x)
 
 struct PixelShaderInput
 {
-	float4 position : SV_POSITION;
-	float4 world_position : POSITION;
-	float3 normal : NORMAL;
-	float4 color : COLOR;
-	float2 tex_coord : TEXCOORD;
+	float4 position			: SV_POSITION;
+	float4 world_position	: POSITION;
+	float3 normal			: NORMAL;
+	float4 color			: COLOR;
+	float2 tex_coord		: TEXCOORD;
 };
 
 float4 main(PixelShaderInput input) : SV_TARGET

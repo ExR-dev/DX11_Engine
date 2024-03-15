@@ -67,7 +67,7 @@ bool Object::BindBuffers(ID3D11DeviceContext *context) const
 	}
 
 	ID3D11Buffer *const materialBuffer = _materialBuffer.GetBuffer();
-	context->PSSetConstantBuffers(0, 1, &materialBuffer);
+	context->PSSetConstantBuffers(2, 1, &materialBuffer);
 
 	return true;
 }
