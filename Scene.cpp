@@ -120,10 +120,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				XM_PIDIV2,					// rotationX
 				0.3f,						// rotationY
 				XM_PI * 0.5f,				// angle
-				0.3f,						// falloff
+				0.25f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
-				35.0f,						// projectionFarZ
+				0.01f,						// projectionNearZ
+				50.0f,						// projectionFarZ
 				{ -9.0f, 4.0f, 0.0f }		// initialPosition
 			},
 		}
@@ -282,8 +282,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 
-	_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
-	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -4.5f);
+	/*_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);
+	_spotLights->GetLightCamera(0)->MoveRight(time.deltaTime * -4.5f);*/
 
 
 	/*_spotLights->GetLightCamera(0)->LookX(time.deltaTime * 0.5f);

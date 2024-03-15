@@ -21,8 +21,6 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 	for (UINT i = 0; i < lightCount; i++)
 	{
-		// TODO: Very unsure if this implementation is correct
-
 		const SpotLightData::PerLightInfo iLightInfo = lightInfo.perLightInfo.at(i);
 
 		_shadowCameras.push_back({ nullptr, true });
@@ -31,8 +29,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		shadowCamera.camera = new CameraD3D11(
 			device,
 			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
-			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
-			true // TODO: Make false, only true to control the camera for debugging purposes
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f }
 		);
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
@@ -56,9 +53,12 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
 	rasterizerDesc.FrontCounterClockwise = false;
-	rasterizerDesc.DepthBias = 1;
-	rasterizerDesc.DepthBiasClamp = 0.0025f;
-	rasterizerDesc.SlopeScaledDepthBias = 2.0f;
+	//rasterizerDesc.DepthBias = 1;
+	//rasterizerDesc.DepthBiasClamp = 0.0025f;
+	//rasterizerDesc.SlopeScaledDepthBias = 2.0f;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
 	rasterizerDesc.DepthClipEnable = false;
 	rasterizerDesc.ScissorEnable = false;
 	rasterizerDesc.MultisampleEnable = false;
