@@ -58,6 +58,8 @@ private:
 	XMFLOAT4A _ambientColor = { 0.08f, 0.08f, 0.08f, 0.0f };
 
 
+	[[nodiscard]] bool RenderToTarget();
+
 	[[nodiscard]] bool RenderShadowCasters();
 	[[nodiscard]] bool RenderGeometry();
 	[[nodiscard]] bool RenderLighting() const;

@@ -178,6 +178,23 @@ bool Graphics::EndSceneRender(Time &time)
 		return false;
 	}
 
+	// Render detatched cameras to buffers
+
+
+	// Render main camera to screen
+	if (!RenderToTarget())
+	{
+		ErrMsg("Failed to render to screen!");
+		return false;
+	}
+
+	return true;
+}
+
+
+bool Graphics::RenderToTarget()
+{
+
 	if (!RenderShadowCasters())
 	{
 		ErrMsg("Failed to render shadow casters!");

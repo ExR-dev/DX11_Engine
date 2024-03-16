@@ -55,7 +55,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const SpotLightData spotLightInfo = {
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 15.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
@@ -89,10 +89,22 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.05f,						// projectionNearZ
 				35.0f,						// projectionFarZ
 				{ 0.0f, 2.0f, 4.0f }		// initialPosition
-			},
+			},*/
+			
+			/*SpotLightData::PerLightInfo {
+				{ 30.0f, 30.0f, 30.0f },	// color
+				0.0f,						// rotationX
+				XM_PIDIV2,					// rotationY
+				XM_PI * 0.6f,				// angle
+				0.75f,						// falloff
+				512.0f,						// specularity
+				0.05f,						// projectionNearZ
+				25.0f,						// projectionFarZ
+				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+			},*/
 
 			SpotLightData::PerLightInfo {
-				{ 30.0f, 30.0f, 30.0f },	// color
+				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.6f,				// angle
@@ -134,7 +146,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Room"),
 			textureID = content->GetTextureID("Tex_texture1"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR;
+			//specularID = CONTENT_LOAD_ERROR;
+			specularID = content->GetTextureMapID("TexMap_Gray");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -152,7 +165,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR;
+			//specularID = CONTENT_LOAD_ERROR;
+			specularID = content->GetTextureMapID("TexMap_Gray");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
@@ -164,6 +178,24 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+	}
+
+	// Create sphere
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_White"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = content->GetTextureMapID("TexMap_Fade");
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		{
+			ErrMsg("Failed to initialize sphere object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -2.0f, 2.0f, -3.0f, 0 });
 	}
 	
 	// Create normal-mapped cube

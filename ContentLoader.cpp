@@ -24,10 +24,10 @@ struct FormattedVertex {
 		u, v;
 
 	FormattedVertex() :
-	px(0.0f), py(0.0f), pz(0.0f),
-	nx(0.0f), ny(0.0f), nz(0.0f),
-	tx(0.0f), ty(0.0f), tz(0.0f),
-	u(0.0f), v(0.0f)
+		px(0.0f), py(0.0f), pz(0.0f),
+		nx(0.0f), ny(0.0f), nz(0.0f),
+		tx(0.0f), ty(0.0f), tz(0.0f),
+		u(0.0f), v(0.0f)
 	{ }
 
 	FormattedVertex(
@@ -35,10 +35,10 @@ struct FormattedVertex {
 		const float nx, const float ny, const float nz, 
 		const float tx, const float ty, const float tz, 
 		const float u, const float v) :
-	px(px), py(py), pz(pz),
-	nx(nx), ny(ny), nz(nz),
-	tx(tx), ty(ty), tz(tz),
-	u(u), v(v)
+		px(px), py(py), pz(pz),
+		nx(nx), ny(ny), nz(nz),
+		tx(tx), ty(ty), tz(tz),
+		u(u), v(v)
 	{ }
 
 	bool operator==(const FormattedVertex &other) const

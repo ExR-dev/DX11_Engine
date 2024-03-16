@@ -5,6 +5,7 @@ class Material
 {
 private:
 
+
 public:
 	Material();
 	~Material();

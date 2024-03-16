@@ -65,7 +65,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"texture5",
 		"CharacterSculptLow0Texture1",
 		"Sphere",
-		"Default",
+		"White",
 		"Black",
 		"Fade",
 		"Bricks",
@@ -91,9 +91,10 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ TextureType::NORMAL,		"texture3_Normal" },
 		{ TextureType::NORMAL,		"Bricks_Normal" },
 		{ TextureType::SPECULAR,	"Default_Specular" },
-		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
-		{ TextureType::SPECULAR,	"Black" },
+		{ TextureType::SPECULAR,	"Gray" },
+		{ TextureType::SPECULAR,	"White" },
 		{ TextureType::SPECULAR,	"Fade" },
+		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
 		{ TextureType::SPECULAR,	"Bricks_Specular" },
 	};
 

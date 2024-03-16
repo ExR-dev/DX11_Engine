@@ -47,7 +47,7 @@ float3 ACESFilm(const float3 x)
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-	const float specularity = (1.0f / pow(1.0f + EPSILON - ColorGBuffer[DTid.xy].w, 1.5f));
+	const float specularity = (1.0f / pow(1.001f - ColorGBuffer[DTid.xy].w, 1.5f));
 	const float3
 		pos = PositionGBuffer[DTid.xy].xyz,
 		col = ColorGBuffer[DTid.xy].xyz,
@@ -84,12 +84,11 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		
 
 		// Calculate Blinn-Phong shading
-		float directionScalar = dot(norm, toLightDir);
-		const float3 diffuseCol = light.color.xyz * max(directionScalar, 0.0f);
+		float directionScalar = max(dot(norm, toLightDir), 0.0f);
+		const float3 diffuseCol = light.color.xyz * directionScalar;
 		
-		const float specFactor = pow(saturate(dot(norm, halfwayDir)), specularity);
-		//const float3 specularCol = light.specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
-		const float3 specularCol = (directionScalar > 0.0f ? 1.0f : 0.0f) * specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
+		const float specFactor = pow(max(dot(norm, halfwayDir), 0.0f), specularity);
+		const float3 specularCol = directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor) * light.color.xyz / max(max(light.color.x, light.color.y), light.color.z);
 
 
 		// Calculate shadow projection
