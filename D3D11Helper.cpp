@@ -148,7 +148,6 @@ bool CreateDepthStencilState(ID3D11Device *device, ID3D11DepthStencilState *&dep
 {
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = { };
 	depthStencilDesc.DepthEnable = true;
-	//depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 	depthStencilDesc.StencilEnable = false;

@@ -1,4 +1,4 @@
-#include "Graphics.h"
+﻿#include "Graphics.h"
 
 #include <algorithm>
 
@@ -132,6 +132,18 @@ bool Graphics::SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera)
 	return true;
 }
 
+bool Graphics::SetCubemap(Cubemap *cubemap)
+{
+	if (cubemap == nullptr)
+	{
+		ErrMsg("Failed to set cubemap, cubemap is nullptr!");
+		return false;
+	}
+
+	_currCubemap = cubemap;
+	return true;
+}
+
 bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11* spotlights)
 {
 	if (spotlights == nullptr)
@@ -178,13 +190,48 @@ bool Graphics::EndSceneRender(Time &time)
 		return false;
 	}
 
-	// Render detatched cameras to buffers
-
-
-	// Render main camera to screen
-	if (!RenderToTarget())
+	if (!RenderShadowCasters())
 	{
-		ErrMsg("Failed to render to screen!");
+		ErrMsg("Failed to render shadow casters!");
+		return false;
+	}
+
+	// Render cubemap cameras to cubemap view
+	if (_currCubemap != nullptr)
+		if (_currCubemap->GetUpdate())
+		{
+			CameraD3D11
+				*mainCamera = _currMainCamera,
+				*viewCamera = _currViewCamera;
+
+			for (UINT i = 0; i < 6; i++)
+			{
+				_currMainCamera = _currCubemap->GetCamera(i);
+				_currViewCamera = _currMainCamera;
+
+				if (!RenderToTarget(
+						_currCubemap->GetGBuffers(), 
+						_currCubemap->GetRTV(i), 
+						_currCubemap->GetUAV(i), 
+						_currCubemap->GetDSV(), 
+						&_currCubemap->GetViewport(), 
+						false, 
+						true))
+				{
+					ErrMsg(std::format("Failed to render to cubemap view #{}!", i));
+					return false;
+				}
+			}
+
+			_currMainCamera = mainCamera;
+			_currViewCamera = viewCamera;
+		}
+
+	// Render main camera to screen view
+	_renderOutput %= G_BUFFER_COUNT + 1;
+	if (!RenderToTarget(nullptr, nullptr, nullptr, nullptr, nullptr, (_renderOutput != 0), false))
+	{
+		ErrMsg("Failed to render to screen view!");
 		return false;
 	}
 
@@ -192,31 +239,36 @@ bool Graphics::EndSceneRender(Time &time)
 }
 
 
-bool Graphics::RenderToTarget()
+bool Graphics::RenderToTarget(
+	const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
+	ID3D11RenderTargetView *targetRTV, 
+	ID3D11UnorderedAccessView *targetUAV, 
+	ID3D11DepthStencilView *targetDSV, 
+	const D3D11_VIEWPORT *targetViewport, 
+	const bool renderGBuffer,
+	const bool cubemapStage)
 {
+	if (targetGBuffers == nullptr)	targetGBuffers = &_gBuffers;
+	if (targetRTV == nullptr)		targetRTV = _rtv;
+	if (targetUAV == nullptr)		targetUAV = _uav;
+	if (targetDSV == nullptr)		targetDSV = _dsView;
+	if (targetViewport == nullptr)	targetViewport = &_viewport;
 
-	if (!RenderShadowCasters())
-	{
-		ErrMsg("Failed to render shadow casters!");
-		return false;
-	}
-
-	if (!RenderGeometry())
+	if (!RenderGeometry(targetGBuffers, targetDSV, targetViewport))
 	{
 		ErrMsg("Failed to render geometry!");
 		return false;
 	}
 
-	_renderOutput %= G_BUFFER_COUNT + 1;
-	if (_renderOutput == 0)
+	if (!renderGBuffer)
 	{
-		if (!RenderLighting())
+		if (!RenderLighting(targetGBuffers, targetUAV, targetViewport, cubemapStage))
 		{
 			ErrMsg("Failed to render lighting!");
 			return false;
 		}
 
-		if (!RenderTransparency())
+		if (!RenderTransparency(targetRTV, targetDSV, targetViewport))
 		{
 			ErrMsg("Failed to render transparency!");
 			return false;
@@ -348,7 +400,8 @@ bool Graphics::RenderShadowCasters()
 	return true;
 }
 
-bool Graphics::RenderGeometry()
+bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
+	ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
 	constexpr float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -356,14 +409,14 @@ bool Graphics::RenderGeometry()
 	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT] = { };
 	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
 	{
-		rtvs[i] = _gBuffers[i].GetRTV();
+		rtvs[i] = targetGBuffers->at(i).GetRTV();
 		_context->ClearRenderTargetView(rtvs[i], clearColor);
 	}
-	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, _dsView);
+	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, targetDSV);
 
-	_context->ClearDepthStencilView(_dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+	_context->ClearDepthStencilView(targetDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	_context->RSSetViewports(1, &_viewport);
+	_context->RSSetViewports(1, targetViewport);
 	_context->RSSetState(nullptr); // TODO: Does this work?
 
 	// Bind camera data
@@ -427,6 +480,21 @@ bool Graphics::RenderGeometry()
 		_currSpecularID = defaultSpecularID;
 	}
 
+	static UINT defaultReflectiveID = _content->GetTextureMapID("TexMap_Default_Reflective");
+	if (_currReflectiveID != defaultReflectiveID)
+	{
+		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultReflectiveID)->GetSRV();
+		_context->PSSetShaderResources(3, 1, &srv);
+		_currReflectiveID = defaultReflectiveID;
+	}
+
+	if (_currCubemap != nullptr)
+	{
+		// Bind cubemap texture
+		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
+		_context->PSSetShaderResources(4, 1, &srv);
+	}
+
 	const MeshD3D11 *loadedMesh = nullptr;
 	UINT entity_i = 0;
 	for (const auto &[resources, instance] : _currMainCamera->GetGeometryQueue())
@@ -474,6 +542,14 @@ bool Graphics::RenderGeometry()
 				_currSpecularID = resources.specularID;
 			}
 
+		if (resources.reflectiveID != CONTENT_LOAD_ERROR)
+			if (_currSpecularID != resources.specularID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
+				_context->PSSetShaderResources(3, 1, &srv);
+				_currReflectiveID = resources.reflectiveID;
+			}
+
 		// Bind private entity resources
 		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
 		{
@@ -501,6 +577,13 @@ bool Graphics::RenderGeometry()
 		entity_i++;
 	}
 
+	if (_currCubemap != nullptr)
+	{
+		// Unbind cubemap texture
+		ID3D11ShaderResourceView *nullSRV = nullptr;
+		_context->PSSetShaderResources(4, 1, &nullSRV);
+	}
+
 	// Unbind render targets
 	for (auto &rtv : rtvs)
 		rtv = nullptr;
@@ -509,21 +592,23 @@ bool Graphics::RenderGeometry()
 	return true;
 }
 
-bool Graphics::RenderLighting() const
+bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
+	ID3D11UnorderedAccessView *targetUAV, const D3D11_VIEWPORT *targetViewport, const bool useCubemapShader) const
 {
-	if (!_content->GetShader("CS_Lighting")->BindShader(_context))
+	const std::string shaderName = useCubemapShader ? "CS_CubemapLighting" : "CS_Lighting";
+	if (!_content->GetShader(shaderName)->BindShader(_context))
 	{
 		ErrMsg(std::format("Failed to bind compute shader!"));
 		return false;
 	}
 
-	_context->CSSetUnorderedAccessViews(0, 1, &_uav, nullptr);
+	_context->CSSetUnorderedAccessViews(0, 1, &targetUAV, nullptr);
 
 	// Bind compute shader resources
 	ID3D11ShaderResourceView *srvs[G_BUFFER_COUNT] = { };
 	for (size_t i = 0; i < G_BUFFER_COUNT; i++)
-		srvs[i] = _gBuffers[i].GetSRV();
-	_context->CSSetShaderResources(0, 3, srvs);
+		srvs[i] = targetGBuffers->at(i).GetSRV();
+	_context->CSSetShaderResources(0, G_BUFFER_COUNT, srvs);
 
 	// Bind global light data
 	ID3D11Buffer *const globalLightBuffer = _globalLightBuffer.GetBuffer();
@@ -547,7 +632,7 @@ bool Graphics::RenderLighting() const
 	}
 
 	// Send execution command
-	_context->Dispatch(static_cast<UINT>(_viewport.Width / 8), static_cast<UINT>(_viewport.Height / 8), 1);
+	_context->Dispatch(static_cast<UINT>(targetViewport->Width / 8), static_cast<UINT>(targetViewport->Height / 8), 1);
 
 	// Unbind spotlight collection
 	if (!_currSpotLightCollection->UnbindCSBuffers(_context))
@@ -558,7 +643,7 @@ bool Graphics::RenderLighting() const
 
 	// Unbind compute shader resources
 	memset(srvs, 0, sizeof(srvs));
-	_context->CSSetShaderResources(0, 3, srvs);
+	_context->CSSetShaderResources(0, G_BUFFER_COUNT, srvs);
 
 	static ID3D11UnorderedAccessView *const nullUAV = nullptr;
 	_context->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
@@ -599,7 +684,7 @@ bool Graphics::RenderGBuffer(const UINT bufferIndex) const
 	return true;
 }
 
-bool Graphics::RenderTransparency()
+bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
 	ID3D11DepthStencilState *prevStencilState;
 	UINT prevStencilRef = 0;
@@ -614,9 +699,9 @@ bool Graphics::RenderTransparency()
 	constexpr float transparentBlendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	_context->OMSetBlendState(_tbs, transparentBlendFactor, 0xffffffff);
 
-	_context->OMSetRenderTargets(1, &_rtv, _dsView);
+	_context->OMSetRenderTargets(1, &targetRTV, targetDSV);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	_context->RSSetViewports(1, &_viewport);
+	_context->RSSetViewports(1, targetViewport);
 	_context->RSSetState(nullptr); // TODO: Does this work?
 
 	// Bind camera data
@@ -936,16 +1021,23 @@ bool Graphics::ResetRenderState()
 {
 	_currMainCamera->ResetRenderQueue();
 
-	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
+	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 		_currSpotLightCollection->GetLightCamera(i)->ResetRenderQueue();
 
-	_currInputLayoutID = CONTENT_LOAD_ERROR;
-	_currMeshID = CONTENT_LOAD_ERROR;
-	_currVsID = CONTENT_LOAD_ERROR;
-	_currPsID = CONTENT_LOAD_ERROR;
-	_currTexID = CONTENT_LOAD_ERROR;
-	_currNormalID = CONTENT_LOAD_ERROR;
-	_currSpecularID = CONTENT_LOAD_ERROR;
+	if (_currCubemap != nullptr)
+		if (_currCubemap->GetUpdate())
+			for (UINT i = 0; i < 6; i++)
+				_currCubemap->GetCamera(i)->ResetRenderQueue();
+	_currCubemap = nullptr;
+
+	_currInputLayoutID	= CONTENT_LOAD_ERROR;
+	_currMeshID			= CONTENT_LOAD_ERROR;
+	_currVsID			= CONTENT_LOAD_ERROR;
+	_currPsID			= CONTENT_LOAD_ERROR;
+	_currTexID			= CONTENT_LOAD_ERROR;
+	_currNormalID		= CONTENT_LOAD_ERROR;
+	_currSpecularID		= CONTENT_LOAD_ERROR;
+	_currReflectiveID	= CONTENT_LOAD_ERROR;
 
 	_isRendering = false;
 	return true;

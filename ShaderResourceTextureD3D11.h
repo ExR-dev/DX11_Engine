@@ -8,7 +8,7 @@ enum class TextureType
 	DEFAULT = 0,
 	NORMAL = 1,
 	SPECULAR = 2,
-	EMISSION = 3,
+	REFLECTIVE = 3,
 };
 
 
@@ -30,5 +30,6 @@ public:
 	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT width, UINT height, const void *textureData);
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const D3D11_TEXTURE2D_DESC &textureDesc, const D3D11_SUBRESOURCE_DATA *srData);
 
+	[[nodiscard]] ID3D11Texture2D *GetTexture() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetSRV() const;
 };

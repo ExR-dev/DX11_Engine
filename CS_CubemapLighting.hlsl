@@ -2,7 +2,7 @@
 static const float EPSILON = 0.00005f;
 static const float NORMAL_OFFSET = 0.005f;
 
-RWTexture2D<unorm float4> BackBufferUAV : register(u0);
+RWTexture2DArray<unorm float4> TargetUAV : register(u0);
 
 Texture2D PositionGBuffer : register(t0); // w is unused
 Texture2D ColorGBuffer : register(t1); // w is specularity
@@ -123,7 +123,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
 				lerp(smResult01, smResult11, fracTex.x),
 				fracTex.y)
 		);
-		//const float shadow = saturate(offsetAngle * smResult00);
 
 
 		// Apply lighting
@@ -133,6 +132,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	//const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
 	const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
-	//BackBufferUAV[DTid.xy] = float4(result, 1.0f);
-	BackBufferUAV[DTid.xy] = float4(col, 1.0f);
+	TargetUAV[uint3(DTid.xy, 0)] = float4(result, 1.0f);
 }

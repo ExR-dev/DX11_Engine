@@ -96,6 +96,9 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ TextureType::SPECULAR,	"Fade" },
 		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
 		{ TextureType::SPECULAR,	"Bricks_Specular" },
+		{ TextureType::REFLECTIVE,	"Default_Reflective" },
+		{ TextureType::REFLECTIVE,	"White_Reflective" },
+		{ TextureType::REFLECTIVE,	"Fade_Reflective" },
 	};
 
 	for (const TextureMapData &textureMap : textureMapNames)
@@ -117,6 +120,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ ShaderType::PIXEL_SHADER,			"PS_Transparent" },
 		{ ShaderType::PIXEL_SHADER,			"PS_Particle" },
 		{ ShaderType::COMPUTE_SHADER,		"CS_Lighting" },
+		{ ShaderType::COMPUTE_SHADER,		"CS_CubemapLighting" },
 		{ ShaderType::COMPUTE_SHADER,		"CS_GBuffer" },
 		{ ShaderType::COMPUTE_SHADER,		"CS_Particle" },
 	};

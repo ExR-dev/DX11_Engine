@@ -45,7 +45,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 	
-	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {0.0f, 0.0f, 0.0f, 0.0f}))
+	//if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {-2.0f, 3.0f, -2.0f, 0.0f}))
+	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {0.0f, 15.0f, 0.0f, 0.0f}))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -55,8 +56,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const SpotLightData spotLightInfo = {
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
-			/*SpotLightData::PerLightInfo {
-				{ 15.0f, 0.0f, 0.0f },		// color
+			SpotLightData::PerLightInfo {
+				{ 20.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
@@ -68,7 +69,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 15.0f, 0.0f },		// color
+				{ 0.0f, 20.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
@@ -80,7 +81,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 15.0f },		// color
+				{ 0.0f, 0.0f, 20.0f },		// color
 				XM_PI,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
@@ -89,25 +90,13 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.05f,						// projectionNearZ
 				35.0f,						// projectionFarZ
 				{ 0.0f, 2.0f, 4.0f }		// initialPosition
-			},*/
+			},
 			
-			/*SpotLightData::PerLightInfo {
-				{ 30.0f, 30.0f, 30.0f },	// color
-				0.0f,						// rotationX
-				XM_PIDIV2,					// rotationY
-				XM_PI * 0.6f,				// angle
-				0.75f,						// falloff
-				512.0f,						// specularity
-				0.05f,						// projectionNearZ
-				25.0f,						// projectionFarZ
-				{ 0.0f, 20.0f, 0.0f }		// initialPosition
-			},*/
-
 			SpotLightData::PerLightInfo {
 				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
-				XM_PI * 0.6f,				// angle
+				XM_PI * 0.5f,				// angle
 				0.75f,						// falloff
 				512.0f,						// specularity
 				0.05f,						// projectionNearZ
@@ -147,10 +136,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			textureID = content->GetTextureID("Tex_texture1"),
 			normalID = CONTENT_LOAD_ERROR,
 			//specularID = CONTENT_LOAD_ERROR;
-			specularID = content->GetTextureMapID("TexMap_Gray");
+			specularID = content->GetTextureMapID("TexMap_Gray"),
+			reflectiveID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
@@ -166,10 +156,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
 			normalID = CONTENT_LOAD_ERROR,
 			//specularID = CONTENT_LOAD_ERROR;
-			specularID = content->GetTextureMapID("TexMap_Gray");
+			specularID = content->GetTextureMapID("TexMap_Gray"),
+			reflectiveID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
@@ -186,10 +177,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Sphere"),
 			textureID = content->GetTextureID("Tex_White"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = content->GetTextureMapID("TexMap_Fade");
+			specularID = CONTENT_LOAD_ERROR,
+			//reflectiveID = CONTENT_LOAD_ERROR;
+			reflectiveID = content->GetTextureMapID("TexMap_White_Reflective");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize sphere object!");
 			return false;
@@ -204,10 +197,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Fallback"),
 			textureID = content->GetTextureID("Tex_Bricks"),
 			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Bricks_Specular");
+			specularID = content->GetTextureMapID("TexMap_Bricks_Specular"),
+			reflectiveID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
@@ -223,10 +217,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Error"),
 			textureID = content->GetTextureID("Tex_Fallback"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR;
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
@@ -245,10 +240,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			//normalID = CONTENT_LOAD_ERROR,
 			//specularID = CONTENT_LOAD_ERROR;
 			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Bricks_Specular");
+			specularID = content->GetTextureMapID("TexMap_Bricks_Specular"),
+			reflectiveID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, true))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
 			return false;
@@ -516,12 +512,11 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	}
 
 
-	//if (!_spotLights->ScaleLightFrustumsToCamera(*_currCameraPtr))
-	if (!_spotLights->ScaleLightFrustumsToCamera(*_camera))
+	/*if (!_spotLights->ScaleLightFrustumsToCamera(*_camera))
 	{
 		ErrMsg("Failed to scale light frustums to camera!");
 		return false;
-	}
+	}*/
 
 	if (!_camera->UpdateBuffers(context))
 	{
@@ -535,13 +530,14 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
-	if (!_cubemap.UpdateBuffers(context))
+	if (!_cubemap.Update(context, time))
 	{
-		ErrMsg("Failed to update cubemap buffers!");
+		ErrMsg("Failed to update cubemap!");
 		return false;
 	}
 
-	if (!_content->GetShader("CS_Particle")->BindShader(context))
+	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
+	if (!_content->GetShader(particleShaderID)->BindShader(context))
 	{
 		ErrMsg(std::format("Failed to bind particle compute shader!"));
 		return false;
@@ -647,8 +643,8 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		#pragma omp parallel for num_threads(2)
 		for (int i = 0; i < spotlightCount; i++)
 		{
-			if (!_spotLights->IsEnabled(i))
-				continue; // Skip frustum culling if the spotlight is disabled
+			//if (!_spotLights->IsEnabled(i))
+			//	continue; // Skip frustum culling if the spotlight is disabled
 
 			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
 
@@ -658,12 +654,12 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			DirectX::BoundingFrustum spotlightFrustum;
 			spotlightCamera->StoreFrustum(spotlightFrustum);
 
-			if (!viewFrustum.Intersects(spotlightFrustum))
+			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
 				_spotLights->SetEnabled(i, false);
 				continue;
 			}
-			//_spotLights->SetEnabled(i, true);
+			_spotLights->SetEnabled(i, true);
 
 			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
 			{
@@ -691,7 +687,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			DirectX::BoundingFrustum spotlightFrustum;
 			spotlightCamera->StoreFrustum(spotlightFrustum);
 
-			if (!viewFrustum.Intersects(spotlightFrustum))
+			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
 				_spotLights->SetEnabled(i, false);
 				continue; 
@@ -719,7 +715,39 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	time.TakeSnapshot("FrustumCullSpotlights");
 
 
+	if (_cubemap.GetUpdate())
+	{
+		for (UINT i = 0; i < 6; i++)
+		{
+			CameraD3D11 *cubemapCamera = _cubemap.GetCamera(i);
 
+			entitiesToRender.clear();
+			entitiesToRender.reserve(cubemapCamera->GetCullCount());
+
+			cubemapCamera->StoreFrustum(viewFrustum);
+
+			if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
+			{
+				ErrMsg(std::format("Failed to perform frustum culling for cubemap camera #{}!", i));
+				return false;
+			}
+
+			for (Entity *ent : entitiesToRender)
+			{
+				if (!ent->Render(cubemapCamera))
+				{
+					ErrMsg(std::format("Failed to render entity for cubemap camera #{}!", i));
+					return false;
+				}
+			}
+		}
+
+		if (!graphics->SetCubemap(&_cubemap))
+		{
+			ErrMsg("Failed to set cubemap!");
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -750,7 +778,7 @@ bool Scene::RenderUI()
 	ImGui::Separator();
 
 	char nearPlane[16]{}, farPlane[16]{};
-	for (int i = 0; i < _spotLights->GetNrOfLights(); i++)
+	for (UINT i = 0; i < _spotLights->GetNrOfLights(); i++)
 	{
 		const ProjectionInfo projInfo = _spotLights->GetLightCamera(i)->GetCurrProjectionInfo();
 		snprintf(nearPlane, sizeof(nearPlane), "%.2f", projInfo.nearZ);

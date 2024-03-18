@@ -65,6 +65,11 @@ bool ShaderResourceTextureD3D11::Initialize(ID3D11Device *device, const D3D11_TE
 }
 
 
+ID3D11Texture2D *ShaderResourceTextureD3D11::GetTexture() const
+{
+	return _texture;
+}
+
 ID3D11ShaderResourceView *ShaderResourceTextureD3D11::GetSRV() const
 {
 	return _srv;

@@ -11,7 +11,7 @@ Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, b
 bool Object::Initialize(ID3D11Device *device, 
 	const UINT meshID, const UINT texID, 
 	const UINT normalID, const UINT specularID,
-	const bool isTransparent)
+	const UINT reflectiveID, const bool isTransparent)
 {
 	if (!Entity::Initialize(device))
 	{
@@ -23,11 +23,13 @@ bool Object::Initialize(ID3D11Device *device,
 	_texID = texID;
 	_normalID = normalID;
 	_specularID = specularID;
+	_reflectiveID = reflectiveID;
 	_isTransparent = isTransparent;
 
 	MaterialProperties materialProperties = { };
 	materialProperties.sampleNormal = _normalID != CONTENT_LOAD_ERROR;
 	materialProperties.sampleSpecular = _specularID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleReflection = _reflectiveID != CONTENT_LOAD_ERROR;
 
 	if (!_materialBuffer.Initialize(device, sizeof(MaterialProperties), &materialProperties))
 	{
@@ -85,6 +87,7 @@ bool Object::Render(CameraD3D11 *camera)
 		_texID,
 		_normalID,
 		_specularID,
+		_reflectiveID,
 	};
 
 	const RenderInstance instance = {

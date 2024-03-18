@@ -56,7 +56,8 @@ struct ResourceGroup
 		meshID = CONTENT_LOAD_ERROR,
 		texID = CONTENT_LOAD_ERROR,
 		normalID = CONTENT_LOAD_ERROR,
-		specularID = CONTENT_LOAD_ERROR;
+		specularID = CONTENT_LOAD_ERROR,
+		reflectiveID = CONTENT_LOAD_ERROR;
 
 	bool operator<(const ResourceGroup &other) const
 	{
@@ -69,7 +70,10 @@ struct ResourceGroup
 		if (normalID != other.normalID)
 			return normalID < other.normalID;
 
-		return specularID < other.specularID;
+		if (specularID != other.specularID)
+			return specularID < other.specularID;
+
+		return reflectiveID < other.reflectiveID;
 	}
 };
 

@@ -306,6 +306,9 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}
 
+	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
+	context->PSSetConstantBuffers(1, 1, &camPosBuffer);
+
 	ID3D11Buffer *const camViewPosBuffer = GetCameraGSBuffer();
 	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
 
@@ -322,7 +325,7 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 
 	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
 	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
-	context->PSSetConstantBuffers(1, 1, &camPosBuffer);
+	//context->PSSetConstantBuffers(1, 1, &camPosBuffer);
 
 	return true;
 }

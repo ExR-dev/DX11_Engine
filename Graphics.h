@@ -1,19 +1,18 @@
 #pragma once
 
 #include <d3d11.h>
-#include <map>
 #include <array>
 
-#include "CameraD3D11.h"
 #include "Content.h"
-//#include "PointLightCollectionD3D11.h"
-#include "RenderTargetD3D11.h"
-#include "SpotLightCollectionD3D11.h"
 #include "Time.h"
+#include "Cubemap.h"
+#include "RenderTargetD3D11.h"
+#include "CameraD3D11.h"
+//#include "PointLightCollectionD3D11.h"
+#include "SpotLightCollectionD3D11.h"
 
 
-constexpr UINT G_BUFFER_COUNT = 3;
-
+//constexpr UINT G_BUFFER_COUNT = 3;
 
 
 class Graphics
@@ -41,6 +40,8 @@ private:
 		*_currMainCamera = nullptr,
 		*_currViewCamera = nullptr;
 
+	Cubemap *_currCubemap = nullptr;
+
 	ConstantBufferD3D11 _globalLightBuffer;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
 	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
@@ -52,19 +53,30 @@ private:
 		_currTexID			= CONTENT_LOAD_ERROR,
 		_currNormalID		= CONTENT_LOAD_ERROR,
 		_currSpecularID		= CONTENT_LOAD_ERROR,
+		_currReflectiveID	= CONTENT_LOAD_ERROR,
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
 	XMFLOAT4A _ambientColor = { 0.08f, 0.08f, 0.08f, 0.0f };
 
 
-	[[nodiscard]] bool RenderToTarget();
+	[[nodiscard]] bool RenderToTarget(
+		const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
+		ID3D11RenderTargetView *targetRTV,
+		ID3D11UnorderedAccessView *targetUAV,
+		ID3D11DepthStencilView *targetDSV, 
+		const D3D11_VIEWPORT *targetViewport,
+		bool renderGBuffer,
+		bool cubemapStage
+	);
 
 	[[nodiscard]] bool RenderShadowCasters();
-	[[nodiscard]] bool RenderGeometry();
-	[[nodiscard]] bool RenderLighting() const;
+	[[nodiscard]] bool RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
+		ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport);
+	[[nodiscard]] bool RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
+		ID3D11UnorderedAccessView *targetUAV, const D3D11_VIEWPORT *targetViewport, bool useCubemapShader) const;
 	[[nodiscard]] bool RenderGBuffer(UINT bufferIndex) const;
-	[[nodiscard]] bool RenderTransparency();
+	[[nodiscard]] bool RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport);
 
 	[[nodiscard]] bool ResetRenderState();
 
@@ -81,6 +93,7 @@ public:
 	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
 	[[nodiscard]] bool SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera = nullptr);
+	[[nodiscard]] bool SetCubemap(Cubemap *cubemap);
 	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
 	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 

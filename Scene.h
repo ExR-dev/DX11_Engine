@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <d3d11.h>
 
 #include "SceneHolder.h"
@@ -25,7 +24,7 @@ private:
 	SpotLightCollectionD3D11 *_spotLights;
 	PointLightCollectionD3D11 *_pointLights;
 
-	Cubemap _cubemap; // TODO: Discard
+	Cubemap _cubemap;
 
 	int _currCamera = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;
