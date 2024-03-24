@@ -30,6 +30,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	_device = device;
 	_content = content;
 
+
+	// Create scene content holder
 	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 150, 150));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
@@ -37,6 +39,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 
+	// Create camera
 	if (!_camera->Initialize(device, 
 		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
 		{ 0.0f, 2.0f, -2.0f, 0.0f }))
@@ -44,15 +47,9 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		ErrMsg("Failed to initialize camera!");
 		return false;
 	}
-	
-	//if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {-2.0f, 3.0f, -2.0f, 0.0f}))
-	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, {0.0f, 15.0f, 0.0f, 0.0f}))
-	{
-		ErrMsg("Failed to initialize cubemap!");
-		return false;
-	}
 
 
+	// Create spotlights
 	const SpotLightData spotLightInfo = {
 		2048,
 		std::vector<SpotLightData::PerLightInfo> {
@@ -113,6 +110,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 
+	// Create pointlights
 	PointLightData pointLightInfo = { };
 	pointLightInfo.shadowCubeMapInfo.textureDimension = 512;
 	pointLightInfo.perLightInfo.push_back({
@@ -124,7 +122,15 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	if (!_pointLights->Initialize(device, pointLightInfo))
 	{
-		ErrMsg("Failed to initialize point light collection!");
+		ErrMsg("Failed to initialize pointlight collection!");
+		return false;
+	}
+
+
+	// Create cubemap
+	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	{
+		ErrMsg("Failed to initialize cubemap!");
 		return false;
 	}
 
@@ -171,24 +177,23 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
 	}
 
-	// Create sphere
+	// Create reflective sphere
 	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Sphere"),
 			textureID = content->GetTextureID("Tex_White"),
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = CONTENT_LOAD_ERROR,
-			//reflectiveID = CONTENT_LOAD_ERROR;
 			reflectiveID = content->GetTextureMapID("TexMap_White_Reflective");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID))
 		{
-			ErrMsg("Failed to initialize sphere object!");
+			ErrMsg("Failed to initialize reflective sphere object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -2.0f, 2.0f, -3.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0.0f });
 	}
 	
 	// Create normal-mapped cube

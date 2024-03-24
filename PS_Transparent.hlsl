@@ -75,9 +75,14 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 	const float3 viewDir = normalize(cam_position.xyz - input.world_position.xyz);
 
-	uint lightCount, _;
+	uint lightCount, smWidth, smHeight, _;
 	SpotLights.GetDimensions(lightCount, _);
-	
+	ShadowMaps.GetDimensions(0, smWidth, smHeight, _, _);
+
+	const float
+		smDX = 1.0f / (float)smWidth,
+		smDY = 1.0f / (float)smHeight;
+
 	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
@@ -109,12 +114,42 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		// Calculate shadow projection
 		const float4 fragPosLightClip = mul(float4(input.world_position.xyz, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
-
+		
+		/*
 		const float3 smUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i);
 		const float smDepth = ShadowMaps.SampleLevel(Sampler, smUV, 0).x;
-		const float smResult = smDepth > fragPosLightNDC.z ? 1.0f : 0.0f;
-
+		const float smResult = smDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
 		const float shadow = saturate(offsetAngle * smResult);
+		*/
+
+		const float3
+			smUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i),
+			smUV01 = smUV00 + float3(0.0f, smDY, 0.0f),
+			smUV10 = smUV00 + float3(smDX, 0.0f, 0.0f),
+			smUV11 = smUV00 + float3(smDX, smDY, 0.0f);
+
+		const float
+			smDepth00 = ShadowMaps.SampleLevel(Sampler, smUV00, 0).x,
+			smDepth01 = ShadowMaps.SampleLevel(Sampler, smUV01, 0).x,
+			smDepth10 = ShadowMaps.SampleLevel(Sampler, smUV10, 0).x,
+			smDepth11 = ShadowMaps.SampleLevel(Sampler, smUV11, 0).x;
+
+		const float
+			smResult00 = smDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult01 = smDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult10 = smDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
+			smResult11 = smDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+
+		const float2
+			texelPos = smUV00.xy * (float)smWidth,
+			fracTex = frac(texelPos);
+		
+		const float shadow = saturate(
+			offsetAngle * lerp(
+				lerp(smResult00, smResult10, fracTex.x),
+				lerp(smResult01, smResult11, fracTex.x),
+				fracTex.y)
+		);
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
@@ -124,7 +159,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	const float3 result = saturate(col.xyz * (ambient_light.xyz + totalDiffuseLight + totalSpecularLight));
 	//const float3 result = ACESFilm(col.xyz * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
 	return float4(result, col.w);
-	//return float4(result, saturate(col.w + max(totalSpecularLight.x, max(totalSpecularLight.y, totalSpecularLight.z))));
 }
 
 

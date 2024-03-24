@@ -3,15 +3,9 @@ Texture2D Texture				: register(t0);
 Texture2D NormalMap				: register(t1);
 Texture2D SpecularMap			: register(t2);
 Texture2D ReflectionMap			: register(t3);
-TextureCube EnvironmentCubemap	: register(t4);
 
 sampler Sampler					: register(s0);
 
-
-cbuffer CameraData : register(b1)
-{
-	float4 cam_position;
-};
 
 cbuffer MaterialProperties : register(b2)
 {
@@ -36,7 +30,7 @@ struct PixelShaderOutput
 {
 	float4 position : SV_Target0; // w is unused
 	float4 color	: SV_Target1; // w is specularity
-	float4 normal	: SV_Target2; // w is unused
+	float4 normal	: SV_Target2; // w is reflectivity
 };
 
 PixelShaderOutput main(PixelShaderInput input)
@@ -56,16 +50,11 @@ PixelShaderOutput main(PixelShaderInput input)
 	const float reflectivity = (sampleReflection > 0)
 		? ReflectionMap.Sample(Sampler, input.tex_coord).x
 		: 0.0f;
-		
-	const float3 viewDir = normalize(cam_position.xyz - input.world_position.xyz);
-	const float3 reflection = (reflectivity > 0.01f)
-		//? EnvironmentCubemap.Sample(Sampler, reflect(viewDir, normal)).x
-		? EnvironmentCubemap.Sample(Sampler, normal).x
-		: float3(0,0,0);
 
 	output.position = float4(input.world_position.xyz, 1.0f);
-	output.color = float4(lerp(col, reflection, reflectivity), specularity);
-	output.normal = float4(normal, 0.0f);
+	//output.color = float4(lerp(col, reflection, reflectivity), specularity);
+	output.color = float4(col, specularity);
+	output.normal = float4(normal, reflectivity);
 
 	return output;
 }

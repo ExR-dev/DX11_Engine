@@ -6,7 +6,7 @@ RWTexture2D<unorm float4> BackBufferUAV : register(u0);
 
 Texture2D PositionGBuffer : register(t0); // w is unused
 Texture2D ColorGBuffer : register(t1); // w is specularity
-Texture2D NormalGBuffer : register(t2); // w is unused
+Texture2D NormalGBuffer : register(t2); // w is reflectivity
 
 
 cbuffer GlobalLight : register(b0)
@@ -29,6 +29,8 @@ StructuredBuffer<SpotLight> SpotLights : register(t3);
 
 Texture2DArray<float> ShadowMaps : register(t4);
 
+TextureCube EnvironmentCubemap	: register(t5);
+
 sampler Sampler : register(s0);
 
 
@@ -48,11 +50,16 @@ float3 ACESFilm(const float3 x)
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	const float specularity = (1.0f / pow(1.001f - ColorGBuffer[DTid.xy].w, 1.5f));
+	const float reflectivity = NormalGBuffer[DTid.xy].w;
 	const float3
 		pos = PositionGBuffer[DTid.xy].xyz,
 		col = ColorGBuffer[DTid.xy].xyz,
 		norm = normalize(NormalGBuffer[DTid.xy].xyz),
 		viewDir = normalize(cam_position.xyz - pos);
+
+	const float3 reflection = (reflectivity > 0.01f)
+		? EnvironmentCubemap.SampleLevel(Sampler, reflect(viewDir, norm) * float3(-1, 1, 1), 0)
+		: float3(0,0,0);
 
 	uint lightCount, smWidth, smHeight, _;
 	SpotLights.GetDimensions(lightCount, _);
@@ -95,6 +102,13 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
+		/*
+		const float3 smUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i);
+		const float smDepth = ShadowMaps.SampleLevel(Sampler, smUV, 0).x;
+		const float smResult = smDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = saturate(offsetAngle * smResult);
+		*/
+
 		const float3
 			smUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i),
 			smUV01 = smUV00 + float3(0.0f, smDY, 0.0f),
@@ -123,7 +137,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
 				lerp(smResult01, smResult11, fracTex.x),
 				fracTex.y)
 		);
-		//const float shadow = saturate(offsetAngle * smResult00);
 
 
 		// Apply lighting
@@ -133,6 +146,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	//const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
 	const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
-	//BackBufferUAV[DTid.xy] = float4(result, 1.0f);
-	BackBufferUAV[DTid.xy] = float4(col, 1.0f);
+	BackBufferUAV[DTid.xy] = float4(lerp(result, reflection, reflectivity), 1.0f);
 }

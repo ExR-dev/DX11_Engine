@@ -488,13 +488,6 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		_currReflectiveID = defaultReflectiveID;
 	}
 
-	if (_currCubemap != nullptr)
-	{
-		// Bind cubemap texture
-		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
-		_context->PSSetShaderResources(4, 1, &srv);
-	}
-
 	const MeshD3D11 *loadedMesh = nullptr;
 	UINT entity_i = 0;
 	for (const auto &[resources, instance] : _currMainCamera->GetGeometryQueue())
@@ -577,13 +570,6 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		entity_i++;
 	}
 
-	if (_currCubemap != nullptr)
-	{
-		// Unbind cubemap texture
-		ID3D11ShaderResourceView *nullSRV = nullptr;
-		_context->PSSetShaderResources(4, 1, &nullSRV);
-	}
-
 	// Unbind render targets
 	for (auto &rtv : rtvs)
 		rtv = nullptr;
@@ -624,6 +610,13 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	ID3D11SamplerState *const ss = _content->GetSampler(0)->GetSamplerState();
 	_context->CSSetSamplers(0, 1, &ss);
 
+	// Bind cubemap texture
+	if (!useCubemapShader && _currCubemap != nullptr)
+	{
+		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
+		_context->CSSetShaderResources(5, 1, &srv);
+	}
+
 	// Bind camera lighting data
 	if (!_currMainCamera->BindLightingBuffers(_context))
 	{
@@ -633,6 +626,13 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 	// Send execution command
 	_context->Dispatch(static_cast<UINT>(targetViewport->Width / 8), static_cast<UINT>(targetViewport->Height / 8), 1);
+
+	// Unbind cubemap texture
+	if (!useCubemapShader && _currCubemap != nullptr)
+	{
+		ID3D11ShaderResourceView *nullSRV = nullptr;
+		_context->CSSetShaderResources(5, 1, &nullSRV);
+	}
 
 	// Unbind spotlight collection
 	if (!_currSpotLightCollection->UnbindCSBuffers(_context))
@@ -645,6 +645,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	memset(srvs, 0, sizeof(srvs));
 	_context->CSSetShaderResources(0, G_BUFFER_COUNT, srvs);
 
+	// Unbind render target
 	static ID3D11UnorderedAccessView *const nullUAV = nullptr;
 	_context->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
 

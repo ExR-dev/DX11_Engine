@@ -95,7 +95,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
-		const float3
+		const float3 smUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i);
+		const float smDepth = ShadowMaps.SampleLevel(Sampler, smUV, 0).x;
+		const float smResult = smDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = saturate(offsetAngle * smResult);
+
+		/*const float3
 			smUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i),
 			smUV01 = smUV00 + float3(0.0f, smDY, 0.0f),
 			smUV10 = smUV00 + float3(smDX, 0.0f, 0.0f),
@@ -122,7 +127,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 				lerp(smResult00, smResult10, fracTex.x),
 				lerp(smResult01, smResult11, fracTex.x),
 				fracTex.y)
-		);
+		);*/
 
 
 		// Apply lighting
