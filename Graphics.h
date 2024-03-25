@@ -41,6 +41,7 @@ private:
 		*_currViewCamera = nullptr;
 
 	Cubemap *_currCubemap = nullptr;
+	bool _updateCubemap = true;
 
 	ConstantBufferD3D11 _globalLightBuffer;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
@@ -91,6 +92,8 @@ public:
 	[[nodiscard]] ID3D11Texture2D *GetDsTexture() const;
 	[[nodiscard]] ID3D11DepthStencilView *GetDsView() const;
 	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
+
+	[[nodiscard]] bool GetUpdateCubemap() const;
 
 	[[nodiscard]] bool SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera = nullptr);
 	[[nodiscard]] bool SetCubemap(Cubemap *cubemap);

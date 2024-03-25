@@ -270,6 +270,12 @@ bool Game::Render(Time &time, const Input &input)
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCull"));
 	ImGui::Text(std::format("{} Culling Main View", timeStr).c_str());
 
+	if (_graphics.GetUpdateCubemap())
+	{
+		snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullCubemap"));
+		ImGui::Text(std::format("{} Culling Cubemap Views", timeStr).c_str());
+	}
+
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullSpotlights"));
 	ImGui::Text(std::format("{} Culling Spotlights Total", timeStr).c_str());
 

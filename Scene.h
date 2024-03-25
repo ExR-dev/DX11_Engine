@@ -25,6 +25,7 @@ private:
 	PointLightCollectionD3D11 *_pointLights;
 
 	Cubemap _cubemap;
+	bool _updateCubemap = true;
 
 	int _currCamera = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;

@@ -45,9 +45,9 @@ CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionI
 
 CameraD3D11::~CameraD3D11()
 {
-	delete _cameraGSBuffer;
+	delete _viewProjPosBuffer;
 
-	delete _cameraCSBuffer;
+	delete _posBuffer;
 }
 
 
@@ -57,7 +57,7 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	_transform.SetPosition(initialPosition);
 
 	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
-	if (!_cameraVSBuffer.Initialize(device, sizeof(XMFLOAT4X4A), &viewProjMatrix))
+	if (!_viewProjBuffer.Initialize(device, sizeof(XMFLOAT4X4A), &viewProjMatrix))
 	{
 		ErrMsg("Failed to initialize camera VS buffer!");
 		return false;
@@ -66,15 +66,15 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	if (hasCSBuffer)
 	{
 		const GeometryBufferData bufferData = { GetViewMatrix(), _transform.GetPosition() };
-		_cameraGSBuffer = new ConstantBufferD3D11();
-		if (!_cameraGSBuffer->Initialize(device, sizeof(GeometryBufferData), &bufferData))
+		_viewProjPosBuffer = new ConstantBufferD3D11();
+		if (!_viewProjPosBuffer->Initialize(device, sizeof(GeometryBufferData), &bufferData))
 		{
 			ErrMsg("Failed to initialize camera GS buffer!");
 			return false;
 		}
 
-		_cameraCSBuffer = new ConstantBufferD3D11();
-		if (!_cameraCSBuffer->Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
+		_posBuffer = new ConstantBufferD3D11();
+		if (!_posBuffer->Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
 		{
 			ErrMsg("Failed to initialize camera CS buffer!");
 			return false;
@@ -90,21 +90,21 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 
 void CameraD3D11::MoveForward(const float amount)
 {
-	MoveLocal(amount, { 0, 0, 1, 0 });
+	MoveLocal(amount, { 0.0f, 0.0f, 1.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
 
 void CameraD3D11::MoveRight(const float amount)
 {
-	MoveLocal(amount, { 1, 0, 0, 0 });
+	MoveLocal(amount, { 1.0f, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
 
 void CameraD3D11::MoveUp(const float amount)
 {
-	MoveLocal(amount, { 0, 1, 0, 0 });
+	MoveLocal(amount, { 0.0f, 1.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -112,21 +112,21 @@ void CameraD3D11::MoveUp(const float amount)
 
 void CameraD3D11::RotateRoll(const float amount)
 {
-	_transform.RotateLocal({ 0, 0, amount, 0 });
+	_transform.RotateLocal({ 0.0f, 0.0f, amount, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
 
 void CameraD3D11::RotatePitch(const float amount)
 {
-	_transform.RotateLocal({ amount, 0, 0, 0 });
+	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
 
 void CameraD3D11::RotateYaw(const float amount)
 {
-	_transform.RotateLocal({ 0, amount, 0, 0 });
+	_transform.RotateLocal({ 0.0f, amount, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -134,14 +134,14 @@ void CameraD3D11::RotateYaw(const float amount)
 
 void CameraD3D11::LookX(const float amount)
 {
-	_transform.Rotate({ 0, amount, 0, 0 });
+	_transform.Rotate({ 0.0f, amount * (XMVectorGetX(XMVector3Dot(TO_CONST_VEC(_transform.GetUp()), {0, 1, 0, 0})) > 0.0f ? 1.0f : -1.0f), 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
 
 void CameraD3D11::LookY(const float amount)
 {
-	_transform.RotateLocal({ amount, 0, 0, 0 });
+	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -264,26 +264,26 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 		return true;
 
 	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
-	if (!_cameraVSBuffer.UpdateBuffer(context, &viewProjMatrix))
+	if (!_viewProjBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
 		ErrMsg("Failed to update camera VS buffer!");
 		return false;
 	}
 
-	if (_cameraGSBuffer != nullptr)
+	if (_viewProjPosBuffer != nullptr)
 	{
 		const GeometryBufferData bufferData = { viewProjMatrix, _transform.GetPosition() };
-		if (!_cameraGSBuffer->UpdateBuffer(context, &bufferData))
+		if (!_viewProjPosBuffer->UpdateBuffer(context, &bufferData))
 		{
 			ErrMsg("Failed to update camera GS buffer!");
 			return false;
 		}
 	}
 
-	if (_cameraCSBuffer != nullptr)
+	if (_posBuffer != nullptr)
 	{
 		const XMFLOAT4A camPos = _transform.GetPosition();
-		if (!_cameraCSBuffer->UpdateBuffer(context, &camPos))
+		if (!_posBuffer->UpdateBuffer(context, &camPos))
 		{
 			ErrMsg("Failed to update camera CS buffer!");
 			return false;
@@ -300,7 +300,7 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
 	context->VSSetConstantBuffers(1, 1, &vpmBuffer);
 
-	if (_cameraGSBuffer == nullptr)
+	if (_viewProjPosBuffer == nullptr)
 	{
 		ErrMsg("Failed to bind geometry buffer, camera does not have that buffer!");
 		return false;
@@ -309,12 +309,15 @@ bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
 	ID3D11Buffer *const camViewPosBuffer = GetCameraGSBuffer();
 	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
 
+	ID3D11Buffer *const posBuffer = (_posBuffer == nullptr) ? nullptr : _posBuffer->GetBuffer();
+	context->HSSetConstantBuffers(1, 1, &posBuffer);
+
 	return true;
 }
 
 bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 {
-	if (_cameraCSBuffer == nullptr)
+	if (_posBuffer == nullptr)
 	{
 		ErrMsg("Failed to bind lighting buffer, camera does not have that buffer!");
 		return false;
@@ -356,10 +359,11 @@ void CameraD3D11::QueueEmitter(const ResourceGroup &resources, const RenderInsta
 
 void CameraD3D11::ResetRenderQueue()
 {
-	_lastCullCount = 
+	_lastCullCount = static_cast<UINT>(
 		_geometryRenderQueue.size() + 
 		_transparentRenderQueue.size() + 
-		_particleRenderQueue.size();
+		_particleRenderQueue.size()
+	);
 
 	_geometryRenderQueue.clear();
 	_transparentRenderQueue.clear();
@@ -395,21 +399,21 @@ const Transform &CameraD3D11::GetTransform() const
 
 ID3D11Buffer *CameraD3D11::GetCameraVSBuffer() const
 {
-	return _cameraVSBuffer.GetBuffer();
+	return _viewProjBuffer.GetBuffer();
 }
 
 ID3D11Buffer *CameraD3D11::GetCameraGSBuffer() const
 {
-	if (_cameraGSBuffer == nullptr)
+	if (_viewProjPosBuffer == nullptr)
 		return nullptr;
 
-	return _cameraGSBuffer->GetBuffer();
+	return _viewProjPosBuffer->GetBuffer();
 }
 
 ID3D11Buffer *CameraD3D11::GetCameraCSBuffer() const
 {
-	if (_cameraCSBuffer == nullptr)
+	if (_posBuffer == nullptr)
 		return nullptr;
 
-	return _cameraCSBuffer->GetBuffer();
+	return _posBuffer->GetBuffer();
 }

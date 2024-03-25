@@ -51,7 +51,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create spotlights
 	const SpotLightData spotLightInfo = {
-		2048,
+		1024,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
 				{ 20.0f, 0.0f, 0.0f },		// color
@@ -128,7 +128,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 1024, 0.1f, 500.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	//if (!_cubemap.Initialize(device, 256, 0.05f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 64, 0.05f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -336,7 +337,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					textureID = rand() % _content->GetTextureCount();
 
 				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, meshID, textureID, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, (textureID >= transparentStart)))
+				if (!obj->Initialize(_device, meshID, textureID, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, (textureID >= transparentStart)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 					return false;
@@ -360,7 +361,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one random entity in front of the camera
 			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, (selectedTextureID >= transparentStart)))
+			if (!obj->Initialize(_device, selectedMeshID, selectedTextureID, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, (selectedTextureID >= transparentStart)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
 				return false;
@@ -535,11 +536,12 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
-	if (!_cubemap.Update(context, time))
-	{
-		ErrMsg("Failed to update cubemap!");
-		return false;
-	}
+	if (_updateCubemap)
+		if (!_cubemap.Update(context, time))
+		{
+			ErrMsg("Failed to update cubemap!");
+			return false;
+		}
 
 	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
 	if (!_content->GetShader(particleShaderID)->BindShader(context))
@@ -571,6 +573,8 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
+
+	_updateCubemap = graphics->GetUpdateCubemap();
 
 	static bool hasSetCamera = false;
 	if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
@@ -611,7 +615,6 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			_currCameraPtr = _spotLights->GetLightCamera(_currCamera - 6);
 	}
 
-
 	if (!graphics->SetCameras(_camera, _currCameraPtr))
 	{
 		ErrMsg("Failed to set camera!");
@@ -630,7 +633,6 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		ErrMsg("Failed to perform frustum culling!");
 		return false;
 	}
-	time.TakeSnapshot("FrustumCull");
 
 	for (Entity *ent : entitiesToRender)
 	{
@@ -640,17 +642,14 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			return false;
 		}
 	}
+	time.TakeSnapshot("FrustumCull");
 
 	const int spotlightCount = static_cast<int>(_spotLights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullSpotlights");
-
 	if (_doMultiThread)
 		#pragma omp parallel for num_threads(2)
 		for (int i = 0; i < spotlightCount; i++)
 		{
-			//if (!_spotLights->IsEnabled(i))
-			//	continue; // Skip frustum culling if the spotlight is disabled
-
 			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
 
 			std::vector<Entity *> entitiesToCastShadows;
@@ -716,42 +715,74 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				}
 			}
 		}
-
 	time.TakeSnapshot("FrustumCullSpotlights");
 
 
-	if (_cubemap.GetUpdate())
+	time.TakeSnapshot("FrustumCullCubemap");
+	if (_updateCubemap && _cubemap.GetUpdate())
 	{
-		for (UINT i = 0; i < 6; i++)
-		{
-			CameraD3D11 *cubemapCamera = _cubemap.GetCamera(i);
-
-			entitiesToRender.clear();
-			entitiesToRender.reserve(cubemapCamera->GetCullCount());
-
-			cubemapCamera->StoreFrustum(viewFrustum);
-
-			if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
+		if (_doMultiThread)
+			#pragma omp parallel for num_threads(2)
+			for (int i = 0; i < 6; i++)
 			{
-				ErrMsg(std::format("Failed to perform frustum culling for cubemap camera #{}!", i));
-				return false;
-			}
+				CameraD3D11 *cubemapCamera = _cubemap.GetCamera(i);
 
-			for (Entity *ent : entitiesToRender)
-			{
-				if (!ent->Render(cubemapCamera))
+				std::vector<Entity *> entitiesToReflect;
+				entitiesToReflect.reserve(cubemapCamera->GetCullCount());
+
+				DirectX::BoundingFrustum cubemapViewFrustum;
+				entitiesToReflect.clear();
+				entitiesToReflect.reserve(cubemapCamera->GetCullCount());
+
+				cubemapCamera->StoreFrustum(cubemapViewFrustum);
+
+				if (!_sceneHolder.FrustumCull(cubemapViewFrustum, entitiesToReflect))
 				{
-					ErrMsg(std::format("Failed to render entity for cubemap camera #{}!", i));
-					return false;
+					ErrMsg(std::format("Failed to perform frustum culling for cubemap camera #{}!", i));
+					continue;
+				}
+
+				for (Entity *ent : entitiesToReflect)
+				{
+					if (!ent->Render(cubemapCamera))
+					{
+						ErrMsg(std::format("Failed to render entity for cubemap camera #{}!", i));
+						continue;
+					}
 				}
 			}
-		}
+		else
+			for (int i = 0; i < 6; i++)
+			{
+				CameraD3D11 *cubemapCamera = _cubemap.GetCamera(i);
 
-		if (!graphics->SetCubemap(&_cubemap))
-		{
-			ErrMsg("Failed to set cubemap!");
-			return false;
-		}
+				entitiesToRender.clear();
+				entitiesToRender.reserve(cubemapCamera->GetCullCount());
+
+				cubemapCamera->StoreFrustum(viewFrustum);
+
+				if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for cubemap camera #{}!", i));
+					return false;
+				}
+
+				for (Entity *ent : entitiesToRender)
+				{
+					if (!ent->Render(cubemapCamera))
+					{
+						ErrMsg(std::format("Failed to render entity for cubemap camera #{}!", i));
+						return false;
+					}
+				}
+			}
+	}
+	time.TakeSnapshot("FrustumCullCubemap");
+
+	if (!graphics->SetCubemap(&_cubemap))
+	{
+		ErrMsg("Failed to set cubemap!");
+		return false;
 	}
 
 	return true;

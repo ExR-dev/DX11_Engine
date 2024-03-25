@@ -135,7 +135,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
 
-	//const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
-	const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
+	//const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
+	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
 	TargetUAV[uint3(DTid.xy, 0)] = float4(result, 1.0f);
 }

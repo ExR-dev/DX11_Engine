@@ -115,6 +115,11 @@ D3D11_VIEWPORT &Graphics::GetViewport()
 	return _viewport;
 }
 
+bool Graphics::GetUpdateCubemap() const
+{
+	return _updateCubemap;
+}
+
 
 bool Graphics::SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera)
 {
@@ -197,7 +202,7 @@ bool Graphics::EndSceneRender(Time &time)
 	}
 
 	// Render cubemap cameras to cubemap view
-	if (_currCubemap != nullptr)
+	if (_updateCubemap && _currCubemap != nullptr)
 		if (_currCubemap->GetUpdate())
 		{
 			CameraD3D11
@@ -403,7 +408,7 @@ bool Graphics::RenderShadowCasters()
 bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
 	ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
-	constexpr float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	constexpr float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// Clear & bind render targets
 	ID3D11RenderTargetView *rtvs[G_BUFFER_COUNT] = { };
@@ -969,6 +974,14 @@ bool Graphics::RenderUI(Time &time)
 	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
 	ImGui::Text(std::format("fps: {}", fps).c_str());
 
+	static float minFPS = FLT_MAX;
+	if (minFPS > 1.0f / time.deltaTime)
+		minFPS = 1.0f / time.deltaTime;
+	ImGui::Text(std::format("Drop: {}", minFPS).c_str());
+
+	if (ImGui::Button("Reset FPS"))
+		minFPS = 1.0f / time.deltaTime;
+
 	std::string currRenderOutput;
 	if		(_renderOutput == 1) currRenderOutput = "Positions";
 	else if (_renderOutput == 2) currRenderOutput = "Colors";
@@ -978,8 +991,11 @@ bool Graphics::RenderUI(Time &time)
 	if (ImGui::Button(std::format("Render Output: {}", currRenderOutput).c_str()))
 		_renderOutput++;
 
+	if (ImGui::Button(std::format("Reflections: {}", _updateCubemap ? "Enabled" : "Disabled").c_str()))
+		_updateCubemap = !_updateCubemap;
+
 	ImGui::Text(std::format("Main Draws: {}", _currMainCamera->GetCullCount()).c_str());
-	for (size_t i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
+	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 	{
 		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
 		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());

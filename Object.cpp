@@ -37,6 +37,13 @@ bool Object::Initialize(ID3D11Device *device,
 		return false;
 	}
 
+
+	if (!_posBuffer.Initialize(device, sizeof(XMFLOAT4A), &_transform.GetPosition()))
+	{
+		ErrMsg("Failed to initialize position buffer!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -57,6 +64,12 @@ bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input
 		return false;
 	}
 
+	if (!_posBuffer.UpdateBuffer(context, &_transform.GetPosition()))
+	{
+		ErrMsg("Failed to update position buffer!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -70,6 +83,9 @@ bool Object::BindBuffers(ID3D11DeviceContext *context) const
 
 	ID3D11Buffer *const materialBuffer = _materialBuffer.GetBuffer();
 	context->PSSetConstantBuffers(2, 1, &materialBuffer);
+
+	ID3D11Buffer *const posBuffer = _posBuffer.GetBuffer();
+	context->HSSetConstantBuffers(0, 1, &posBuffer);
 
 	return true;
 }

@@ -29,7 +29,7 @@ bool Emitter::Initialize(ID3D11Device *device, const EmitterData &settings, cons
 	Particle *particles = new Particle[settings.particleCount];
 	ZeroMemory(particles, sizeof(Particle) * settings.particleCount);
 
-	for (int i = 0; i < settings.particleCount; i++)
+	for (UINT i = 0; i < settings.particleCount; i++)
 	{
 		/*particles[i].position = {
 			(float)((rand() % 2000) - 1000) / 66.66f,
@@ -122,7 +122,7 @@ bool Emitter::Update(ID3D11DeviceContext *context, Time &time, const Input &inpu
 	ID3D11UnorderedAccessView *uav = _particleBuffer.GetUAV();
 	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
-	context->Dispatch(std::ceil(static_cast<float>(_particleBuffer.GetNrOfElements()) / 32.0f), 1, 1);
+	context->Dispatch((UINT)std::ceil(static_cast<float>(_particleBuffer.GetNrOfElements()) / 32.0f), 1, 1);
 	
 	uav = nullptr;
 	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);

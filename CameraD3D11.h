@@ -94,9 +94,9 @@ private:
 	DirectX::BoundingFrustum _transformedFrustum;
 	bool _recalculateFrustum = true;
 
-	ConstantBufferD3D11 _cameraVSBuffer;
-	ConstantBufferD3D11 *_cameraGSBuffer = nullptr;
-	ConstantBufferD3D11 *_cameraCSBuffer = nullptr;
+	ConstantBufferD3D11 _viewProjBuffer;
+	ConstantBufferD3D11 *_viewProjPosBuffer = nullptr;
+	ConstantBufferD3D11 *_posBuffer = nullptr;
 	bool _isDirty = true;
 
 	UINT _lastCullCount = 0;
