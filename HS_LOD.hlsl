@@ -1,27 +1,29 @@
 
-cbuffer ObjectPosition : register(b0)
+cbuffer ObjectPositionBuffer : register(b0)
 {
 	float4 objPos;
 };
 
-cbuffer CameraPosition : register(b1)
+cbuffer CameraPositionBuffer : register(b1)
 {
 	float4 camPos;
 };
 
 
-struct VS_CONTROL_POINT_OUTPUT
+struct VertexShaderOutput
 {
-	float3 wPos		: WORLD_POS;
-	float3 normal	: NORMAL;
-	float2 uv		: UV;
+	float4 world_position	: POSITION;
+	float3 normal			: NORMAL;
+	float3 tangent			: TANGENT;
+	float2 tex_coord		: TEXCOORD;
 };
 
-struct HS_CONTROL_POINT_OUTPUT
+struct HullShaderOutput
 {
-	float3 wPos		: WORLD_POS;
-	float3 normal	: NORMAL;
-	float2 uv		: UV;
+	float4 world_position	: POSITION;
+	float3 normal			: NORMAL;
+	float3 tangent			: TANGENT;
+	float2 tex_coord		: TEXCOORD;
 };
 
 struct HS_CONSTANT_DATA_OUTPUT
@@ -33,15 +35,25 @@ struct HS_CONSTANT_DATA_OUTPUT
 #define NUM_CONTROL_POINTS 3
 
 HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
-	InputPatch<VS_CONTROL_POINT_OUTPUT, NUM_CONTROL_POINTS> ip,
+	InputPatch<VertexShaderOutput, NUM_CONTROL_POINTS> ip,
 	uint patchID : SV_PrimitiveID)
 {
 	HS_CONSTANT_DATA_OUTPUT output;
 
-	output.EdgeTessFactor[0] = 
-		output.EdgeTessFactor[1] = 
-		output.EdgeTessFactor[2] = 
-		output.InsideTessFactor = 32;
+	const float
+		r = 1.2f,
+		d = 0.75f,
+		h = 10.0f,
+		t = 3.0f;
+
+	const float
+		dist = distance(camPos, objPos),
+		tessFactor = clamp((((h - d) * t) / (pow(dist, r) + t)) + d, 1, h);
+
+	output.EdgeTessFactor[0] = tessFactor;
+	output.EdgeTessFactor[1] = tessFactor;
+	output.EdgeTessFactor[2] = tessFactor;
+	output.InsideTessFactor = tessFactor;
 
 	return output;
 }
@@ -51,16 +63,17 @@ HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(3)]
 [patchconstantfunc("CalcHSPatchConstants")]
-HS_CONTROL_POINT_OUTPUT main( 
-	InputPatch<VS_CONTROL_POINT_OUTPUT, NUM_CONTROL_POINTS> ip, 
+HullShaderOutput main( 
+	InputPatch<VertexShaderOutput, NUM_CONTROL_POINTS> ip, 
 	uint i : SV_OutputControlPointID,
-	uint patchID : SV_PrimitiveID )
+	uint patchID : SV_PrimitiveID)
 {
-	HS_CONTROL_POINT_OUTPUT output;
+	HullShaderOutput output;
 
-	output.wPos		= ip[i].wPos;
-	output.normal	= ip[i].normal;
-	output.uv		= ip[i].uv;
+	output.world_position	= ip[i].world_position;
+	output.normal			= ip[i].normal;
+	output.tangent			= ip[i].tangent;
+	output.tex_coord		= ip[i].tex_coord;
 
 	return output;
 }

@@ -15,6 +15,9 @@
 
 Graphics::~Graphics()
 {
+	if (_wireframeRasterizer != nullptr)
+		_wireframeRasterizer->Release();
+
 	if (_tdss != nullptr)
 		_tdss->Release();
 
@@ -75,6 +78,24 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	if (!_globalLightBuffer.Initialize(device, sizeof(float) * 4, &_ambientColor))
 	{
 		ErrMsg("Failed to initialize global light buffer!");
+		return false;
+	}
+
+	D3D11_RASTERIZER_DESC rasterizerDesc = { };
+	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterizerDesc.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc.FrontCounterClockwise = false;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = false;
+	rasterizerDesc.ScissorEnable = false;
+	rasterizerDesc.MultisampleEnable = false;
+	rasterizerDesc.AntialiasedLineEnable = true;
+
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_wireframeRasterizer)))
+	{
+		ErrMsg("Failed to create wireframe rasterizer state!");
 		return false;
 	}
 
@@ -342,7 +363,7 @@ bool Graphics::RenderShadowCasters()
 		// Bind shadow-camera data
 		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(spotlight_i);
 
-		if (!spotlightCamera->BindGeometryBuffers(_context))
+		if (!spotlightCamera->BindShadowCasterBuffers(_context))
 		{
 			ErrMsg(std::format("Failed to bind shadow-camera buffers for spotlight #{}!", spotlight_i));
 			return false;
@@ -420,9 +441,9 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, targetDSV);
 
 	_context->ClearDepthStencilView(targetDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST); // Enabled tessellation, otherwise D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 	_context->RSSetViewports(1, targetViewport);
-	_context->RSSetState(nullptr); // TODO: Does this work?
+	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
 
 	// Bind camera data
 	if (!_currViewCamera->BindGeometryBuffers(_context))
@@ -450,6 +471,20 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		_currVsID = vsID;
 	}
 
+	static UINT hsID = _content->GetShaderID("HS_LOD");
+	if (!_content->GetShader(hsID)->BindShader(_context))
+	{
+		ErrMsg("Failed to bind LOD hull shader!");
+		return false;
+	}
+
+	static UINT dsID = _content->GetShaderID("DS_LOD");
+	if (!_content->GetShader(dsID)->BindShader(_context))
+	{
+		ErrMsg("Failed to bind LOD domain shader!");
+		return false;
+	}
+
 	static UINT psID = _content->GetShaderID("PS_Geometry");
 	if (_currPsID != psID)
 	{
@@ -466,6 +501,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	{
 		ID3D11SamplerState *const ss = _content->GetSampler(ssID)->GetSamplerState();
 		_context->PSSetSamplers(0, 1, &ss);
+		_context->DSSetSamplers(0, 1, &ss);
 		_currSamplerID = ssID;
 	}
 
@@ -491,6 +527,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultReflectiveID)->GetSRV();
 		_context->PSSetShaderResources(3, 1, &srv);
 		_currReflectiveID = defaultReflectiveID;
+	}
+
+	static UINT defaultHeightID = _content->GetTextureMapID("TexMap_Default_Height");
+	if (_currHeightID != defaultHeightID)
+	{
+		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+		_context->DSSetShaderResources(0, 1, &srv);
+		_currHeightID = defaultHeightID;
 	}
 
 	const MeshD3D11 *loadedMesh = nullptr;
@@ -541,12 +585,28 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			}
 
 		if (resources.reflectiveID != CONTENT_LOAD_ERROR)
-			if (_currSpecularID != resources.specularID)
+			if (_currReflectiveID != resources.reflectiveID)
 			{
 				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
 				_context->PSSetShaderResources(3, 1, &srv);
 				_currReflectiveID = resources.reflectiveID;
 			}
+
+		if (resources.heightID != CONTENT_LOAD_ERROR)
+		{
+			if (_currHeightID != resources.heightID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.heightID)->GetSRV();
+				_context->DSSetShaderResources(0, 1, &srv);
+				_currHeightID = resources.heightID;
+			}
+		}
+		else if (_currHeightID != defaultHeightID)
+		{
+			ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+			_context->DSSetShaderResources(0, 1, &srv);
+			_currHeightID = defaultHeightID;
+		}
 
 		// Bind private entity resources
 		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
@@ -574,6 +634,10 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 		entity_i++;
 	}
+
+	// Unbind tesselation shaders
+	_context->HSSetShader(nullptr, nullptr, 0);
+	_context->DSSetShader(nullptr, nullptr, 0);
 
 	// Unbind render targets
 	for (auto &rtv : rtvs)
@@ -706,9 +770,9 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	_context->OMSetBlendState(_tbs, transparentBlendFactor, 0xffffffff);
 
 	_context->OMSetRenderTargets(1, &targetRTV, targetDSV);
-	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST); // Enabled tessellation, otherwise D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 	_context->RSSetViewports(1, targetViewport);
-	_context->RSSetState(nullptr); // TODO: Does this work?
+	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
 
 	// Bind camera data
 	if (!_currViewCamera->BindGeometryBuffers(_context))
@@ -736,6 +800,20 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		_currVsID = vsID;
 	}
 
+	static UINT hsID = _content->GetShaderID("HS_LOD");
+	if (!_content->GetShader(hsID)->BindShader(_context))
+	{
+		ErrMsg("Failed to bind LOD hull shader!");
+		return false;
+	}
+
+	static UINT dsID = _content->GetShaderID("DS_LOD");
+	if (!_content->GetShader(dsID)->BindShader(_context))
+	{
+		ErrMsg("Failed to bind LOD domain shader!");
+		return false;
+	}
+
 	static UINT psID = _content->GetShaderID("PS_Transparent");
 	if (_currPsID != psID)
 	{
@@ -752,6 +830,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	{
 		ID3D11SamplerState *const ss = _content->GetSampler(ssID)->GetSamplerState();
 		_context->PSSetSamplers(0, 1, &ss);
+		_context->DSSetSamplers(0, 1, &ss);
 		_currSamplerID = ssID;
 	}
 
@@ -767,7 +846,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	}
 
 	// Bind camera lighting data
-	if (!_currMainCamera->BindLightingBuffers(_context))
+	if (!_currMainCamera->BindTransparentBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
 		//return false;
@@ -787,6 +866,14 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultSpecularID)->GetSRV();
 		_context->PSSetShaderResources(2, 1, &srv);
 		_currSpecularID = defaultSpecularID;
+	}
+
+	static UINT defaultHeightID = _content->GetTextureMapID("TexMap_Default_Height");
+	if (_currHeightID != defaultHeightID)
+	{
+		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+		_context->DSSetShaderResources(0, 1, &srv);
+		_currHeightID = defaultHeightID;
 	}
 
 	const MeshD3D11 *loadedMesh = nullptr;
@@ -836,6 +923,22 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 				_currSpecularID = resources.specularID;
 			}
 
+		if (resources.heightID != CONTENT_LOAD_ERROR)
+		{
+			if (_currHeightID != resources.heightID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.heightID)->GetSRV();
+				_context->DSSetShaderResources(0, 1, &srv);
+				_currHeightID = resources.heightID;
+			}
+		}
+		else if (_currHeightID != defaultHeightID)
+		{
+			ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+			_context->DSSetShaderResources(0, 1, &srv);
+			_currHeightID = defaultHeightID;
+		}
+
 		// Bind private entity resources
 		if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
 		{
@@ -862,6 +965,10 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 
 		entity_i++;
 	}
+
+	// Unbind tesselation shaders
+	_context->HSSetShader(nullptr, nullptr, 0);
+	_context->DSSetShader(nullptr, nullptr, 0);
 
 	bool firstEmitter = true;
 	entity_i = 0;
@@ -991,6 +1098,9 @@ bool Graphics::RenderUI(Time &time)
 	if (ImGui::Button(std::format("Render Output: {}", currRenderOutput).c_str()))
 		_renderOutput++;
 
+	if (ImGui::Button(std::format("Wireframe Mode: {}", _wireframe ? "Enabled" : "Disabled").c_str()))
+		_wireframe = !_wireframe;
+
 	if (ImGui::Button(std::format("Reflections: {}", _updateCubemap ? "Enabled" : "Disabled").c_str()))
 		_updateCubemap = !_updateCubemap;
 
@@ -1055,6 +1165,7 @@ bool Graphics::ResetRenderState()
 	_currNormalID		= CONTENT_LOAD_ERROR;
 	_currSpecularID		= CONTENT_LOAD_ERROR;
 	_currReflectiveID	= CONTENT_LOAD_ERROR;
+	_currHeightID		= CONTENT_LOAD_ERROR;
 
 	_isRendering = false;
 	return true;

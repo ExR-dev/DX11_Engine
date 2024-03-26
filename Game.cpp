@@ -54,79 +54,93 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		}
 
 
-	const std::vector<std::string> textureNames = {
+	struct TextureData { std::string name; std::string file; };
+	const std::vector<TextureData> textureNames = {
 		// Opaque
-		"Error",
-		"Fallback",
-		"texture1",
-		"texture2",
-		"texture3",
-		"texture4",
-		"texture5",
-		"CharacterSculptLow0Texture1",
-		"Sphere",
-		"White",
-		"Black",
-		"Fade",
-		"Bricks",
+		{ "Error",							"Error"							},
+		{ "Fallback",						"Fallback"						},
+		{ "texture1",						"texture1"						},
+		{ "texture2",						"texture2"						},
+		{ "texture3",						"texture3"						},
+		{ "texture4",						"texture4"						},
+		{ "texture5",						"texture5"						},
+		{ "CharacterSculptLow0Texture1",	"CharacterSculptLow0Texture1"	},
+		{ "Sphere",							"Sphere"						},
+		{ "White",							"White"							},
+		{ "Black",							"Black"							},
+		{ "Fade",							"Fade"							},
+		{ "Bricks",							"Bricks"						},
+		{ "Metal",							"Metal"							},
 
 		//Transparent
-		"Transparent",
-		"Transparent2",
-		"Particle",
+		{ "Transparent",					"Transparent"					},
+		{ "Transparent2",					"Transparent2"					},
+		{ "Particle",						"Particle"						},
 	};
 
-	for (const std::string &textureName : textureNames)
-		if (_content.AddTexture(_device, std::format("Tex_{}", textureName), 
-			std::format("Content\\{}.png", textureName).c_str()) == CONTENT_LOAD_ERROR)
+	for (const TextureData &textureName : textureNames)
+		if (_content.AddTexture(_device, std::format("Tex_{}", textureName.name), 
+			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
-			ErrMsg(std::format("Failed to add Tex_{}!", textureName));
+			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
 			return false;
 		}
 
 
-	struct TextureMapData { TextureType type; std::string name; };
+	struct TextureMapData { TextureType type; std::string name; std::string file; };
 	const std::vector<TextureMapData> textureMapNames = {
-		{ TextureType::NORMAL,		"Default_Normal" },
-		{ TextureType::NORMAL,		"texture3_Normal" },
-		{ TextureType::NORMAL,		"Bricks_Normal" },
-		{ TextureType::SPECULAR,	"Default_Specular" },
-		{ TextureType::SPECULAR,	"Gray" },
-		{ TextureType::SPECULAR,	"White" },
-		{ TextureType::SPECULAR,	"Fade" },
-		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular" },
-		{ TextureType::SPECULAR,	"Bricks_Specular" },
-		{ TextureType::REFLECTIVE,	"Default_Reflective" },
-		{ TextureType::REFLECTIVE,	"White_Reflective" },
-		{ TextureType::REFLECTIVE,	"Fade_Reflective" },
+		{ TextureType::NORMAL,		"Default_Normal",				"Default_Normal"				},
+		{ TextureType::NORMAL,		"texture3_Normal",				"texture3_Normal"				},
+		{ TextureType::NORMAL,		"Bricks_Normal",				"Bricks_Normal"					},
+		{ TextureType::NORMAL,		"Shapes_Normal",				"Shapes_Normal"					},
+		{ TextureType::NORMAL,		"Metal_Normal",					"Metal_Normal"					},
+
+		{ TextureType::SPECULAR,	"Default_Specular",				"Black"							},
+		{ TextureType::SPECULAR,	"Gray_Specular",				"Gray"							},
+		{ TextureType::SPECULAR,	"White_Specular",				"White"							},
+		{ TextureType::SPECULAR,	"Fade_Specular",				"Fade"							},
+		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular",	"CharacterSculptLow0_Specular"	},
+		{ TextureType::SPECULAR,	"Bricks_Specular",				"Bricks_Specular"				},
+		{ TextureType::SPECULAR,	"Metal_Specular",				"Metal_Specular"				},
+
+		{ TextureType::REFLECTIVE,	"Default_Reflective",			"Black"							},
+		{ TextureType::REFLECTIVE,	"Gray_Reflective",				"Gray"							},
+		{ TextureType::REFLECTIVE,	"White_Reflective",				"White"							},
+		{ TextureType::REFLECTIVE,	"Fade_Reflective",				"Fade"							},
+		{ TextureType::REFLECTIVE,	"Metal_Reflective",				"Metal"							},
+
+		{ TextureType::HEIGHT,		"Default_Height",				"Gray"							},
+		{ TextureType::HEIGHT,		"Metal_Height",					"Metal_Height"					},
 	};
 
 	for (const TextureMapData &textureMap : textureMapNames)
 		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name), 
-			textureMap.type, std::format("Content\\{}.png", textureMap.name).c_str()) == CONTENT_LOAD_ERROR)
+			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
 			return false;
 		}
 
 
-	struct ShaderData { ShaderType type; std::string name; };
+	struct ShaderData { ShaderType type; std::string name; std::string file; };
 	const std::vector<ShaderData> shaderNames = {
-		{ ShaderType::VERTEX_SHADER,		"VS_Geometry" },
-		{ ShaderType::VERTEX_SHADER,		"VS_Depth" },
-		{ ShaderType::VERTEX_SHADER,		"VS_Particle" },
-		{ ShaderType::GEOMETRY_SHADER,		"GS_Billboard" },
-		{ ShaderType::PIXEL_SHADER,			"PS_Geometry" },
-		{ ShaderType::PIXEL_SHADER,			"PS_Transparent" },
-		{ ShaderType::PIXEL_SHADER,			"PS_Particle" },
-		{ ShaderType::COMPUTE_SHADER,		"CS_Lighting" },
-		{ ShaderType::COMPUTE_SHADER,		"CS_CubemapLighting" },
-		{ ShaderType::COMPUTE_SHADER,		"CS_GBuffer" },
-		{ ShaderType::COMPUTE_SHADER,		"CS_Particle" },
+		{ ShaderType::VERTEX_SHADER,		"VS_Geometry",			"VS_Geometry"			},
+		{ ShaderType::VERTEX_SHADER,		"VS_Depth",				"VS_Depth"				},
+		{ ShaderType::VERTEX_SHADER,		"VS_Particle",			"VS_Particle"			},
+		{ ShaderType::HULL_SHADER,			"HS_LOD",				"HS_LOD"				},
+		{ ShaderType::DOMAIN_SHADER,		"DS_LOD",				"DS_LOD"				},
+		{ ShaderType::GEOMETRY_SHADER,		"GS_Billboard",			"GS_Billboard"			},
+		{ ShaderType::PIXEL_SHADER,			"PS_Geometry",			"PS_Geometry"			},
+		{ ShaderType::PIXEL_SHADER,			"PS_Transparent",		"PS_Transparent"		},
+		{ ShaderType::PIXEL_SHADER,			"PS_Particle",			"PS_Particle"			},
+		{ ShaderType::COMPUTE_SHADER,		"CS_Lighting",			"CS_Lighting"			},
+		{ ShaderType::COMPUTE_SHADER,		"CS_CubemapLighting",	"CS_CubemapLighting"	},
+		{ ShaderType::COMPUTE_SHADER,		"CS_GBuffer",			"CS_GBuffer"			},
+		{ ShaderType::COMPUTE_SHADER,		"CS_Particle",			"CS_Particle"			},
 	};
 
 	for (const ShaderData &shader : shaderNames)
-		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.name).c_str()) == CONTENT_LOAD_ERROR)
+		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add {} shader!", shader.name));
 			return false;

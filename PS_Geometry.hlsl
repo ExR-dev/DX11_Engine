@@ -22,7 +22,6 @@ struct PixelShaderInput
 	float4 world_position	: POSITION;
     float3 normal			: NORMAL;
     float3 tangent			: TANGENT;
-    float3 bitangent		: BITANGENT;
 	float2 tex_coord		: TEXCOORD;
 };
 
@@ -38,9 +37,10 @@ PixelShaderOutput main(PixelShaderInput input)
 	PixelShaderOutput output;
 
 	const float3 col = Texture.Sample(Sampler, input.tex_coord).xyz;
-
+	
+	const float3 bitangent = normalize(cross(input.normal, input.tangent));
 	const float3 normal = (sampleNormal > 0)
-		? mul(NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f), float3x3(input.tangent, input.bitangent, input.normal))
+		? mul(NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f), float3x3(input.tangent, bitangent, input.normal))
 		: input.normal;
 
 	const float specularity = (sampleSpecular > 0)
@@ -52,7 +52,6 @@ PixelShaderOutput main(PixelShaderInput input)
 		: 0.0f;
 
 	output.position = float4(input.world_position.xyz, 1.0f);
-	//output.color = float4(lerp(col, reflection, reflectivity), specularity);
 	output.color = float4(col, specularity);
 	output.normal = float4(normal, reflectivity);
 

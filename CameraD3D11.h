@@ -57,7 +57,8 @@ struct ResourceGroup
 		texID = CONTENT_LOAD_ERROR,
 		normalID = CONTENT_LOAD_ERROR,
 		specularID = CONTENT_LOAD_ERROR,
-		reflectiveID = CONTENT_LOAD_ERROR;
+		reflectiveID = CONTENT_LOAD_ERROR,
+		heightID = CONTENT_LOAD_ERROR;
 
 	bool operator<(const ResourceGroup &other) const
 	{
@@ -73,7 +74,10 @@ struct ResourceGroup
 		if (specularID != other.specularID)
 			return specularID < other.specularID;
 
-		return reflectiveID < other.reflectiveID;
+		if (reflectiveID != other.reflectiveID)
+			return reflectiveID < other.reflectiveID;
+
+		return heightID < other.heightID;
 	}
 };
 
@@ -133,6 +137,8 @@ public:
 	void LookX(float amount);
 	void LookY(float amount);
 
+	void SetFOV(float amount);
+
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight() const;
@@ -146,8 +152,10 @@ public:
 	[[nodiscard]] bool FitPlanesToPoints(const std::vector<DirectX::XMFLOAT4A> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 
+	[[nodiscard]] bool BindShadowCasterBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindTransparentBuffers(ID3D11DeviceContext *context) const;
 
 	void StoreFrustum(DirectX::BoundingFrustum &frustum);
 

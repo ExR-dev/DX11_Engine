@@ -33,6 +33,9 @@ private:
 	ID3D11DepthStencilState *_tdss	= nullptr;
 	D3D11_VIEWPORT _viewport		= { };
 
+	ID3D11RasterizerState *_wireframeRasterizer = nullptr;
+	bool _wireframe = false;
+
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
 	UINT _renderOutput = 0;
 
@@ -55,6 +58,7 @@ private:
 		_currNormalID		= CONTENT_LOAD_ERROR,
 		_currSpecularID		= CONTENT_LOAD_ERROR,
 		_currReflectiveID	= CONTENT_LOAD_ERROR,
+		_currHeightID		= CONTENT_LOAD_ERROR,
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 

@@ -11,7 +11,8 @@ Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, b
 bool Object::Initialize(ID3D11Device *device, 
 	const UINT meshID, const UINT texID, 
 	const UINT normalID, const UINT specularID,
-	const UINT reflectiveID, const bool isTransparent)
+	const UINT reflectiveID, const UINT heightID, 
+	const bool isTransparent)
 {
 	if (!Entity::Initialize(device))
 	{
@@ -24,6 +25,7 @@ bool Object::Initialize(ID3D11Device *device,
 	_normalID = normalID;
 	_specularID = specularID;
 	_reflectiveID = reflectiveID;
+	_heightID = heightID;
 	_isTransparent = isTransparent;
 
 	MaterialProperties materialProperties = { };
@@ -58,16 +60,25 @@ void Object::SetTexture(const UINT id)	{ _texID = id;	}
 
 bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
+	bool updatePosBuffer = _transform.GetDirty();
+
 	if (!InternalUpdate(context))
 	{
 		ErrMsg("Failed to update object!");
 		return false;
 	}
 
-	if (!_posBuffer.UpdateBuffer(context, &_transform.GetPosition()))
+	if (updatePosBuffer)
 	{
-		ErrMsg("Failed to update position buffer!");
-		return false;
+		BoundingBox worldSpaceBounds;
+		StoreBounds(worldSpaceBounds);
+		const XMFLOAT4A center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0.0f };
+
+		if (!_posBuffer.UpdateBuffer(context, &center))
+		{
+			ErrMsg("Failed to update position buffer!");
+			return false;
+		}
 	}
 
 	return true;
@@ -104,6 +115,7 @@ bool Object::Render(CameraD3D11 *camera)
 		_normalID,
 		_specularID,
 		_reflectiveID,
+		_heightID,
 	};
 
 	const RenderInstance instance = {

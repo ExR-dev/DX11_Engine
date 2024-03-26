@@ -11,7 +11,8 @@ private:
 		_texID = CONTENT_LOAD_ERROR,
 		_normalID = CONTENT_LOAD_ERROR,
 		_specularID = CONTENT_LOAD_ERROR,
-		_reflectiveID = CONTENT_LOAD_ERROR;
+		_reflectiveID = CONTENT_LOAD_ERROR,
+		_heightID = CONTENT_LOAD_ERROR;
 
 	bool _isTransparent = false;
 
@@ -22,9 +23,11 @@ private:
 public:
 	explicit Object(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT meshID, UINT texID, 
-		UINT normalID = CONTENT_LOAD_ERROR, UINT specularID = CONTENT_LOAD_ERROR, 
-		UINT reflectiveID = CONTENT_LOAD_ERROR, bool isTransparent = false);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, 
+		UINT meshID, UINT texID, 
+		UINT normalID, UINT specularID, 
+		UINT reflectiveID, UINT heightID, 
+		bool isTransparent = false);
 
 	[[nodiscard]] EntityType GetType() const override;
 

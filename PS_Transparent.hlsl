@@ -1,11 +1,11 @@
 
 static const float EPSILON = 0.00005f;
 
-Texture2D Texture : register(t0);
-Texture2D NormalMap : register(t1);
-Texture2D SpecularMap : register(t2);
+Texture2D Texture		: register(t0);
+Texture2D NormalMap		: register(t1);
+Texture2D SpecularMap	: register(t2);
 
-sampler Sampler : register(s0);
+sampler Sampler			: register(s0);
 
 cbuffer GlobalLight : register(b0)
 {
@@ -48,25 +48,20 @@ float3 ACESFilm(const float3 x)
 
 struct PixelShaderInput
 {
-	/*float4 position : SV_POSITION;
-	float4 world_position : POSITION;
-    float3 normal : NORMAL;
-	float2 tex_coord : TEXCOORD;*/
-
 	float4 position			: SV_POSITION;
 	float4 world_position	: POSITION;
 	float3 normal			: NORMAL;
 	float3 tangent			: TANGENT;
-	float3 bitangent		: BITANGENT;
 	float2 tex_coord		: TEXCOORD;
 };
 
 float4 main(PixelShaderInput input) : SV_TARGET
 {	
 	float4 col = Texture.Sample(Sampler, input.tex_coord);
-
+	
+	const float3 bitangent = normalize(cross(input.normal, input.tangent));
 	const float3 normal = (sampleNormal > 0)
-		? mul(NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f), float3x3(input.tangent, input.bitangent, input.normal))
+		? mul(NormalMap.Sample(Sampler, input.tex_coord).xyz * 2.0f - float3(1.0f, 1.0f, 1.0f), float3x3(input.tangent, bitangent, input.normal))
 		: input.normal;
 
 	const float specularity = (sampleSpecular > 0)
@@ -156,8 +151,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
 
-	const float3 result = saturate(col.xyz * (ambient_light.xyz + totalDiffuseLight + totalSpecularLight));
-	//const float3 result = ACESFilm(col.xyz * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
+	//const float3 result = saturate(col.xyz * (ambient_light.xyz + totalDiffuseLight + totalSpecularLight));
+	const float3 result = ACESFilm(col.xyz * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));
 	return float4(result, col.w);
 }
 

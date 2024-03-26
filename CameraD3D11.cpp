@@ -46,7 +46,6 @@ CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionI
 CameraD3D11::~CameraD3D11()
 {
 	delete _viewProjPosBuffer;
-
 	delete _posBuffer;
 }
 
@@ -82,7 +81,7 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	}
 
 	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	return true;
 }
@@ -142,6 +141,17 @@ void CameraD3D11::LookX(const float amount)
 void CameraD3D11::LookY(const float amount)
 {
 	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
+	_isDirty = true;
+	_recalculateFrustum = true;
+}
+
+void CameraD3D11::SetFOV(float amount)
+{
+	_currProjInfo.fovAngleY = amount;
+
+	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
+	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -266,7 +276,7 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
 	if (!_viewProjBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
-		ErrMsg("Failed to update camera VS buffer!");
+		ErrMsg("Failed to update camera view projection buffer!");
 		return false;
 	}
 
@@ -275,56 +285,70 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 		const GeometryBufferData bufferData = { viewProjMatrix, _transform.GetPosition() };
 		if (!_viewProjPosBuffer->UpdateBuffer(context, &bufferData))
 		{
-			ErrMsg("Failed to update camera GS buffer!");
+			ErrMsg("Failed to update camera view projection positon buffer!");
 			return false;
 		}
 	}
 
 	if (_posBuffer != nullptr)
-	{
-		const XMFLOAT4A camPos = _transform.GetPosition();
-		if (!_posBuffer->UpdateBuffer(context, &camPos))
+		if (!_posBuffer->UpdateBuffer(context, &_transform.GetPosition()))
 		{
-			ErrMsg("Failed to update camera CS buffer!");
+			ErrMsg("Failed to update camera position buffer!");
 			return false;
 		}
-	}
 
 	_isDirty = false;
 	return true;
 }
 
 
-bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
+bool CameraD3D11::BindShadowCasterBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
 	context->VSSetConstantBuffers(1, 1, &vpmBuffer);
 
-	if (_viewProjPosBuffer == nullptr)
-	{
-		ErrMsg("Failed to bind geometry buffer, camera does not have that buffer!");
-		return false;
-	}
+	return true;
+}
 
-	ID3D11Buffer *const camViewPosBuffer = GetCameraGSBuffer();
-	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
-
+bool CameraD3D11::BindGeometryBuffers(ID3D11DeviceContext *context) const
+{
 	ID3D11Buffer *const posBuffer = (_posBuffer == nullptr) ? nullptr : _posBuffer->GetBuffer();
 	context->HSSetConstantBuffers(1, 1, &posBuffer);
+
+	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
+	context->DSSetConstantBuffers(0, 1, &vpmBuffer);
 
 	return true;
 }
 
 bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 {
-	if (_posBuffer == nullptr)
+	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
+	if (camPosBuffer == nullptr)
 	{
 		ErrMsg("Failed to bind lighting buffer, camera does not have that buffer!");
 		return false;
 	}
-
-	ID3D11Buffer *const camPosBuffer = GetCameraCSBuffer();
 	context->CSSetConstantBuffers(1, 1, &camPosBuffer);
+
+	return true;
+}
+
+bool CameraD3D11::BindTransparentBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const posBuffer = (_posBuffer == nullptr) ? nullptr : _posBuffer->GetBuffer();
+	context->HSSetConstantBuffers(1, 1, &posBuffer);
+
+	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
+	context->DSSetConstantBuffers(0, 1, &vpmBuffer);
+
+	ID3D11Buffer *const camViewPosBuffer = GetCameraGSBuffer();
+	if (camViewPosBuffer == nullptr)
+	{
+		ErrMsg("Failed to bind geometry buffer, camera does not have that buffer!");
+		return false;
+	}
+	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
 
 	return true;
 }

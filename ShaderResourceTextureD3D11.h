@@ -9,6 +9,7 @@ enum class TextureType
 	NORMAL = 1,
 	SPECULAR = 2,
 	REFLECTIVE = 3,
+	HEIGHT = 4,
 };
 
 
