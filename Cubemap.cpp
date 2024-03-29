@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-constexpr float UPDATE_INTERVAL = 0.0f;
+constexpr float UPDATE_INTERVAL = 0.016f;
 
 
 Cubemap::Cubemap()
@@ -72,10 +72,8 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 	_cameras[1]->RotateRoll(DirectX::XM_PI);
 
 	_cameras[2]->LookY(DirectX::XM_PIDIV2);
-	//_cameras[2]->RotateRoll(DirectX::XM_PI);
 
 	_cameras[3]->LookY(-DirectX::XM_PIDIV2);
-	//_cameras[3]->RotateRoll(DirectX::XM_PI);
 
 	_cameras[4]->LookX(DirectX::XM_PI);
 	_cameras[4]->RotateRoll(DirectX::XM_PI);

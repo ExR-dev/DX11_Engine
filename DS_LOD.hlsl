@@ -64,14 +64,7 @@ DomainShaderOutput main(
 		patch[1].tex_coord * domain.y + 
 		patch[2].tex_coord * domain.z;
 
-	const float3 str = float3(
-		smoothstep(0, 1, 1 - abs(domain.x * 2 - 1)),
-		smoothstep(0, 1, 1 - abs(domain.y * 2 - 1)),
-		smoothstep(0, 1, 1 - abs(domain.z * 2 - 1))
-	);
-
-	//output.world_position += float4(output.normal * str * (HeightMap.SampleLevel(Sampler, output.tex_coord, 0).x - 0.5f) * 0.1f, 0.0f);
-	output.world_position += float4(output.normal * (HeightMap.SampleLevel(Sampler, output.tex_coord, 0).x - 0.5f) * 0.1f, 0.0f);
+	output.world_position += float4(output.normal * HeightMap.SampleLevel(Sampler, output.tex_coord, 0).x * 0.1f, 0.0f);
 	output.position = mul(output.world_position, viewProjMatrix);
 
 	return output;

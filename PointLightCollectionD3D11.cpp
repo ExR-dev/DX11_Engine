@@ -5,8 +5,9 @@
 
 PointLightCollectionD3D11::~PointLightCollectionD3D11()
 {
-	for (const CameraD3D11 *camera : _shadowCameras)
-		delete camera;
+	for (const ShadowCameraCube &cameraCube : _shadowCameraCubes)
+		for (UINT i = 0; i < 6; i++)
+			delete cameraCube.cameraArray[i];
 }
 
 bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLightData &lightInfo)
@@ -24,7 +25,7 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f }
 		);
 
-		_shadowCameras.push_back(lightCamera);
+		//_shadowCameras.push_back(lightCamera);
 
 		LightBuffer lightBuffer;
 		lightBuffer.color = iLightInfo.color;
@@ -55,9 +56,9 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 	return true;
 }
 
-bool PointLightCollectionD3D11::UpdateLightBuffers(ID3D11DeviceContext *context) const
+bool PointLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context) const
 {
-	const UINT lightCount = static_cast<UINT>(_bufferData.size());
+	const UINT lightCount = GetNrOfLights();
 	for (UINT i = 0; i < lightCount; i++)
 	{
 		const LightBuffer *lightBuffer = &_bufferData.at(i);
@@ -78,7 +79,7 @@ UINT PointLightCollectionD3D11::GetNrOfLights() const
 	return static_cast<UINT>(_bufferData.size());
 }
 
-ID3D11DepthStencilView *PointLightCollectionD3D11::GetShadowMapDSV(const UINT lightIndex) const
+ID3D11DepthStencilView *PointLightCollectionD3D11::GetShadowMapDSV(const UINT lightIndex, const UINT cameraIndex) const
 {
 	return _shadowMaps.GetDSV(lightIndex);
 }
@@ -93,17 +94,8 @@ ID3D11ShaderResourceView *PointLightCollectionD3D11::GetLightBufferSRV() const
 	return _lightBuffer.GetSRV();
 }
 
-CameraD3D11 *PointLightCollectionD3D11::GetLightCamera(const UINT lightIndex) const
+CameraD3D11 *PointLightCollectionD3D11::GetLightCamera(const UINT lightIndex, const UINT cameraIndex) const
 {
-	return _shadowCameras.at(lightIndex);
+	return _shadowCameraCubes.at(lightIndex).cameraArray[cameraIndex];
 }
 
-ID3D11Buffer *PointLightCollectionD3D11::GetLightCameraVSBuffer(const UINT lightIndex) const
-{
-	return _shadowCameras.at(lightIndex)->GetCameraVSBuffer();
-}
-
-ID3D11Buffer *PointLightCollectionD3D11::GetLightCameraCSBuffer(const UINT lightIndex) const
-{
-	return _shadowCameras.at(lightIndex)->GetCameraCSBuffer();
-}

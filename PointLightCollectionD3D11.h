@@ -30,6 +30,12 @@ struct PointLightData
 	std::vector<PerLightInfo> perLightInfo;
 };
 
+struct ShadowCameraCube
+{
+	std::array<CameraD3D11 *, 6> cameraArray;
+	uint8_t isEnabledFlag = 0b111111;
+};
+
 
 class PointLightCollectionD3D11
 {
@@ -43,10 +49,14 @@ private:
 	};
 
 	std::vector<LightBuffer> _bufferData;
+	std::vector<ShadowCameraCube> _shadowCameraCubes;
+	PointLightData::ShadowMapInfo _shadowMapInfo;
 
 	DepthBufferD3D11 _shadowMaps;
 	StructuredBufferD3D11 _lightBuffer;
-	std::vector<CameraD3D11 *> _shadowCameras;
+	D3D11_VIEWPORT _shadowViewport = { };
+
+	ID3D11RasterizerState *_rasterizerState = nullptr;
 
 public:
 	PointLightCollectionD3D11() = default;
@@ -58,13 +68,20 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const PointLightData &lightInfo);
 
-	[[nodiscard]] bool UpdateLightBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindCSBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindPSBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool UnbindCSBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool UnbindPSBuffers(ID3D11DeviceContext *context) const;
 
 	[[nodiscard]] UINT GetNrOfLights() const;
-	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;
+	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex, UINT cameraIndex) const;
+	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex, UINT cameraIndex) const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetShadowMapsSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
-	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex) const;
-	[[nodiscard]] ID3D11Buffer *GetLightCameraVSBuffer(UINT lightIndex) const;
-	[[nodiscard]] ID3D11Buffer *GetLightCameraCSBuffer(UINT lightIndex) const;
+	[[nodiscard]] ID3D11RasterizerState *GetRasterizerState() const;
+	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
+
+	[[nodiscard]] bool IsEnabled(UINT lightIndex, UINT cameraIndex) const;
+	void SetEnabled(UINT lightIndex, UINT cameraIndex, bool state);
 };

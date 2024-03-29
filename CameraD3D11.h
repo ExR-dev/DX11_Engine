@@ -156,6 +156,8 @@ public:
 	[[nodiscard]] bool BindGeometryBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindLightingBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindTransparentBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindViewBuffers(ID3D11DeviceContext *context) const;
+	[[nodiscard]] bool BindMainBuffers(ID3D11DeviceContext *context) const;
 
 	void StoreFrustum(DirectX::BoundingFrustum &frustum);
 

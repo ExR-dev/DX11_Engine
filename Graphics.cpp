@@ -446,9 +446,15 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
 
 	// Bind camera data
-	if (!_currViewCamera->BindGeometryBuffers(_context))
+	if (!_currMainCamera->BindMainBuffers(_context))
 	{
-		ErrMsg("Failed to bind camera buffers!");
+		ErrMsg("Failed to bind main camera buffers!");
+		return false;
+	}
+
+	if (!_currViewCamera->BindViewBuffers(_context))
+	{
+		ErrMsg("Failed to bind view camera buffers!");
 		return false;
 	}
 
@@ -775,9 +781,22 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
 
 	// Bind camera data
-	if (!_currViewCamera->BindGeometryBuffers(_context))
+	if (!_currMainCamera->BindMainBuffers(_context))
 	{
-		ErrMsg("Failed to bind camera buffers!");
+		ErrMsg("Failed to bind main camera buffers!");
+		return false;
+	}
+
+	if (!_currViewCamera->BindViewBuffers(_context))
+	{
+		ErrMsg("Failed to bind view camera buffers!");
+		return false;
+	}
+
+	// Bind billboard camera data
+	if (!_currViewCamera->BindTransparentBuffers(_context))
+	{
+		ErrMsg("Failed to bind billboard camera buffers!");
 		return false;
 	}
 
@@ -843,13 +862,6 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	{
 		ErrMsg("Failed to bind spotlight buffers!");
 		return false;
-	}
-
-	// Bind camera lighting data
-	if (!_currMainCamera->BindTransparentBuffers(_context))
-	{
-		ErrMsg("Failed to bind camera buffers!");
-		//return false;
 	}
 
 	static UINT defaultNormalID = _content->GetTextureMapID("TexMap_Default_Normal");

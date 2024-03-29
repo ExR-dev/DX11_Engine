@@ -35,14 +35,14 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"Fallback",
 		"Cube",
 		"Room",
-		"SimpleSubmesh",
-		"ControlChair",
-		"ControlDesk",
-		"CharacterSculptLow0",
+		//"SimpleSubmesh",
+		//"ControlChair",
+		//"ControlDesk",
+		//"CharacterSculptLow0",
 		"CharacterSculptLow1",
 		"Plane",
 		"Sphere",
-		"IsoSphereEdged",
+		//"IsoSphereEdged",
 		"IsoSphereSmooth",
 	};
 
@@ -109,7 +109,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ TextureType::REFLECTIVE,	"Fade_Reflective",				"Fade"							},
 		{ TextureType::REFLECTIVE,	"Metal_Reflective",				"Metal"							},
 
-		{ TextureType::HEIGHT,		"Default_Height",				"Gray"							},
+		{ TextureType::HEIGHT,		"Default_Height",				"Black"							},
 		{ TextureType::HEIGHT,		"Metal_Height",					"Metal_Height"					},
 	};
 

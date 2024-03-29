@@ -14,7 +14,7 @@ constexpr UINT G_BUFFER_COUNT = 3;
 class Cubemap
 {
 private:
-	std::array<CameraD3D11*, 6>						_cameras;
+	std::array<CameraD3D11 *, 6>					_cameras;
 	std::array<ID3D11RenderTargetView *, 6>			_rtvs;
 	std::array<ID3D11UnorderedAccessView *, 6>		_uavs;
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT>	_gBuffers;

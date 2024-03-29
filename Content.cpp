@@ -383,12 +383,12 @@ UINT Content::AddInputLayout(ID3D11Device *device, const std::string &name, cons
 
 UINT Content::GetMeshCount() const
 {
-	return _meshes.size();
+	return static_cast<UINT>(_meshes.size());
 }
 
 UINT Content::GetTextureCount() const
 {
-	return _textures.size();
+	return static_cast<UINT>(_textures.size());
 }
 
 

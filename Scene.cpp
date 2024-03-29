@@ -30,7 +30,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	_device = device;
 	_content = content;
 
-
 	// Create scene content holder
 	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 150, 150));
 	if (!_sceneHolder.Initialize(sceneBounds))
@@ -47,7 +46,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		ErrMsg("Failed to initialize camera!");
 		return false;
 	}
-
 
 	// Create spotlights
 	const SpotLightData spotLightInfo = {
@@ -111,7 +109,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create pointlights
-	PointLightData pointLightInfo = { };
+	/*PointLightData pointLightInfo = { };
 	pointLightInfo.shadowCubeMapInfo.textureDimension = 512;
 	pointLightInfo.perLightInfo.push_back({
 		{ 1.0f, 1.0f, 1.0f },
@@ -124,8 +122,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	{
 		ErrMsg("Failed to initialize pointlight collection!");
 		return false;
-	}
-
+	}*/
 
 	// Create cubemap
 	if (!_cubemap.Initialize(device, 256, 0.05f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))

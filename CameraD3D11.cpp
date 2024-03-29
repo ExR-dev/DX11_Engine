@@ -336,9 +336,6 @@ bool CameraD3D11::BindLightingBuffers(ID3D11DeviceContext *context) const
 
 bool CameraD3D11::BindTransparentBuffers(ID3D11DeviceContext *context) const
 {
-	ID3D11Buffer *const posBuffer = (_posBuffer == nullptr) ? nullptr : _posBuffer->GetBuffer();
-	context->HSSetConstantBuffers(1, 1, &posBuffer);
-
 	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
 	context->DSSetConstantBuffers(0, 1, &vpmBuffer);
 
@@ -349,6 +346,22 @@ bool CameraD3D11::BindTransparentBuffers(ID3D11DeviceContext *context) const
 		return false;
 	}
 	context->GSSetConstantBuffers(0, 1, &camViewPosBuffer);
+
+	return true;
+}
+
+bool CameraD3D11::BindViewBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const vpmBuffer = GetCameraVSBuffer();
+	context->DSSetConstantBuffers(0, 1, &vpmBuffer);
+
+	return true;
+}
+
+bool CameraD3D11::BindMainBuffers(ID3D11DeviceContext *context) const
+{
+	ID3D11Buffer *const posBuffer = (_posBuffer == nullptr) ? nullptr : _posBuffer->GetBuffer();
+	context->HSSetConstantBuffers(1, 1, &posBuffer);
 
 	return true;
 }

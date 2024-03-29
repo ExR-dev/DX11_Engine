@@ -62,7 +62,7 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	XMFLOAT4A _ambientColor = { 0.08f, 0.08f, 0.08f, 0.0f };
+	XMFLOAT4A _ambientColor = { 0.10f, 0.11f, 0.12f, 0.0f };
 
 
 	[[nodiscard]] bool RenderToTarget(
