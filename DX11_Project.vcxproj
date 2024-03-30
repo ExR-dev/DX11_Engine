@@ -146,6 +146,7 @@
     <ClCompile Include="Content.cpp" />
     <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="D3D11Helper.cpp" />
+    <ClCompile Include="DepthBufferCube.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Object.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="Cubemap.h" />
     <ClInclude Include="D3D11Helper.h" />
+    <ClInclude Include="DepthBufferCube.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="ErrMsg.h" />

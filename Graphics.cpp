@@ -81,19 +81,19 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		return false;
 	}
 
-	D3D11_RASTERIZER_DESC rasterizerDesc = { };
-	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	rasterizerDesc.FrontCounterClockwise = false;
-	rasterizerDesc.DepthBias = 0;
-	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	rasterizerDesc.DepthClipEnable = false;
-	rasterizerDesc.ScissorEnable = false;
-	rasterizerDesc.MultisampleEnable = false;
-	rasterizerDesc.AntialiasedLineEnable = true;
+	D3D11_RASTERIZER_DESC wireframeRasterizerDesc = { };
+	wireframeRasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+	wireframeRasterizerDesc.CullMode = D3D11_CULL_NONE;
+	wireframeRasterizerDesc.FrontCounterClockwise = false;
+	wireframeRasterizerDesc.DepthBias = 0;
+	wireframeRasterizerDesc.DepthBiasClamp = 0.0f;
+	wireframeRasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	wireframeRasterizerDesc.DepthClipEnable = false;
+	wireframeRasterizerDesc.ScissorEnable = false;
+	wireframeRasterizerDesc.MultisampleEnable = false;
+	wireframeRasterizerDesc.AntialiasedLineEnable = false;
 
-	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_wireframeRasterizer)))
+	if (FAILED(device->CreateRasterizerState(&wireframeRasterizerDesc, &_wireframeRasterizer)))
 	{
 		ErrMsg("Failed to create wireframe rasterizer state!");
 		return false;
@@ -170,15 +170,27 @@ bool Graphics::SetCubemap(Cubemap *cubemap)
 	return true;
 }
 
-bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11* spotlights)
+bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights)
 {
 	if (spotlights == nullptr)
 	{
-		ErrMsg("Failed to set spot light collection, collection is nullptr!");
+		ErrMsg("Failed to set spotlight collection, collection is nullptr!");
 		return false;
 	}
 
 	_currSpotLightCollection = spotlights;
+	return true;
+}
+
+bool Graphics::SetPointlightCollection(PointLightCollectionD3D11 *pointlights)
+{
+	if (pointlights == nullptr)
+	{
+		ErrMsg("Failed to set pointlight collection, collection is nullptr!");
+		return false;
+	}
+
+	_currPointLightCollection = pointlights;
 	return true;
 }
 
@@ -313,36 +325,14 @@ bool Graphics::RenderToTarget(
 }
 
 
-bool Graphics::RenderShadowCasters()
+bool Graphics::RenderSpotlights()
 {
 	if (_currSpotLightCollection == nullptr)
 	{
-		ErrMsg("Failed to render shadow casters, current spotlight collection is nullptr!");
+		ErrMsg("Failed to render spotlights, current spotlight collection is nullptr!");
 		return false;
 	}
 
-	// Bind depth stage resources
-	const UINT ilID = _content->GetInputLayoutID("IL_Fallback");
-	if (_currInputLayoutID != ilID)
-	{
-		_context->IASetInputLayout(_content->GetInputLayout(ilID)->GetInputLayout());
-		_currInputLayoutID = ilID;
-	}
-
-	const UINT vsID = _content->GetShaderID("VS_Depth");
-	if (_currVsID != vsID)
-	{
-		if (!_content->GetShader(vsID)->BindShader(_context))
-		{
-			ErrMsg("Failed to bind depth-stage vertex shader!");
-			return false;
-		}
-		_currVsID = vsID;
-	}
-
-	_context->PSSetShader(nullptr, nullptr, 0);
-
-	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_context->RSSetState(_currSpotLightCollection->GetRasterizerState());
 	_context->RSSetViewports(1, &_currSpotLightCollection->GetViewport());
 
@@ -382,10 +372,8 @@ bool Graphics::RenderShadowCasters()
 			if (_currMeshID != resources.meshID)
 			{
 				loadedMesh = _content->GetMesh(resources.meshID);
-				//if (!loadedMesh->BindMeshBuffers(_context, sizeof(float) * 4, 0)) // Only bind position
-				// TODO: Check if stride works as expected
 				if (!loadedMesh->BindMeshBuffers(_context))
-				{ 
+				{
 					ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
 					return false;
 				}
@@ -418,6 +406,133 @@ bool Graphics::RenderShadowCasters()
 
 			entity_i++;
 		}
+	}
+
+	return true;
+}
+
+bool Graphics::RenderPointlights()
+{
+	if (_currPointLightCollection == nullptr)
+	{
+		ErrMsg("Failed to render pointlights, current pointlight collection is nullptr!");
+		return false;
+	}
+
+	_context->RSSetState(_currPointLightCollection->GetRasterizerState());
+	_context->RSSetViewports(1, &_currPointLightCollection->GetViewport());
+
+	const MeshD3D11 *loadedMesh = nullptr;
+
+	const UINT pointlightCount = _currPointLightCollection->GetNrOfLights();
+	for (UINT pointlight_i = 0; pointlight_i < pointlightCount; pointlight_i++)
+		for (UINT camera_i = 0; camera_i < 6; camera_i++)
+		{
+			ID3D11DepthStencilView *dsView = _currPointLightCollection->GetShadowCubemapDSV(pointlight_i, camera_i);
+			_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 1, 0);
+
+			// Skip rendering if disabled
+			if (!_currPointLightCollection->IsEnabled(pointlight_i, camera_i))
+				continue;
+
+			_context->OMSetRenderTargets(0, nullptr, dsView);
+
+			// Bind shadow-camera data
+			const CameraD3D11 *pointlightCamera = _currPointLightCollection->GetLightCamera(pointlight_i, camera_i);
+
+			if (!pointlightCamera->BindShadowCasterBuffers(_context))
+			{
+				ErrMsg(std::format("Failed to bind shadow-camera buffers for pointlight #{} camera #{}!", pointlight_i, camera_i));
+				return false;
+			}
+
+			UINT entity_i = 0;
+			for (const auto &[resources, instance] : pointlightCamera->GetGeometryQueue())
+			{
+				if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
+				{
+					ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
+					return false;
+				}
+
+				// Bind shared entity data, skip data irrelevant for shadow mapping
+				if (_currMeshID != resources.meshID)
+				{
+					loadedMesh = _content->GetMesh(resources.meshID);
+					if (!loadedMesh->BindMeshBuffers(_context))
+					{
+						ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
+						return false;
+					}
+					_currMeshID = resources.meshID;
+				}
+
+				// Bind private entity data
+				if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
+				{
+					ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
+					return false;
+				}
+
+				// Perform draw calls
+				if (loadedMesh == nullptr)
+				{
+					ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", entity_i));
+					return false;
+				}
+
+				const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
+				for (size_t submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
+				{
+					if (!loadedMesh->PerformSubMeshDrawCall(_context, submesh_i))
+					{
+						ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, submesh_i));
+						return false;
+					}
+				}
+
+				entity_i++;
+			}
+		}
+
+	return true;
+}
+
+bool Graphics::RenderShadowCasters()
+{
+	// Bind depth stage resources
+	const UINT ilID = _content->GetInputLayoutID("IL_Fallback");
+	if (_currInputLayoutID != ilID)
+	{
+		_context->IASetInputLayout(_content->GetInputLayout(ilID)->GetInputLayout());
+		_currInputLayoutID = ilID;
+	}
+
+	const UINT vsID = _content->GetShaderID("VS_Depth");
+	if (_currVsID != vsID)
+	{
+		if (!_content->GetShader(vsID)->BindShader(_context))
+		{
+			ErrMsg("Failed to bind depth-stage vertex shader!");
+			return false;
+		}
+		_currVsID = vsID;
+	}
+
+	_context->PSSetShader(nullptr, nullptr, 0);
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+
+	if (!RenderSpotlights())
+	{
+		ErrMsg("Failed to render spotlights!");
+		return false;
+	}
+
+	if (!RenderPointlights())
+	{
+		ErrMsg("Failed to render pointlights!");
+		return false;
 	}
 
 	// Unbind render target
@@ -682,21 +797,28 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		return false;
 	}
 
-	ID3D11SamplerState *const ss = _content->GetSampler(0)->GetSamplerState();
-	_context->CSSetSamplers(0, 1, &ss);
+	// Bind pointlight collection
+	if (!_currPointLightCollection->BindCSBuffers(_context))
+	{
+		ErrMsg("Failed to bind pointlight buffers!");
+		return false;
+	}
 
 	// Bind cubemap texture
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
-		_context->CSSetShaderResources(5, 1, &srv);
+		_context->CSSetShaderResources(7, 1, &srv);
 	}
+
+	ID3D11SamplerState *const ss = _content->GetSampler(0)->GetSamplerState();
+	_context->CSSetSamplers(0, 1, &ss);
 
 	// Bind camera lighting data
 	if (!_currMainCamera->BindLightingBuffers(_context))
 	{
 		ErrMsg("Failed to bind camera buffers!");
-		//return false;
+		return false;
 	}
 
 	// Send execution command
@@ -706,7 +828,14 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *nullSRV = nullptr;
-		_context->CSSetShaderResources(5, 1, &nullSRV);
+		_context->CSSetShaderResources(7, 1, &nullSRV);
+	}
+
+	// Unbind pointlight collection
+	if (!_currPointLightCollection->UnbindCSBuffers(_context))
+	{
+		ErrMsg("Failed to unbind pointlight buffers!");
+		return false;
 	}
 
 	// Unbind spotlight collection
@@ -861,6 +990,13 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	if (!_currSpotLightCollection->BindPSBuffers(_context))
 	{
 		ErrMsg("Failed to bind spotlight buffers!");
+		return false;
+	}
+
+	// Bind pointlight collection
+	if (!_currPointLightCollection->BindPSBuffers(_context))
+	{
+		ErrMsg("Failed to bind pointlight buffers!");
 		return false;
 	}
 
@@ -1058,6 +1194,13 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		_context->VSSetShaderResources(0, 1, &nullSRV);
 	}
 
+	// Unbind pointlight collection
+	if (!_currPointLightCollection->UnbindPSBuffers(_context))
+	{
+		ErrMsg("Failed to unbind pointlight buffers!");
+		return false;
+	}
+
 	// Unbind spotlight collection
 	if (!_currSpotLightCollection->UnbindPSBuffers(_context))
 	{
@@ -1065,9 +1208,11 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		return false;
 	}
 
+	// Reset blend state
 	_context->OMSetBlendState(prevBlendState, prevBlendFactor, prevSampleMask);
 	_context->OMSetDepthStencilState(prevStencilState, prevStencilRef);
 
+	// Unbind render target
 	static ID3D11RenderTargetView *const nullRTV = nullptr;
 	_context->OMSetRenderTargets(1, &nullRTV, nullptr);
 
@@ -1162,6 +1307,10 @@ bool Graphics::ResetRenderState()
 
 	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 		_currSpotLightCollection->GetLightCamera(i)->ResetRenderQueue();
+
+	for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
+		for (UINT j = 0; j < 6; j++)
+			_currPointLightCollection->GetLightCamera(i, j)->ResetRenderQueue();
 
 	if (_currCubemap != nullptr)
 		if (_currCubemap->GetUpdate())

@@ -2,6 +2,7 @@
 Texture2D Texture : register(t0);
 sampler Sampler : register(s0);
 
+
 cbuffer GlobalLight : register(b0)
 {
 	float4 ambient_light;
@@ -11,6 +12,7 @@ cbuffer CameraData : register(b1)
 {
 	float4 cam_position;
 };
+
 
 struct SpotLight
 {
@@ -25,6 +27,19 @@ struct SpotLight
 
 StructuredBuffer<SpotLight> SpotLights : register(t3);
 Texture2DArray<float> ShadowMaps : register(t4);
+
+struct PointLight
+{
+	float3 color;
+	float3 light_position;
+	float falloff;
+	float specularity;
+	float2 nearFarPlanes;
+	float padding[2];
+};
+
+StructuredBuffer<PointLight> PointLights : register(t5);
+TextureCubeArray<float> ShadowCubemaps : register(t6);
 
 
 // Generic color-clamping algorithm, not mine but it looks good
@@ -47,13 +62,13 @@ float4 main(PixelShaderInput input) : SV_TARGET
 {	
 	const float4 col = Texture.Sample(Sampler, input.tex_coord) * input.color;
 
-	uint lightCount, _;
-	SpotLights.GetDimensions(lightCount, _);
+	uint spotLightCount, _;
+	SpotLights.GetDimensions(spotLightCount, _);
 	
 	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
 
-	// Per-light calculations
-	for (uint light_i = 0; light_i < lightCount; light_i++)
+	// Per-spotlight calculations
+	for (uint light_i = 0; light_i < spotLightCount; light_i++)
 	{
 		// Prerequisite variables
 		const SpotLight light = SpotLights[light_i];

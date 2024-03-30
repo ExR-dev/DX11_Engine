@@ -29,7 +29,8 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		shadowCamera.camera = new CameraD3D11(
 			device,
 			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
-			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f }
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
+			false
 		);
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
@@ -83,7 +84,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 	if (!_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount,
 		true, false, true, _bufferData.data()))
 	{
-		ErrMsg("Failed to initialize light buffer!");
+		ErrMsg("Failed to initialize spotlight buffer!");
 		return false;
 	}
 

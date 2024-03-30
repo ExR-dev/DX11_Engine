@@ -109,10 +109,6 @@ private:
 	std::multimap<ResourceGroup, RenderInstance> _particleRenderQueue;
 
 
-	void Move(float amount, const DirectX::XMFLOAT4A &direction);
-	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
-
-
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
@@ -125,6 +121,9 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
 		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+
+	void Move(float amount, const DirectX::XMFLOAT4A &direction);
+	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);

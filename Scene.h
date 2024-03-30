@@ -21,8 +21,8 @@ private:
 	SceneHolder _sceneHolder;
 
 	CameraD3D11 *_camera = nullptr;
-	SpotLightCollectionD3D11 *_spotLights;
-	PointLightCollectionD3D11 *_pointLights;
+	SpotLightCollectionD3D11 *_spotlights;
+	PointLightCollectionD3D11 *_pointlights;
 
 	Cubemap _cubemap;
 	bool _updateCubemap = true;

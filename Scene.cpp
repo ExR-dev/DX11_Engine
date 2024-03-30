@@ -9,16 +9,16 @@
 Scene::Scene()
 {
 	_camera = new CameraD3D11();
-	_spotLights = new SpotLightCollectionD3D11();
-	_pointLights = new PointLightCollectionD3D11();
+	_spotlights = new SpotLightCollectionD3D11();
+	_pointlights = new PointLightCollectionD3D11();
 
 	_currCameraPtr = _camera;
 }
 
 Scene::~Scene()
 {
-	delete _pointLights;
-	delete _spotLights;
+	delete _pointlights;
+	delete _spotlights;
 	delete _camera;
 }
 
@@ -48,10 +48,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create spotlights
-	const SpotLightData spotLightInfo = {
+	const SpotLightData spotlightInfo = {
 		1024,
 		std::vector<SpotLightData::PerLightInfo> {
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 20.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
@@ -97,11 +97,23 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.05f,						// projectionNearZ
 				25.0f,						// projectionFarZ
 				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+			},*/
+
+			SpotLightData::PerLightInfo {
+				{ 1.0f, 1.0f, 1.0f },		// color
+				0.0f,						// rotationX
+				0.0f,						// rotationY
+				XM_PI * 0.5f,				// angle
+				1.0f,						// falloff
+				1.0f,						// specularity
+				0.5f,						// projectionNearZ
+				1.0f,						// projectionFarZ
+				{ 0.0f, 20.0f, 0.0f }		// initialPosition
 			},
 		}
 	};
 
-	if (!_spotLights->Initialize(device, spotLightInfo))
+	if (!_spotlights->Initialize(device, spotlightInfo))
 	{
 		ErrMsg("Failed to initialize spotlight collection!");
 		return false;
@@ -109,20 +121,35 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create pointlights
-	/*PointLightData pointLightInfo = { };
-	pointLightInfo.shadowCubeMapInfo.textureDimension = 512;
-	pointLightInfo.perLightInfo.push_back({
-		{ 1.0f, 1.0f, 1.0f },
-		{ 0.0f, 0.0f, 0.0f },
-		0.1f,
-		50.0f
-	});
+	const PointLightData pointlightInfo = {
+		1024,
+		std::vector<PointLightData::PerLightInfo> {
+			PointLightData::PerLightInfo {
+				{ 20.0f, 20.0f, 20.0f },	// color
+				{ 0.0f, 4.0f, 0.0f },		// initialPosition
+				1.5f,						// falloff
+				32.0f,						// specularity
+				0.05f,						// projectionNearZ
+				35.0f						// projectionFarZ
+			},
 
-	if (!_pointLights->Initialize(device, pointLightInfo))
+			/*PointLightData::PerLightInfo {
+				{ 0.0f, 20.0f, 20.0f },		// color
+				{ -6.0f, 24.0f, -14.0f },	// initialPosition
+				1.0f,						// falloff
+				32.0f,						// specularity
+				0.05f,						// projectionNearZ
+				25.0f						// projectionFarZ
+			},*/
+		}
+	};
+
+	if (!_pointlights->Initialize(device, pointlightInfo))
 	{
 		ErrMsg("Failed to initialize pointlight collection!");
 		return false;
-	}*/
+	}
+
 
 	// Create cubemap
 	if (!_cubemap.Initialize(device, 256, 0.05f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
@@ -361,7 +388,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 		}
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
-		{ // Create one random entity in front of the camera
+		{ // Create one custom entity in front of the camera
 			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
 			if (!obj->Initialize(_device, 
 				selectedMeshID, selectedTextureID, 
@@ -408,6 +435,11 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				currSelection++;
 			if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
 				currSelection--;
+
+			if (currSelection < -1)
+				currSelection = -1;
+			else if (currSelection >= (int)_sceneHolder.GetEntityCount())
+				currSelection = (int)_sceneHolder.GetEntityCount() - 1;
 
 			float currSpeed = 3.0f;
 			if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
@@ -536,9 +568,15 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
-	if (!_spotLights->UpdateBuffers(context))
+	if (!_spotlights->UpdateBuffers(context))
 	{
 		ErrMsg("Failed to update spotlight buffers!");
+		return false;
+	}
+
+	if (!_pointlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update pointlight buffers!");
 		return false;
 	}
 
@@ -589,17 +627,17 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	if (!hasSetCamera)
 	{
 		_currCameraPtr = _camera;
-		if (!graphics->SetSpotlightCollection(_spotLights))
+		if (!graphics->SetSpotlightCollection(_spotlights))
 		{
 			ErrMsg("Failed to set spotlight collection!");
 			return false;
 		}
 
-		/*if (!graphics->SetPointLightCollection(_pointLights))
+		if (!graphics->SetPointlightCollection(_pointlights))
 		{
-			ErrMsg("Failed to set point light collection!");
+			ErrMsg("Failed to set pointlight collection!");
 			return false;
-		}*/
+		}
 
 		hasSetCamera = true;
 	}
@@ -607,7 +645,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	{ // Change camera
 		_currCamera++;
 
-		if (_currCamera - 6 >= static_cast<int>(_spotLights->GetNrOfLights()))
+		if (_currCamera - 6 >= static_cast<int>(_spotlights->GetNrOfLights()))
 			_currCamera = -1;
 
 		if (_currCamera < 0)
@@ -618,7 +656,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		else if (_currCamera < 6)
 			_currCameraPtr = _cubemap.GetCamera(_currCamera);
 		else
-			_currCameraPtr = _spotLights->GetLightCamera(_currCamera - 6);
+			_currCameraPtr = _spotlights->GetLightCamera(_currCamera - 6);
 	}
 
 	if (!graphics->SetCameras(_camera, _currCameraPtr))
@@ -650,13 +688,13 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	}
 	time.TakeSnapshot("FrustumCull");
 
-	const int spotlightCount = static_cast<int>(_spotLights->GetNrOfLights());
+	const int spotlightCount = static_cast<int>(_spotlights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullSpotlights");
 	if (_doMultiThread)
 		#pragma omp parallel for num_threads(2)
 		for (int i = 0; i < spotlightCount; i++)
 		{
-			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
+			CameraD3D11 *spotlightCamera = _spotlights->GetLightCamera(i);
 
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
@@ -666,10 +704,10 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
-				_spotLights->SetEnabled(i, false);
+				_spotlights->SetEnabled(i, false);
 				continue;
 			}
-			_spotLights->SetEnabled(i, true);
+			_spotlights->SetEnabled(i, true);
 
 			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
 			{
@@ -689,7 +727,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	else
 		for (int i = 0; i < spotlightCount; i++)
 		{
-			CameraD3D11 *spotlightCamera = _spotLights->GetLightCamera(i);
+			CameraD3D11 *spotlightCamera = _spotlights->GetLightCamera(i);
 
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
@@ -699,10 +737,10 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
-				_spotLights->SetEnabled(i, false);
+				_spotlights->SetEnabled(i, false);
 				continue; 
 			}
-			_spotLights->SetEnabled(i, true);
+			_spotlights->SetEnabled(i, true);
 
 			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
 			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
@@ -722,6 +760,83 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			}
 		}
 	time.TakeSnapshot("FrustumCullSpotlights");
+
+	const int pointlightCount = static_cast<int>(_pointlights->GetNrOfLights());
+	time.TakeSnapshot("FrustumCullPointlights");
+	if (_doMultiThread)
+		#pragma omp parallel for num_threads(2)
+		for (int i = 0; i < pointlightCount; i++)
+			for (int j = 0; j < 6; j++)
+			{
+				CameraD3D11 *pointlightCamera = _pointlights->GetLightCamera(i, j);
+
+				std::vector<Entity *> entitiesToCastShadows;
+				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
+
+				DirectX::BoundingFrustum pointlightFrustum;
+				pointlightCamera->StoreFrustum(pointlightFrustum);
+
+				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
+				{ // Skip rendering if the frustums don't intersect
+					_pointlights->SetEnabled(i, j, false);
+					continue;
+				}
+				_pointlights->SetEnabled(i, j, true);
+
+				if (!_sceneHolder.FrustumCull(pointlightFrustum, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for pointlight #{} camera #{}!", i, j));
+					continue;
+				}
+
+				for (Entity *ent : entitiesToCastShadows)
+				{
+					if (!ent->Render(pointlightCamera))
+					{
+						ErrMsg(std::format("Failed to render entity for pointlight #{} camera #{}!", i, j));
+						break;
+					}
+				}
+			}
+	else
+		for (int i = 0; i < pointlightCount; i++)
+		{
+			time.TakeSnapshot(std::format("FrustumCullPointlight{}", i));
+			for (int j = 0; j < 6; j++)
+			{
+				CameraD3D11 *pointlightCamera = _pointlights->GetLightCamera(i, j);
+
+				std::vector<Entity *> entitiesToCastShadows;
+				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
+
+				DirectX::BoundingFrustum pointlightFrustum;
+				pointlightCamera->StoreFrustum(pointlightFrustum);
+
+				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
+				{ // Skip rendering if the frustums don't intersect
+					_pointlights->SetEnabled(i, j, false);
+					continue;
+				}
+				_pointlights->SetEnabled(i, j, true);
+
+				if (!_sceneHolder.FrustumCull(pointlightFrustum, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for pointlight #{} camera #{}!", i, j));
+					return false;
+				}
+
+				for (Entity *ent : entitiesToCastShadows)
+				{
+					if (!ent->Render(pointlightCamera))
+					{
+						ErrMsg(std::format("Failed to render entity for pointlight #{} camera #{}!", i, j));
+						return false;
+					}
+				}
+			}
+			time.TakeSnapshot(std::format("FrustumCullPointlight{}", i));
+		}
+	time.TakeSnapshot("FrustumCullPointlights");
 
 
 	time.TakeSnapshot("FrustumCullCubemap");
@@ -828,9 +943,9 @@ bool Scene::RenderUI()
 	ImGui::Separator();
 
 	char nearPlane[16]{}, farPlane[16]{};
-	for (UINT i = 0; i < _spotLights->GetNrOfLights(); i++)
+	for (UINT i = 0; i < _spotlights->GetNrOfLights(); i++)
 	{
-		const ProjectionInfo projInfo = _spotLights->GetLightCamera(i)->GetCurrProjectionInfo();
+		const ProjectionInfo projInfo = _spotlights->GetLightCamera(i)->GetCurrProjectionInfo();
 		snprintf(nearPlane, sizeof(nearPlane), "%.2f", projInfo.nearZ);
 		snprintf(farPlane, sizeof(farPlane), "%.1f", projInfo.farZ);
 		ImGui::Text(std::format("({}:{}) Planes Spotlight #{}", nearPlane, farPlane, i).c_str());

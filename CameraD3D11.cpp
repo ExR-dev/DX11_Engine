@@ -12,31 +12,6 @@ using namespace DirectX;
 #define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
 
 
-void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
-{
-	_transform.Move({
-		direction.x * amount,
-		direction.y * amount,
-		direction.z * amount,
-		0.0f
-	});
-	_isDirty = true;
-	_recalculateFrustum = true;
-}
-
-void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
-{
-	_transform.MoveLocal({ 
-		direction.x * amount,
-		direction.y * amount,
-		direction.z * amount,
-		0.0f
-	});
-	_isDirty = true;
-	_recalculateFrustum = true;
-}
-
-
 CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer)
 {
 	if (!Initialize(device, projectionInfo, initialPosition, hasCSBuffer))
@@ -84,6 +59,31 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
 
 	return true;
+}
+
+
+void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
+{
+	_transform.Move({
+		direction.x * amount,
+		direction.y * amount,
+		direction.z * amount,
+		0.0f
+		});
+	_isDirty = true;
+	_recalculateFrustum = true;
+}
+
+void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
+{
+	_transform.MoveLocal({
+		direction.x * amount,
+		direction.y * amount,
+		direction.z * amount,
+		0.0f
+		});
+	_isDirty = true;
+	_recalculateFrustum = true;
 }
 
 

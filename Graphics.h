@@ -8,8 +8,8 @@
 #include "Cubemap.h"
 #include "RenderTargetD3D11.h"
 #include "CameraD3D11.h"
-//#include "PointLightCollectionD3D11.h"
 #include "SpotLightCollectionD3D11.h"
+#include "PointLightCollectionD3D11.h"
 
 
 //constexpr UINT G_BUFFER_COUNT = 3;
@@ -48,7 +48,7 @@ private:
 
 	ConstantBufferD3D11 _globalLightBuffer;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
-	//PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
+	PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 
 	UINT
 		_currMeshID			= CONTENT_LOAD_ERROR,
@@ -62,7 +62,7 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	XMFLOAT4A _ambientColor = { 0.10f, 0.11f, 0.12f, 0.0f };
+	XMFLOAT4A _ambientColor = { 0.08f, 0.085f, 0.095f, 0.0f };
 
 
 	[[nodiscard]] bool RenderToTarget(
@@ -75,6 +75,8 @@ private:
 		bool cubemapStage
 	);
 
+	[[nodiscard]] bool RenderSpotlights();
+	[[nodiscard]] bool RenderPointlights();
 	[[nodiscard]] bool RenderShadowCasters();
 	[[nodiscard]] bool RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
 		ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport);
@@ -102,7 +104,7 @@ public:
 	[[nodiscard]] bool SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera = nullptr);
 	[[nodiscard]] bool SetCubemap(Cubemap *cubemap);
 	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
-	//[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
+	[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
 	[[nodiscard]] bool BeginSceneRender();
 	[[nodiscard]] bool EndSceneRender(Time &time);

@@ -8,11 +8,19 @@ Texture2D PositionGBuffer : register(t0); // w is unused
 Texture2D ColorGBuffer : register(t1); // w is specularity
 Texture2D NormalGBuffer : register(t2); // w is unused
 
+sampler Sampler : register(s0);
+
 
 cbuffer GlobalLight : register(b0)
 {
 	float4 ambient_light;
 };
+
+cbuffer CameraData : register(b1)
+{
+	float4 cam_position;
+};
+
 
 struct SpotLight
 {
@@ -26,16 +34,21 @@ struct SpotLight
 };
 
 StructuredBuffer<SpotLight> SpotLights : register(t3);
-
 Texture2DArray<float> ShadowMaps : register(t4);
 
-sampler Sampler : register(s0);
-
-
-cbuffer CameraData : register(b1)
+struct PointLight
 {
-	float4 cam_position;
+	float3 color;
+	float3 light_position;
+	float falloff;
+	float specularity;
+	float2 nearFarPlanes;
+	float padding[2];
 };
+
+StructuredBuffer<PointLight> PointLights : register(t5);
+TextureCubeArray<float> ShadowCubemaps : register(t6);
+
 
 // Generic color-clamping algorithm, not mine but it looks good
 float3 ACESFilm(const float3 x)
@@ -54,8 +67,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		norm = normalize(NormalGBuffer[DTid.xy].xyz),
 		viewDir = normalize(cam_position.xyz - pos);
 
-	uint lightCount, smWidth, smHeight, _;
-	SpotLights.GetDimensions(lightCount, _);
+	uint spotLightCount, smWidth, smHeight, _;
+	SpotLights.GetDimensions(spotLightCount, _);
 	ShadowMaps.GetDimensions(0, smWidth, smHeight, _, _);
 
 	const float
@@ -65,8 +78,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
-	// Per-light calculations
-	for (uint light_i = 0; light_i < lightCount; light_i++)
+	// Per-spotlight calculations
+	for (uint light_i = 0; light_i < spotLightCount; light_i++)
 	{
 		// Prerequisite variables
 		const SpotLight light = SpotLights[light_i];
