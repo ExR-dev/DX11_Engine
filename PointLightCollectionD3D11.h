@@ -6,7 +6,7 @@
 #include <DirectXMath.h>
 
 #include "StructuredBufferD3D11.h"
-#include "DepthBufferCube.h"
+#include "DepthBufferD3D11.h"
 #include "CameraD3D11.h"
 
 using namespace DirectX;
@@ -21,8 +21,8 @@ struct PointLightData
 
 	struct PerLightInfo
 	{
-		XMFLOAT3 color;
 		XMFLOAT3 initialPosition;
+		XMFLOAT3 color;
 		float falloff = 0.0f;
 		float specularity = 0.0f;
 		float projectionNearZ = 0.0f;
@@ -44,18 +44,18 @@ class PointLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		XMFLOAT3 color = { };
+		XMFLOAT4X4 vpMatrix = { };
 		XMFLOAT3 position = { };
+		XMFLOAT3 color = { };
 		float falloff = 0.0f;
 		float specularity = 0.0f;
-		XMFLOAT2A nearFarPlanes;
 	};
 
 	std::vector<LightBuffer> _bufferData;
 	std::vector<ShadowCameraCube> _shadowCameraCubes;
 	PointLightData::ShadowMapInfo _shadowMapInfo;
 
-	DepthBufferCube _shadowCubemaps;
+	DepthBufferD3D11 _shadowMaps;
 	StructuredBufferD3D11 _lightBuffer;
 	D3D11_VIEWPORT _shadowViewport = { };
 
@@ -81,7 +81,7 @@ public:
 
 	[[nodiscard]] UINT GetNrOfLights() const;
 	[[nodiscard]] CameraD3D11 *GetLightCamera(UINT lightIndex, UINT cameraIndex) const;
-	[[nodiscard]] ID3D11DepthStencilView *GetShadowCubemapDSV(UINT lightIndex, UINT cameraIndex) const;
+	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex, UINT cameraIndex) const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetShadowCubemapsSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
 	[[nodiscard]] ID3D11RasterizerState *GetRasterizerState() const;

@@ -428,7 +428,7 @@ bool Graphics::RenderPointlights()
 	for (UINT pointlight_i = 0; pointlight_i < pointlightCount; pointlight_i++)
 		for (UINT camera_i = 0; camera_i < 6; camera_i++)
 		{
-			ID3D11DepthStencilView *dsView = _currPointLightCollection->GetShadowCubemapDSV(pointlight_i, camera_i);
+			ID3D11DepthStencilView *dsView = _currPointLightCollection->GetShadowMapDSV(pointlight_i, camera_i);
 			_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 1, 0);
 
 			// Skip rendering if disabled
@@ -540,6 +540,7 @@ bool Graphics::RenderShadowCasters()
 
 	return true;
 }
+
 
 bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
 	ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
@@ -811,7 +812,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		_context->CSSetShaderResources(7, 1, &srv);
 	}
 
-	ID3D11SamplerState *const ss = _content->GetSampler(0)->GetSamplerState();
+	static ID3D11SamplerState *const ss = _content->GetSampler("SS_Clamp")->GetSamplerState();
 	_context->CSSetSamplers(0, 1, &ss);
 
 	// Bind camera lighting data
@@ -973,7 +974,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		_currPsID = psID;
 	}
 
-	static UINT ssID = _content->GetSamplerID("SS_Fallback");
+	static UINT ssID = _content->GetSamplerID("SS_Clamp");
 	if (_currSamplerID != ssID)
 	{
 		ID3D11SamplerState *const ss = _content->GetSampler(ssID)->GetSamplerState();
@@ -1267,6 +1268,13 @@ bool Graphics::RenderUI(Time &time)
 		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
 		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());
 	}
+
+	for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
+		for (UINT j = 0; j < 6; j++)
+		{
+			const CameraD3D11 *pointlightCamera = _currPointLightCollection->GetLightCamera(i, j);
+			ImGui::Text(std::format("Pointlight #{}:{} Draws: {}", i, j, pointlightCamera->GetCullCount()).c_str());
+		}
 
 	return true;
 }

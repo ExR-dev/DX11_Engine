@@ -62,7 +62,7 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	XMFLOAT4A _ambientColor = { 0.08f, 0.085f, 0.095f, 0.0f };
+	XMFLOAT4A _ambientColor = { 0.05f, 0.055f, 0.06f, 0.0f };
 
 
 	[[nodiscard]] bool RenderToTarget(
@@ -78,6 +78,7 @@ private:
 	[[nodiscard]] bool RenderSpotlights();
 	[[nodiscard]] bool RenderPointlights();
 	[[nodiscard]] bool RenderShadowCasters();
+
 	[[nodiscard]] bool RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
 		ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport);
 	[[nodiscard]] bool RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 

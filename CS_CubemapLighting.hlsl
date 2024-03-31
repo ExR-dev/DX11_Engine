@@ -25,29 +25,28 @@ cbuffer CameraData : register(b1)
 struct SpotLight
 {
 	float4x4 vp_matrix;
-	float3 color;
+	float3 position;
 	float3 direction;
+	float3 color;
 	float angle;
 	float falloff;
 	float specularity;
-	float3 light_position;
 };
 
 StructuredBuffer<SpotLight> SpotLights : register(t3);
-Texture2DArray<float> ShadowMaps : register(t4);
+Texture2DArray<float> SpotShadowMaps : register(t4);
 
 struct PointLight
 {
+	float4x4 vp_matrix;
+	float3 position;
 	float3 color;
-	float3 light_position;
 	float falloff;
 	float specularity;
-	float2 nearFarPlanes;
-	float padding[2];
 };
 
 StructuredBuffer<PointLight> PointLights : register(t5);
-TextureCubeArray<float> ShadowCubemaps : register(t6);
+Texture2DArray<float> PointShadowMaps : register(t6);
 
 
 // Generic color-clamping algorithm, not mine but it looks good
@@ -66,26 +65,22 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		col = ColorGBuffer[DTid.xy].xyz,
 		norm = normalize(NormalGBuffer[DTid.xy].xyz),
 		viewDir = normalize(cam_position.xyz - pos);
-
-	uint spotLightCount, smWidth, smHeight, _;
-	SpotLights.GetDimensions(spotLightCount, _);
-	ShadowMaps.GetDimensions(0, smWidth, smHeight, _, _);
-
-	const float
-		smDX = 1.0f / (float)smWidth,
-		smDY = 1.0f / (float)smHeight;
 	
 	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
+
+	uint spotLightCount, _;
+	SpotLights.GetDimensions(spotLightCount, _);
+
 	// Per-spotlight calculations
-	for (uint light_i = 0; light_i < spotLightCount; light_i++)
+	for (uint spotlight_i = 0; spotlight_i < spotLightCount; spotlight_i++)
 	{
 		// Prerequisite variables
-		const SpotLight light = SpotLights[light_i];
+		const SpotLight light = SpotLights[spotlight_i];
 
 		const float3
-			toLight = light.light_position - pos,
+			toLight = light.position - pos,
 			toLightDir = normalize(toLight),
 			halfwayDir = normalize(toLightDir + viewDir);
 		
@@ -101,52 +96,83 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		const float3 diffuseCol = light.color.xyz * directionScalar;
 		
 		const float specFactor = pow(max(dot(norm, halfwayDir), 0.0f), specularity);
-		const float3 specularCol = directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor) * light.color.xyz / max(max(light.color.x, light.color.y), light.color.z);
+		const float3 specularCol = (
+			directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor) * 
+			light.color.xyz / max(max(light.color.x, light.color.y), light.color.z)
+		);
 
 
 		// Calculate shadow projection
 		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 
-		const float3 smUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i);
-		const float smDepth = ShadowMaps.SampleLevel(Sampler, smUV, 0).x;
-		const float smResult = smDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
-		const float shadow = saturate(offsetAngle * smResult);
+		const bool isInsideFrustum = (
+			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
+			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
+		);
 
-		/*const float3
-			smUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, light_i),
-			smUV01 = smUV00 + float3(0.0f, smDY, 0.0f),
-			smUV10 = smUV00 + float3(smDX, 0.0f, 0.0f),
-			smUV11 = smUV00 + float3(smDX, smDY, 0.0f);
-
-		const float
-			smDepth00 = ShadowMaps.SampleLevel(Sampler, smUV00, 0).x,
-			smDepth01 = ShadowMaps.SampleLevel(Sampler, smUV01, 0).x,
-			smDepth10 = ShadowMaps.SampleLevel(Sampler, smUV10, 0).x,
-			smDepth11 = ShadowMaps.SampleLevel(Sampler, smUV11, 0).x;
-
-		const float
-			smResult00 = smDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult01 = smDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult10 = smDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			smResult11 = smDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
-
-		const float2
-			texelPos = smUV00.xy * (float)smWidth,
-			fracTex = frac(texelPos);
-		
-		const float shadow = saturate(
-			offsetAngle * lerp(
-				lerp(smResult00, smResult10, fracTex.x),
-				lerp(smResult01, smResult11, fracTex.x),
-				fracTex.y)
-		);*/
-
+		const float3 spotUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, spotlight_i);
+		const float spotDepth = SpotShadowMaps.SampleLevel(Sampler, spotUV, 0).x;
+		const float spotResult = spotDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * saturate(offsetAngle * spotResult);
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
+
+
+	uint pointLightCount;
+	PointLights.GetDimensions(pointLightCount, _);
+
+	// Per-pointlight calculations
+	for (uint pointlight_i = 0; pointlight_i < pointLightCount; pointlight_i++)
+	{
+		// Prerequisite variables
+		const PointLight light = PointLights[pointlight_i];
+
+		const float3
+			toLight = light.position - pos,
+			toLightDir = normalize(toLight),
+			halfwayDir = normalize(toLightDir + viewDir);
+		
+		const float inverseLightDistSqr = 1.0f / (1.0f + (
+			pow(toLight.x * light.falloff, 2) + 
+			pow(toLight.y * light.falloff, 2) + 
+			pow(toLight.z * light.falloff, 2)
+		));
+		
+
+		// Calculate Blinn-Phong shading
+		float directionScalar = max(dot(norm, toLightDir), 0.0f);
+		const float3 diffuseCol = light.color.xyz * directionScalar;
+		
+		const float specFactor = pow(max(dot(norm, halfwayDir), 0.0f), specularity);
+		const float3 specularCol = (
+			directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor) * 
+			light.color.xyz / max(max(light.color.x, light.color.y), light.color.z)
+		);
+
+
+		// Calculate shadow projection
+		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
+		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
+
+		const bool isInsideFrustum = (
+			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
+			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
+		);
+
+		const float3 pointUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, pointlight_i);
+		const float pointDepth = PointShadowMaps.SampleLevel(Sampler, pointUV, 0).x;
+		const float pointResult = pointDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * saturate(pointResult);
+
+		// Apply lighting
+		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
+		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
+	}
+
 
 	//const float3 result = saturate(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);
 	const float3 result = ACESFilm(col * ((ambient_light.xyz) + totalDiffuseLight) + totalSpecularLight);

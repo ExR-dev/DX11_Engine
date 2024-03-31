@@ -40,12 +40,12 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 
 		LightBuffer lightBuffer;
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
-		lightBuffer.color = iLightInfo.color;
 		lightBuffer.position = iLightInfo.initialPosition;
+		lightBuffer.direction = { dir.x, dir.y, dir.z };
+		lightBuffer.color = iLightInfo.color;
 		lightBuffer.angle = iLightInfo.angle;
 		lightBuffer.falloff = iLightInfo.falloff;
 		lightBuffer.specularity = iLightInfo.specularity;
-		lightBuffer.direction = { dir.x, dir.y, dir.z };
 
 		_bufferData.push_back(lightBuffer);
 	}
@@ -139,7 +139,6 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 		}
 
 		LightBuffer &lightBuffer = _bufferData.at(i);
-
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
 		memcpy(&lightBuffer.position, &shadowCamera.camera->GetPosition(), sizeof(XMFLOAT3));
 		memcpy(&lightBuffer.direction, &shadowCamera.camera->GetForward(), sizeof(XMFLOAT3));

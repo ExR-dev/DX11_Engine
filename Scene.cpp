@@ -49,66 +49,66 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		1024,
+		64, //1024,
 		std::vector<SpotLightData::PerLightInfo> {
 			/*SpotLightData::PerLightInfo {
-				{ 20.0f, 0.0f, 0.0f },		// color
+				{ 4.0f, 2.0f, 0.0f },		// initialPosition
+				{ 10.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
-				35.0f,						// projectionFarZ
-				{ 4.0f, 2.0f, 0.0f }		// initialPosition
+				0.1f,						// projectionNearZ
+				35.0f						// projectionFarZ
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },		// color
+				{ 0.0f, 6.0f, 0.0f },		// initialPosition
+				{ 0.0f, 10.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
-				35.0f,						// projectionFarZ
-				{ 0.0f, 6.0f, 0.0f }		// initialPosition
+				0.1f,						// projectionNearZ
+				35.0f						// projectionFarZ
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 0.0f, 20.0f },		// color
+				{ 0.0f, 2.0f, 4.0f },		// initialPosition
+				{ 0.0f, 0.0f, 10.0f },		// color
 				XM_PI,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
-				35.0f,						// projectionFarZ
-				{ 0.0f, 2.0f, 4.0f }		// initialPosition
-			},
+				0.1f,						// projectionNearZ
+				35.0f						// projectionFarZ
+			},*/
 			
-			SpotLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 20.0f },	// color
+			/*SpotLightData::PerLightInfo {
+				{ 0.0f, 20.0f, 0.0f },		// initialPosition
+				{ 10.0f, 10.0f, 10.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
-				0.75f,						// falloff
+				1.0f,						// falloff
 				512.0f,						// specularity
-				0.05f,						// projectionNearZ
-				25.0f,						// projectionFarZ
-				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+				0.1f,						// projectionNearZ
+				25.0f						// projectionFarZ
 			},*/
 
 			SpotLightData::PerLightInfo {
-				{ 1.0f, 1.0f, 1.0f },		// color
+				{ 0.0f, 20.0f, 0.0f },		// initialPosition
+				{ 10.0f, 10.0f, 10.0f },	// color
 				0.0f,						// rotationX
-				0.0f,						// rotationY
+				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				1.0f,						// specularity
-				0.5f,						// projectionNearZ
-				1.0f,						// projectionFarZ
-				{ 0.0f, 20.0f, 0.0f }		// initialPosition
+				512.0f,						// specularity
+				0.1f,						// projectionNearZ
+				1.0f						// projectionFarZ
 			},
 		}
 	};
@@ -125,22 +125,22 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		1024,
 		std::vector<PointLightData::PerLightInfo> {
 			PointLightData::PerLightInfo {
-				{ 20.0f, 20.0f, 20.0f },	// color
 				{ 0.0f, 4.0f, 0.0f },		// initialPosition
-				1.5f,						// falloff
+				{ 20.0f, 20.0f, 20.0f },	// color
+				1.75f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
+				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
 
-			/*PointLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 20.0f },		// color
+			PointLightData::PerLightInfo {
 				{ -6.0f, 24.0f, -14.0f },	// initialPosition
-				1.0f,						// falloff
+				{ 0.0f, 20.0f, 20.0f },		// color
+				4.0f,						// falloff
 				32.0f,						// specularity
-				0.05f,						// projectionNearZ
-				25.0f						// projectionFarZ
-			},*/
+				0.1f,						// projectionNearZ
+				20.0f						// projectionFarZ
+			},
 		}
 	};
 
@@ -152,7 +152,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 256, 0.05f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 256, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -265,7 +265,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create transparent
-	{
+	/*{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Fallback"),
 			textureID = content->GetTextureID("Tex_Transparent"),
@@ -300,7 +300,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0 });
-	}
+	}*/
 	
 	_initialized = true;
 	return true;

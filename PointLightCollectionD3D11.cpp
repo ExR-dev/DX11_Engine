@@ -25,10 +25,17 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 		_shadowCameraCubes.push_back({ { }, 0b111111 });
 		ShadowCameraCube &shadowCameraCube = _shadowCameraCubes.back();
 
+		const ProjectionInfo projInfo{
+			DirectX::XM_PIDIV2,
+			1.0f,
+			iLightInfo.projectionNearZ,
+			iLightInfo.projectionFarZ
+		};
+
 		for (UINT j = 0; j < 6; j++)
 			shadowCameraCube.cameraArray[j] = new CameraD3D11(
 				device,
-				ProjectionInfo(90.0f, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
+				projInfo,
 				{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
 				false
 			);
@@ -44,14 +51,17 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 		shadowCameraCube.cameraArray[4]->RotateRoll(DirectX::XM_PI);
 		shadowCameraCube.cameraArray[5]->RotateRoll(DirectX::XM_PI);
 
-		LightBuffer lightBuffer;
-		lightBuffer.color = iLightInfo.color;
-		lightBuffer.position = iLightInfo.initialPosition;
-		lightBuffer.falloff = iLightInfo.falloff;
-		lightBuffer.specularity = iLightInfo.specularity;
-		lightBuffer.nearFarPlanes = { iLightInfo.projectionNearZ, iLightInfo.projectionFarZ };
+		for (UINT j = 0; j < 6; j++)
+		{
+			LightBuffer lightBuffer;
+			lightBuffer.vpMatrix = shadowCameraCube.cameraArray[j]->GetViewProjectionMatrix();
+			lightBuffer.position = iLightInfo.initialPosition;
+			lightBuffer.color = iLightInfo.color;
+			lightBuffer.falloff = iLightInfo.falloff;
+			lightBuffer.specularity = iLightInfo.specularity;
 
-		_bufferData.push_back(lightBuffer);
+			_bufferData.push_back(lightBuffer);
+		}
 	}
 
 	D3D11_RASTERIZER_DESC rasterizerDesc = { };
@@ -75,16 +85,17 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 		return false;
 	}
 
-	if (!_shadowCubemaps.Initialize(device,
+	if (!_shadowMaps.Initialize(device,
 		lightInfo.shadowCubeMapInfo.textureDimension,
 		lightInfo.shadowCubeMapInfo.textureDimension,
-		lightCount))
+		true,
+		lightCount * 6))
 	{
-		ErrMsg("Failed to initialize pointlight shadow cubemaps!");
+		ErrMsg("Failed to initialize shadow maps!");
 		return false;
 	}
 
-	if (!_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount,
+	if (!_lightBuffer.Initialize(device, sizeof(LightBuffer), lightCount * 6,
 		true, false, true, _bufferData.data()))
 	{
 		ErrMsg("Failed to initialize pointlight buffer!");
@@ -116,22 +127,26 @@ void PointLightCollectionD3D11::Move(const UINT lightIndex, const DirectX::XMFLO
 
 bool PointLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 {
-	const UINT lightCount = static_cast<UINT>(_bufferData.size());
+	const UINT lightCount = GetNrOfLights();
 	for (UINT i = 0; i < lightCount; i++)
 	{
 		const ShadowCameraCube &shadowCameraCube = _shadowCameraCubes.at(i);
 
 		for (UINT j = 0; j < 6; j++)
 		{
+			if (!IsEnabled(i, j))
+				continue;
+
 			if (!shadowCameraCube.cameraArray[j]->UpdateBuffers(context))
 			{
 				ErrMsg(std::format("Failed to update pointlight #{} camera #{} buffers!", i, j));
 				return false;
 			}
-		}
 
-		LightBuffer &lightBuffer = _bufferData.at(i);
-		memcpy(&lightBuffer.position, &shadowCameraCube.cameraArray[0]->GetPosition(), sizeof(XMFLOAT3));
+			LightBuffer &lightBuffer = _bufferData.at(i * 6 + j);
+			lightBuffer.vpMatrix = shadowCameraCube.cameraArray[j]->GetViewProjectionMatrix();
+			memcpy(&lightBuffer.position, &shadowCameraCube.cameraArray[0]->GetPosition(), sizeof(XMFLOAT3));
+		}
 	}
 
 	if (!_lightBuffer.UpdateBuffer(context, _bufferData.data()))
@@ -149,8 +164,8 @@ bool PointLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) cons
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
 	context->CSSetShaderResources(5, 1, &lightBufferSRV);
 
-	ID3D11ShaderResourceView *const shadowCubemapSRV = _shadowCubemaps.GetSRV();
-	context->CSSetShaderResources(6, 1, &shadowCubemapSRV);
+	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
+	context->CSSetShaderResources(6, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -160,8 +175,8 @@ bool PointLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) cons
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
 	context->PSSetShaderResources(5, 1, &lightBufferSRV);
 
-	ID3D11ShaderResourceView *const shadowCubemapSRV = _shadowCubemaps.GetSRV();
-	context->PSSetShaderResources(6, 1, &shadowCubemapSRV);
+	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
+	context->PSSetShaderResources(6, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -185,7 +200,7 @@ bool PointLightCollectionD3D11::UnbindPSBuffers(ID3D11DeviceContext *context) co
 
 UINT PointLightCollectionD3D11::GetNrOfLights() const
 {
-	return static_cast<UINT>(_bufferData.size());
+	return static_cast<UINT>(_shadowCameraCubes.size());
 }
 
 CameraD3D11 *PointLightCollectionD3D11::GetLightCamera(const UINT lightIndex, const UINT cameraIndex) const
@@ -193,14 +208,14 @@ CameraD3D11 *PointLightCollectionD3D11::GetLightCamera(const UINT lightIndex, co
 	return _shadowCameraCubes.at(lightIndex).cameraArray[cameraIndex];
 }
 
-ID3D11DepthStencilView *PointLightCollectionD3D11::GetShadowCubemapDSV(const UINT lightIndex, const UINT cameraIndex) const
+ID3D11DepthStencilView *PointLightCollectionD3D11::GetShadowMapDSV(const UINT lightIndex, const UINT cameraIndex) const
 {
-	return _shadowCubemaps.GetDSV(lightIndex, cameraIndex);
+	return _shadowMaps.GetDSV(lightIndex * 6 + cameraIndex);
 }
 
 ID3D11ShaderResourceView *PointLightCollectionD3D11::GetShadowCubemapsSRV() const
 {
-	return _shadowCubemaps.GetSRV();
+	return _shadowMaps.GetSRV();
 }
 
 ID3D11ShaderResourceView *PointLightCollectionD3D11::GetLightBufferSRV() const

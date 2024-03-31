@@ -153,6 +153,12 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		return false;
 	}
 
+	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add clamp sampler!");
+		return false;
+	}
+
 
 	const std::vector<Semantic> fallbackInputLayout {
 		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
@@ -301,6 +307,19 @@ bool Game::Render(Time &time, const Input &input)
 		ImGui::Text(std::format("{} Culling Spotlight #{}", timeStr, i).c_str());
 
 		spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", ++i));
+	}
+
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullPointlights"));
+	ImGui::Text(std::format("{} Culling Pointlights Total", timeStr).c_str());
+
+	i = 0;
+	float pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", i));
+	while (pointlightTime >= 0.0f)
+	{
+		snprintf(timeStr, sizeof(timeStr), "%.6f", pointlightTime);
+		ImGui::Text(std::format("{} Culling Pointlight #{}", timeStr, i).c_str());
+
+		pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", ++i));
 	}
 
 	/// ^==========================================^ ///
