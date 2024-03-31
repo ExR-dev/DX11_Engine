@@ -30,9 +30,12 @@ private:
 	ID3D11DepthStencilView *_dsView	= nullptr;
 	ID3D11UnorderedAccessView *_uav	= nullptr;
 	ID3D11BlendState *_tbs			= nullptr;
+	ID3D11DepthStencilState *_ndss	= nullptr;
 	ID3D11DepthStencilState *_tdss	= nullptr;
 	D3D11_VIEWPORT _viewport		= { };
 
+	ID3D11RasterizerState *_defaultRasterizer = nullptr;
+	ID3D11RasterizerState *_shadowRasterizer = nullptr;
 	ID3D11RasterizerState *_wireframeRasterizer = nullptr;
 	bool _wireframe = false;
 

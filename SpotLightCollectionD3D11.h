@@ -63,8 +63,6 @@ private:
 	StructuredBufferD3D11 _lightBuffer;
 	D3D11_VIEWPORT _shadowViewport = { };
 
-	ID3D11RasterizerState *_rasterizerState = nullptr;
-
 public:
 	SpotLightCollectionD3D11() = default;
 	~SpotLightCollectionD3D11();
@@ -87,7 +85,6 @@ public:
 	[[nodiscard]] ID3D11DepthStencilView *GetShadowMapDSV(UINT lightIndex) const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetShadowMapsSRV() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
-	[[nodiscard]] ID3D11RasterizerState *GetRasterizerState() const;
 	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
 
 	[[nodiscard]] bool IsEnabled(UINT lightIndex) const;

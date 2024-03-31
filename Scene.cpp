@@ -49,15 +49,15 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		64, //1024,
+		512,
 		std::vector<SpotLightData::PerLightInfo> {
-			/*SpotLightData::PerLightInfo {
+			SpotLightData::PerLightInfo {
 				{ 4.0f, 2.0f, 0.0f },		// initialPosition
-				{ 10.0f, 0.0f, 0.0f },		// color
+				{ 15.0f, 0.0f, 0.0f },	// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
-				1.0f,						// falloff
+				0.75f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
@@ -65,11 +65,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 6.0f, 0.0f },		// initialPosition
-				{ 0.0f, 10.0f, 0.0f },		// color
+				{ 0.0f, 15.0f, 0.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
-				1.0f,						// falloff
+				0.75f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
@@ -77,18 +77,18 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 2.0f, 4.0f },		// initialPosition
-				{ 0.0f, 0.0f, 10.0f },		// color
+				{ 0.0f, 0.0f, 15.0f },	// color
 				XM_PI,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
-				1.0f,						// falloff
+				0.75f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
-			},*/
+			},
 			
-			/*SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },		// initialPosition
+			SpotLightData::PerLightInfo {
+				{ 0.0f, 20.0f, 0.0f },	// initialPosition
 				{ 10.0f, 10.0f, 10.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
@@ -97,18 +97,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				512.0f,						// specularity
 				0.1f,						// projectionNearZ
 				25.0f						// projectionFarZ
-			},*/
-
-			SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },		// initialPosition
-				{ 10.0f, 10.0f, 10.0f },	// color
-				0.0f,						// rotationX
-				XM_PIDIV2,					// rotationY
-				XM_PI * 0.5f,				// angle
-				1.0f,						// falloff
-				512.0f,						// specularity
-				0.1f,						// projectionNearZ
-				1.0f						// projectionFarZ
 			},
 		}
 	};
@@ -122,24 +110,24 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create pointlights
 	const PointLightData pointlightInfo = {
-		1024,
+		512,
 		std::vector<PointLightData::PerLightInfo> {
 			PointLightData::PerLightInfo {
-				{ 0.0f, 4.0f, 0.0f },		// initialPosition
-				{ 20.0f, 20.0f, 20.0f },	// color
-				1.75f,						// falloff
-				32.0f,						// specularity
-				0.1f,						// projectionNearZ
-				35.0f						// projectionFarZ
+				{ 7.0f, 5.0f, -9.0f },		// initialPosition
+				{ 15.0f, 15.0f, 15.0f },		// color
+				3.0f,							// falloff
+				32.0f,							// specularity
+				0.1f,							// projectionNearZ
+				35.0f							// projectionFarZ
 			},
 
 			PointLightData::PerLightInfo {
-				{ -6.0f, 24.0f, -14.0f },	// initialPosition
-				{ 0.0f, 20.0f, 20.0f },		// color
-				4.0f,						// falloff
-				32.0f,						// specularity
-				0.1f,						// projectionNearZ
-				20.0f						// projectionFarZ
+				{ -6.0f, 24.0f, -14.0f },		// initialPosition
+				{ 0.0f, 20.0f, 15.0f },		// color
+				4.0f,							// falloff
+				32.0f,							// specularity
+				0.1f,							// projectionNearZ
+				20.0f							// projectionFarZ
 			},
 		}
 	};
@@ -221,24 +209,24 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0.0f });
 	}
 	
-	// Create normal-mapped cube
+	// Create PBR-sphere
 	{
 		const UINT
-			meshID = content->GetMeshID("Mesh_IsoSphereSmooth"),
-			textureID = content->GetTextureID("Tex_Metal"),
-			normalID = content->GetTextureMapID("TexMap_Metal_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Metal_Specular"),
-			reflectiveID = content->GetTextureMapID("TexMap_Metal_Reflective"),
-			heightID = content->GetTextureMapID("TexMap_Metal_Height");
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_Cobble"),
+			normalID = content->GetTextureMapID("TexMap_Cobble_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Cobble_Specular"),
+			reflectiveID = content->GetTextureMapID("TexMap_Cobble_Reflective"),
+			heightID = content->GetTextureMapID("TexMap_Cobble_Height");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID))
 		{
-			ErrMsg("Failed to initialize model object!");
+			ErrMsg("Failed to initialize PBR object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 3.0f, 1.0f, -8.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 2.5f, -7.5f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f, 0 });
 	}
 
@@ -265,7 +253,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create transparent
-	/*{
+	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Fallback"),
 			textureID = content->GetTextureID("Tex_Transparent"),
@@ -289,7 +277,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {15,15,15}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
-		emitterData.particleCount = 4096;
+		emitterData.particleCount = 2048;
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 5.0f;
 
@@ -300,7 +288,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0 });
-	}*/
+	}
 	
 	_initialized = true;
 	return true;

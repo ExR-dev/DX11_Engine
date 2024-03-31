@@ -93,7 +93,7 @@ bool CreateDepthStencil(
 	textureDesc.Height = height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	textureDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -144,12 +144,14 @@ bool CreateBlendState(ID3D11Device *device, ID3D11BlendState *&blendState)
 	return true;
 }
 
-bool CreateDepthStencilState(ID3D11Device *device, ID3D11DepthStencilState *&depthStencilState)
+bool CreateDepthStencilStates(ID3D11Device *device, 
+	ID3D11DepthStencilState *&normalDepthStencilState, 
+	ID3D11DepthStencilState *&transparentDepthStencilState)
 {
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = { };
 	depthStencilDesc.DepthEnable = true;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
 	depthStencilDesc.StencilEnable = false;
 	depthStencilDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 	depthStencilDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
@@ -158,9 +160,26 @@ bool CreateDepthStencilState(ID3D11Device *device, ID3D11DepthStencilState *&dep
 	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 
-	if (FAILED(device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState)))
+	if (FAILED(device->CreateDepthStencilState(&depthStencilDesc, &normalDepthStencilState)))
 	{
-		ErrMsg("Failed to create depth stencil state!");
+		ErrMsg("Failed to create normal depth stencil state!");
+		return false;
+	}
+
+	depthStencilDesc.DepthEnable = true;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
+	depthStencilDesc.StencilEnable = false;
+	depthStencilDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	depthStencilDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+
+	if (FAILED(device->CreateDepthStencilState(&depthStencilDesc, &transparentDepthStencilState)))
+	{
+		ErrMsg("Failed to create transparent depth stencil state!");
 		return false;
 	}
 
@@ -188,7 +207,8 @@ bool SetupD3D11(
 	ID3D11DepthStencilView *&dsView, 
 	ID3D11UnorderedAccessView *&uav, 
 	ID3D11BlendState *&blendState,
-	ID3D11DepthStencilState *&depthStencilState,
+	ID3D11DepthStencilState *&normalDepthStencilState,
+	ID3D11DepthStencilState *&transparentDepthStencilState,
 	D3D11_VIEWPORT &viewport)
 {
 	if (!CreateInterfaces(width, height, window, device, immediateContext, swapChain))
@@ -215,7 +235,7 @@ bool SetupD3D11(
 		return false;
 	}
 
-	if (!CreateDepthStencilState(device, depthStencilState))
+	if (!CreateDepthStencilStates(device, normalDepthStencilState, transparentDepthStencilState))
 	{
 		ErrMsg("Error creating depth stencil state!");
 		return false;

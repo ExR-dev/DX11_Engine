@@ -88,13 +88,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 
-	uint spotLightCount, spotWidth, spotHeight, _;
+	uint spotLightCount, _;
 	SpotLights.GetDimensions(spotLightCount, _);
-	SpotShadowMaps.GetDimensions(0, spotWidth, spotHeight, _, _);
-
-	const float
-		spotDX = 1.0f / (float)spotWidth,
-		spotDY = 1.0f / (float)spotHeight;
 
 	// Per-spotlight calculations
 	for (uint spotlight_i = 0; spotlight_i < spotLightCount; spotlight_i++)
@@ -130,48 +125,20 @@ float4 main(PixelShaderInput input) : SV_TARGET
 			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
 		);
 
-		const float3
-			spotUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, spotlight_i),
-			spotUV01 = spotUV00 + float3(0.0f, spotDY, 0.0f),
-			spotUV10 = spotUV00 + float3(spotDX, 0.0f, 0.0f),
-			spotUV11 = spotUV00 + float3(spotDX, spotDY, 0.0f);
-
-		const float
-			spotDepth00 = SpotShadowMaps.SampleLevel(Sampler, spotUV00, 0).x,
-			spotDepth01 = SpotShadowMaps.SampleLevel(Sampler, spotUV01, 0).x,
-			spotDepth10 = SpotShadowMaps.SampleLevel(Sampler, spotUV10, 0).x,
-			spotDepth11 = SpotShadowMaps.SampleLevel(Sampler, spotUV11, 0).x;
-
-		const float
-			spotResult00 = spotDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult01 = spotDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult10 = spotDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult11 = spotDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
-
-		const float2
-			texelPos = spotUV00.xy * (float)spotWidth,
-			fracTex = frac(texelPos);
-		
-		const float shadow = isInsideFrustum * saturate(offsetAngle * lerp(
-			lerp(spotResult00, spotResult10, fracTex.x),
-			lerp(spotResult01, spotResult11, fracTex.x),
-			fracTex.y)
-		);
+		const float3 spotUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, spotlight_i);
+		const float spotDepth = SpotShadowMaps.SampleLevel(Sampler, spotUV, 0).x;
+		const float spotResult = spotDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * saturate(offsetAngle * spotResult);
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
-
 	
-	uint pointlightCount, pointWidth, pointHeight;
+	
+	uint pointlightCount;
 	PointLights.GetDimensions(pointlightCount, _);
-	PointShadowMaps.GetDimensions(0, pointWidth, pointHeight, _, _);
-
-	const float
-		pointDX = 1.0f / (float)pointWidth,
-		pointDY = 1.0f / (float)pointHeight;
-
+	
 	// Per-pointlight calculations
 	for (uint pointlight_i = 0; pointlight_i < pointlightCount; pointlight_i++)
 	{
@@ -206,39 +173,16 @@ float4 main(PixelShaderInput input) : SV_TARGET
 			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
 		);
 
-		const float3
-			pointUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, pointlight_i),
-			pointUV01 = pointUV00 + float3(0.0f, pointDY, 0.0f),
-			pointUV10 = pointUV00 + float3(pointDX, 0.0f, 0.0f),
-			pointUV11 = pointUV00 + float3(pointDX, pointDY, 0.0f);
-
-		const float
-			pointDepth00 = PointShadowMaps.SampleLevel(Sampler, pointUV00, 0).x,
-			pointDepth01 = PointShadowMaps.SampleLevel(Sampler, pointUV01, 0).x,
-			pointDepth10 = PointShadowMaps.SampleLevel(Sampler, pointUV10, 0).x,
-			pointDepth11 = PointShadowMaps.SampleLevel(Sampler, pointUV11, 0).x;
-
-		const float
-			pointResult00 = pointDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult01 = pointDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult10 = pointDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult11 = pointDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
-
-		const float2
-			texelPos = pointUV00.xy * (float)pointWidth,
-			fracTex = frac(texelPos);
-		
-		const float shadow = isInsideFrustum * saturate(lerp(
-			lerp(pointResult00, pointResult10, fracTex.x),
-			lerp(pointResult01, pointResult11, fracTex.x),
-			fracTex.y)
-		);
+		const float3 pointUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, pointlight_i);
+		const float pointDepth = PointShadowMaps.SampleLevel(Sampler, pointUV, 0).x;
+		const float pointResult = pointDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * saturate(pointResult);
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
 	}
-
+	
 
 	//const float3 result = saturate(col.xyz * (ambient_light.xyz + totalDiffuseLight + totalSpecularLight));
 	const float3 result = ACESFilm(col.xyz * ((ambient_light.xyz) + totalDiffuseLight + totalSpecularLight));

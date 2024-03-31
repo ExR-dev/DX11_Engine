@@ -69,7 +69,7 @@ void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
 		direction.y * amount,
 		direction.z * amount,
 		0.0f
-		});
+	});
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -81,7 +81,7 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 		direction.y * amount,
 		direction.z * amount,
 		0.0f
-		});
+	});
 	_isDirty = true;
 	_recalculateFrustum = true;
 }
@@ -211,8 +211,8 @@ XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
 			XMMatrixPerspectiveFovLH(
 				_currProjInfo.fovAngleY,
 				_currProjInfo.aspectRatio,
-				_currProjInfo.nearZ,
-				_currProjInfo.farZ
+				_currProjInfo.farZ,
+				_currProjInfo.nearZ
 			)
 		)
 	);

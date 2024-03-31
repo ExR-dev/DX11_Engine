@@ -40,10 +40,16 @@ HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
 {
 	HS_CONSTANT_DATA_OUTPUT output;
 
-	const float
+	/*const float
 		r = 1.2f,
 		d = 0.75f,
-		h = 10.0f,
+		h = 8.0f,
+		t = 3.0f;*/
+
+	const float
+		r = 2.0f,
+		d = 0.75f,
+		h = 8.0f,
 		t = 3.0f;
 
 	const float

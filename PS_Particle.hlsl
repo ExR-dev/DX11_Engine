@@ -95,7 +95,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 		const float3 spotUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, spotlight_i);
 		const float spotDepth = SpotShadowMaps.SampleLevel(Sampler, spotUV, 0).x;
-		const float spotResult = spotDepth > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float spotResult = spotDepth < fragPosLightNDC.z ? 1.0f : 0.0f;
 
 		const float shadow = isInsideFrustum * saturate(offsetAngle * spotResult);
 

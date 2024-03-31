@@ -71,6 +71,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ "Fade",							"Fade"							},
 		{ "Bricks",							"Bricks"						},
 		{ "Metal",							"Metal"							},
+		{ "Cobble",							"Cobble"						},
 
 		//Transparent
 		{ "Transparent",					"Transparent"					},
@@ -94,23 +95,26 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ TextureType::NORMAL,		"Bricks_Normal",				"Bricks_Normal"					},
 		{ TextureType::NORMAL,		"Shapes_Normal",				"Shapes_Normal"					},
 		{ TextureType::NORMAL,		"Metal_Normal",					"Metal_Normal"					},
+		{ TextureType::NORMAL,		"Cobble_Normal",				"Cobble_Normal"					},
 
 		{ TextureType::SPECULAR,	"Default_Specular",				"Black"							},
 		{ TextureType::SPECULAR,	"Gray_Specular",				"Gray"							},
 		{ TextureType::SPECULAR,	"White_Specular",				"White"							},
 		{ TextureType::SPECULAR,	"Fade_Specular",				"Fade"							},
-		{ TextureType::SPECULAR,	"CharacterSculptLow0_Specular",	"CharacterSculptLow0_Specular"	},
 		{ TextureType::SPECULAR,	"Bricks_Specular",				"Bricks_Specular"				},
 		{ TextureType::SPECULAR,	"Metal_Specular",				"Metal_Specular"				},
+		{ TextureType::SPECULAR,	"Cobble_Specular",				"Cobble_Specular"				},
 
 		{ TextureType::REFLECTIVE,	"Default_Reflective",			"Black"							},
 		{ TextureType::REFLECTIVE,	"Gray_Reflective",				"Gray"							},
 		{ TextureType::REFLECTIVE,	"White_Reflective",				"White"							},
 		{ TextureType::REFLECTIVE,	"Fade_Reflective",				"Fade"							},
-		{ TextureType::REFLECTIVE,	"Metal_Reflective",				"Metal"							},
+		{ TextureType::REFLECTIVE,	"Metal_Reflective",				"Metal_Reflective"				},
+		{ TextureType::REFLECTIVE,	"Cobble_Reflective",			"Cobble_Reflective"				},
 
 		{ TextureType::HEIGHT,		"Default_Height",				"Black"							},
 		{ TextureType::HEIGHT,		"Metal_Height",					"Metal_Height"					},
+		{ TextureType::HEIGHT,		"Cobble_Height",				"Cobble_Height"					},
 	};
 
 	for (const TextureMapData &textureMap : textureMapNames)

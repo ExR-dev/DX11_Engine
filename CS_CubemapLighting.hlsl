@@ -113,7 +113,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 		const float3 spotUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, spotlight_i);
 		const float spotDepth = SpotShadowMaps.SampleLevel(Sampler, spotUV, 0).x;
-		const float spotResult = spotDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float spotResult = spotDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
 		const float shadow = isInsideFrustum * saturate(offsetAngle * spotResult);
 
 		// Apply lighting
@@ -165,7 +165,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 		const float3 pointUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, pointlight_i);
 		const float pointDepth = PointShadowMaps.SampleLevel(Sampler, pointUV, 0).x;
-		const float pointResult = pointDepth + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float pointResult = pointDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
 		const float shadow = isInsideFrustum * saturate(pointResult);
 
 		// Apply lighting

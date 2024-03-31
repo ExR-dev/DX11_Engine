@@ -14,5 +14,6 @@
 	ID3D11DepthStencilView *&dsView,
 	ID3D11UnorderedAccessView *&uav,
 	ID3D11BlendState *&blendState,
-	ID3D11DepthStencilState *&depthStencilState,
+	ID3D11DepthStencilState *&normalDepthStencilState,
+	ID3D11DepthStencilState *&transparentDepthStencilState,
 	D3D11_VIEWPORT &viewport);

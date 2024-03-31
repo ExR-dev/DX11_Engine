@@ -18,8 +18,17 @@ Graphics::~Graphics()
 	if (_wireframeRasterizer != nullptr)
 		_wireframeRasterizer->Release();
 
+	if (_shadowRasterizer != nullptr)
+		_shadowRasterizer->Release();
+
+	if (_defaultRasterizer != nullptr)
+		_defaultRasterizer->Release();
+
 	if (_tdss != nullptr)
 		_tdss->Release();
+
+	if (_ndss != nullptr)
+		_ndss->Release();
 
 	if (_tbs != nullptr)
 		_tbs->Release();
@@ -60,7 +69,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	}
 
 	if (!SetupD3D11(width, height, window, device, immediateContext, 
-			_swapChain, _rtv, _dsTexture, _dsView, _uav, _tbs, _tdss, _viewport))
+			_swapChain, _rtv, _dsTexture, _dsView, _uav, _tbs, _ndss, _tdss, _viewport))
 	{
 		ErrMsg("Failed to setup d3d11!");
 		return false;
@@ -81,19 +90,41 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		return false;
 	}
 
-	D3D11_RASTERIZER_DESC wireframeRasterizerDesc = { };
-	wireframeRasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-	wireframeRasterizerDesc.CullMode = D3D11_CULL_NONE;
-	wireframeRasterizerDesc.FrontCounterClockwise = false;
-	wireframeRasterizerDesc.DepthBias = 0;
-	wireframeRasterizerDesc.DepthBiasClamp = 0.0f;
-	wireframeRasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	wireframeRasterizerDesc.DepthClipEnable = false;
-	wireframeRasterizerDesc.ScissorEnable = false;
-	wireframeRasterizerDesc.MultisampleEnable = false;
-	wireframeRasterizerDesc.AntialiasedLineEnable = false;
+	D3D11_RASTERIZER_DESC rasterizerDesc = { };
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.FrontCounterClockwise = false;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0;
+	rasterizerDesc.SlopeScaledDepthBias = 0;
+	rasterizerDesc.DepthClipEnable = false;
+	rasterizerDesc.ScissorEnable = false;
+	rasterizerDesc.MultisampleEnable = false;
+	rasterizerDesc.AntialiasedLineEnable = false;
 
-	if (FAILED(device->CreateRasterizerState(&wireframeRasterizerDesc, &_wireframeRasterizer)))
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_defaultRasterizer)))
+	{
+		ErrMsg("Failed to create default rasterizer state!");
+		return false;
+	}
+
+	rasterizerDesc.DepthBias = -1;
+	rasterizerDesc.DepthBiasClamp = -0.01f;
+	rasterizerDesc.SlopeScaledDepthBias = -3.0f;
+
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_shadowRasterizer)))
+	{
+		ErrMsg("Failed to create shadow rasterizer state!");
+		return false;
+	}
+
+	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterizerDesc.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_wireframeRasterizer)))
 	{
 		ErrMsg("Failed to create wireframe rasterizer state!");
 		return false;
@@ -228,6 +259,8 @@ bool Graphics::EndSceneRender(Time &time)
 		return false;
 	}
 
+	_context->OMSetDepthStencilState(_ndss, 0);
+
 	if (!RenderShadowCasters())
 	{
 		ErrMsg("Failed to render shadow casters!");
@@ -333,7 +366,6 @@ bool Graphics::RenderSpotlights()
 		return false;
 	}
 
-	_context->RSSetState(_currSpotLightCollection->GetRasterizerState());
 	_context->RSSetViewports(1, &_currSpotLightCollection->GetViewport());
 
 	const MeshD3D11 *loadedMesh = nullptr;
@@ -341,13 +373,12 @@ bool Graphics::RenderSpotlights()
 	const UINT spotLightCount = _currSpotLightCollection->GetNrOfLights();
 	for (UINT spotlight_i = 0; spotlight_i < spotLightCount; spotlight_i++)
 	{
-		ID3D11DepthStencilView *dsView = _currSpotLightCollection->GetShadowMapDSV(spotlight_i);
-		_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 1, 0);
-
 		// Skip rendering if disabled
 		if (!_currSpotLightCollection->IsEnabled(spotlight_i))
 			continue;
 
+		ID3D11DepthStencilView *dsView = _currSpotLightCollection->GetShadowMapDSV(spotlight_i);
+		_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 0.0f, 0);
 		_context->OMSetRenderTargets(0, nullptr, dsView);
 
 		// Bind shadow-camera data
@@ -419,7 +450,6 @@ bool Graphics::RenderPointlights()
 		return false;
 	}
 
-	_context->RSSetState(_currPointLightCollection->GetRasterizerState());
 	_context->RSSetViewports(1, &_currPointLightCollection->GetViewport());
 
 	const MeshD3D11 *loadedMesh = nullptr;
@@ -428,13 +458,12 @@ bool Graphics::RenderPointlights()
 	for (UINT pointlight_i = 0; pointlight_i < pointlightCount; pointlight_i++)
 		for (UINT camera_i = 0; camera_i < 6; camera_i++)
 		{
-			ID3D11DepthStencilView *dsView = _currPointLightCollection->GetShadowMapDSV(pointlight_i, camera_i);
-			_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 1, 0);
-
 			// Skip rendering if disabled
 			if (!_currPointLightCollection->IsEnabled(pointlight_i, camera_i))
 				continue;
 
+			ID3D11DepthStencilView *dsView = _currPointLightCollection->GetShadowMapDSV(pointlight_i, camera_i);
+			_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 0.0f, 0);
 			_context->OMSetRenderTargets(0, nullptr, dsView);
 
 			// Bind shadow-camera data
@@ -521,7 +550,7 @@ bool Graphics::RenderShadowCasters()
 
 	_context->PSSetShader(nullptr, nullptr, 0);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
+	_context->RSSetState(_shadowRasterizer);
 
 	if (!RenderSpotlights())
 	{
@@ -537,6 +566,8 @@ bool Graphics::RenderShadowCasters()
 
 	// Unbind render target
 	_context->OMSetRenderTargets(0, nullptr, nullptr);
+
+	_context->RSSetState(_defaultRasterizer);
 
 	return true;
 }
@@ -556,10 +587,10 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	}
 	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, targetDSV);
 
-	_context->ClearDepthStencilView(targetDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+	_context->ClearDepthStencilView(targetDSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST); // Enabled tessellation, otherwise D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 	_context->RSSetViewports(1, targetViewport);
-	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
+	_context->RSSetState(_wireframe ? _wireframeRasterizer : _defaultRasterizer);
 
 	// Bind camera data
 	if (!_currMainCamera->BindMainBuffers(_context))
@@ -892,9 +923,6 @@ bool Graphics::RenderGBuffer(const UINT bufferIndex) const
 
 bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
-	ID3D11DepthStencilState *prevStencilState;
-	UINT prevStencilRef = 0;
-	_context->OMGetDepthStencilState(&prevStencilState, &prevStencilRef);
 	_context->OMSetDepthStencilState(_tdss, 0);
 
 	ID3D11BlendState *prevBlendState;
@@ -908,7 +936,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	_context->OMSetRenderTargets(1, &targetRTV, targetDSV);
 	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST); // Enabled tessellation, otherwise D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 	_context->RSSetViewports(1, targetViewport);
-	_context->RSSetState(_wireframe ? _wireframeRasterizer : nullptr);
+	_context->RSSetState(_wireframe ? _wireframeRasterizer : _defaultRasterizer);
 
 	// Bind camera data
 	if (!_currMainCamera->BindMainBuffers(_context))
@@ -1211,7 +1239,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 
 	// Reset blend state
 	_context->OMSetBlendState(prevBlendState, prevBlendFactor, prevSampleMask);
-	_context->OMSetDepthStencilState(prevStencilState, prevStencilRef);
+	_context->OMSetDepthStencilState(_ndss, 0);
 
 	// Unbind render target
 	static ID3D11RenderTargetView *const nullRTV = nullptr;

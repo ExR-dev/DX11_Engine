@@ -135,7 +135,7 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 	depthTextureDesc.Height = resolution;
 	depthTextureDesc.MipLevels = 1;
 	depthTextureDesc.ArraySize = 1;
-	depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthTextureDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	depthTextureDesc.SampleDesc.Count = 1;
 	depthTextureDesc.SampleDesc.Quality = 0;
 	depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;

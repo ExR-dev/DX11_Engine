@@ -7,9 +7,6 @@
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
 {
-	if (_rasterizerState != nullptr)
-		_rasterizerState->Release();
-
 	for (const ShadowCamera &shadowCamera : _shadowCameras)
 		delete shadowCamera.camera;
 }
@@ -48,27 +45,6 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		lightBuffer.specularity = iLightInfo.specularity;
 
 		_bufferData.push_back(lightBuffer);
-	}
-
-	D3D11_RASTERIZER_DESC rasterizerDesc = { };
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FrontCounterClockwise = false;
-	//rasterizerDesc.DepthBias = 1;
-	//rasterizerDesc.DepthBiasClamp = 0.0025f;
-	//rasterizerDesc.SlopeScaledDepthBias = 2.0f;
-	rasterizerDesc.DepthBias = 0;
-	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	rasterizerDesc.DepthClipEnable = false;
-	rasterizerDesc.ScissorEnable = false;
-	rasterizerDesc.MultisampleEnable = false;
-	rasterizerDesc.AntialiasedLineEnable = false;
-
-	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_rasterizerState)))
-	{
-		ErrMsg("Failed to create rasterizer state for spotlights!");
-		return false;
 	}
 
 	if (!_shadowMaps.Initialize(device, 
@@ -215,11 +191,6 @@ ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetShadowMapsSRV() const
 ID3D11ShaderResourceView *SpotLightCollectionD3D11::GetLightBufferSRV() const
 {
 	return _lightBuffer.GetSRV();
-}
-
-ID3D11RasterizerState *SpotLightCollectionD3D11::GetRasterizerState() const
-{
-	return _rasterizerState;
 }
 
 const D3D11_VIEWPORT &SpotLightCollectionD3D11::GetViewport() const

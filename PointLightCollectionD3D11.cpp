@@ -5,9 +5,6 @@
 
 PointLightCollectionD3D11::~PointLightCollectionD3D11()
 {
-	if (_rasterizerState != nullptr)
-		_rasterizerState->Release();
-
 	for (const ShadowCameraCube &cameraCube : _shadowCameraCubes)
 		for (UINT i = 0; i < 6; i++)
 			delete cameraCube.cameraArray[i];
@@ -62,27 +59,6 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 
 			_bufferData.push_back(lightBuffer);
 		}
-	}
-
-	D3D11_RASTERIZER_DESC rasterizerDesc = { };
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FrontCounterClockwise = false;
-	//rasterizerDesc.DepthBias = 1;
-	//rasterizerDesc.DepthBiasClamp = 0.0025f;
-	//rasterizerDesc.SlopeScaledDepthBias = 2.0f;
-	rasterizerDesc.DepthBias = 0;
-	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	rasterizerDesc.DepthClipEnable = false;
-	rasterizerDesc.ScissorEnable = false;
-	rasterizerDesc.MultisampleEnable = false;
-	rasterizerDesc.AntialiasedLineEnable = false;
-
-	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_rasterizerState)))
-	{
-		ErrMsg("Failed to create rasterizer state for pointlights!");
-		return false;
 	}
 
 	if (!_shadowMaps.Initialize(device,
@@ -221,11 +197,6 @@ ID3D11ShaderResourceView *PointLightCollectionD3D11::GetShadowCubemapsSRV() cons
 ID3D11ShaderResourceView *PointLightCollectionD3D11::GetLightBufferSRV() const
 {
 	return _lightBuffer.GetSRV();
-}
-
-ID3D11RasterizerState *PointLightCollectionD3D11::GetRasterizerState() const
-{
-	return _rasterizerState;
 }
 
 const D3D11_VIEWPORT &PointLightCollectionD3D11::GetViewport() const

@@ -134,10 +134,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			spotDepth11 = SpotShadowMaps.SampleLevel(Sampler, spotUV11, 0).x;
 
 		const float
-			spotResult00 = spotDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult01 = spotDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult10 = spotDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			spotResult11 = spotDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+			spotResult00 = spotDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			spotResult01 = spotDepth01 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			spotResult10 = spotDepth10 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			spotResult11 = spotDepth11 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
 
 		const float2
 			texelPos = spotUV00.xy * (float)spotWidth,
@@ -215,10 +215,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			pointDepth11 = PointShadowMaps.SampleLevel(Sampler, pointUV11, 0).x;
 
 		const float
-			pointResult00 = pointDepth00 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult01 = pointDepth01 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult10 = pointDepth10 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f,
-			pointResult11 = pointDepth11 + EPSILON > fragPosLightNDC.z ? 1.0f : 0.0f;
+			pointResult00 = pointDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			pointResult01 = pointDepth01 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			pointResult10 = pointDepth10 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			pointResult11 = pointDepth11 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
 
 		const float2
 			texelPos = pointUV00.xy * (float)pointWidth,
@@ -229,6 +229,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			lerp(pointResult01, pointResult11, fracTex.x),
 			fracTex.y)
 		);
+
+		//const float shadow = isInsideFrustum * saturate(pointResult00);
 
 
 		// Apply lighting
