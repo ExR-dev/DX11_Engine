@@ -131,10 +131,10 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 bool SpotLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
-	context->CSSetShaderResources(3, 1, &lightBufferSRV);
+	context->CSSetShaderResources(4, 1, &lightBufferSRV);
 
 	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
-	context->CSSetShaderResources(4, 1, &shadowMapSRV);
+	context->CSSetShaderResources(5, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -142,10 +142,10 @@ bool SpotLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) const
 bool SpotLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
-	context->PSSetShaderResources(3, 1, &lightBufferSRV);
+	context->PSSetShaderResources(4, 1, &lightBufferSRV);
 
 	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
-	context->PSSetShaderResources(4, 1, &shadowMapSRV);
+	context->PSSetShaderResources(5, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -153,7 +153,7 @@ bool SpotLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
 bool SpotLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->CSSetShaderResources(3, 2, nullSRV);
+	context->CSSetShaderResources(4, 2, nullSRV);
 
 	return true;
 }
@@ -161,7 +161,7 @@ bool SpotLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) con
 bool SpotLightCollectionD3D11::UnbindPSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->PSSetShaderResources(3, 2, nullSRV);
+	context->PSSetShaderResources(4, 2, nullSRV);
 
 	return true;
 }

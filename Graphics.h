@@ -61,6 +61,7 @@ private:
 		_currNormalID		= CONTENT_LOAD_ERROR,
 		_currSpecularID		= CONTENT_LOAD_ERROR,
 		_currReflectiveID	= CONTENT_LOAD_ERROR,
+		_currAmbientID		= CONTENT_LOAD_ERROR,
 		_currHeightID		= CONTENT_LOAD_ERROR,
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;

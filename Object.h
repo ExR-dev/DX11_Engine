@@ -12,6 +12,7 @@ private:
 		_normalID = CONTENT_LOAD_ERROR,
 		_specularID = CONTENT_LOAD_ERROR,
 		_reflectiveID = CONTENT_LOAD_ERROR,
+		_ambientID = CONTENT_LOAD_ERROR,
 		_heightID = CONTENT_LOAD_ERROR;
 
 	bool _isTransparent = false;
@@ -26,8 +27,8 @@ public:
 	[[nodiscard]] bool Initialize(ID3D11Device *device, 
 		UINT meshID, UINT texID, 
 		UINT normalID, UINT specularID, 
-		UINT reflectiveID, UINT heightID, 
-		bool isTransparent = false);
+		UINT reflectiveID, UINT ambientID, 
+		UINT heightID, bool isTransparent = false);
 
 	[[nodiscard]] EntityType GetType() const override;
 

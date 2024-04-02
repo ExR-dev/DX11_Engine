@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <array>
+//#include <array>
 #include <map>
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
@@ -26,7 +26,7 @@ struct GeometryBufferData
 	DirectX::XMFLOAT4A position;
 };
 
-struct LightingBufferData
+/*struct LightingBufferData
 {
 	float lightPos[4];
 	float ambCol[4];
@@ -47,7 +47,7 @@ struct LightingBufferData
 			specCol[i] = specularColour[i];
 		}
 	}
-};
+};*/
 
 
 struct ResourceGroup
@@ -58,6 +58,7 @@ struct ResourceGroup
 		normalID = CONTENT_LOAD_ERROR,
 		specularID = CONTENT_LOAD_ERROR,
 		reflectiveID = CONTENT_LOAD_ERROR,
+		ambientID = CONTENT_LOAD_ERROR,
 		heightID = CONTENT_LOAD_ERROR;
 
 	bool operator<(const ResourceGroup &other) const
@@ -76,6 +77,9 @@ struct ResourceGroup
 
 		if (reflectiveID != other.reflectiveID)
 			return reflectiveID < other.reflectiveID;
+
+		if (ambientID != other.ambientID)
+			return ambientID < other.ambientID;
 
 		return heightID < other.heightID;
 	}

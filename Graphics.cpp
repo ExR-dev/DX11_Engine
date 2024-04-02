@@ -354,6 +354,17 @@ bool Graphics::RenderToTarget(
 		}
 	}
 
+	_currInputLayoutID = CONTENT_LOAD_ERROR;
+	_currMeshID = CONTENT_LOAD_ERROR;
+	_currVsID = CONTENT_LOAD_ERROR;
+	_currPsID = CONTENT_LOAD_ERROR;
+	_currTexID = CONTENT_LOAD_ERROR;
+	_currNormalID = CONTENT_LOAD_ERROR;
+	_currSpecularID = CONTENT_LOAD_ERROR;
+	_currReflectiveID = CONTENT_LOAD_ERROR;
+	_currAmbientID = CONTENT_LOAD_ERROR;
+	_currHeightID = CONTENT_LOAD_ERROR;
+
 	return true;
 }
 
@@ -588,7 +599,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	_context->OMSetRenderTargets(G_BUFFER_COUNT, rtvs, targetDSV);
 
 	_context->ClearDepthStencilView(targetDSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
-	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST); // Enabled tessellation, otherwise D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+	_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 	_context->RSSetViewports(1, targetViewport);
 	_context->RSSetState(_wireframe ? _wireframeRasterizer : _defaultRasterizer);
 
@@ -607,22 +618,16 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 	// Bind geometry stage resources
 	static UINT geometryInputLayoutID = _content->GetInputLayoutID("IL_Fallback");
-	if (_currInputLayoutID != geometryInputLayoutID)
-	{
-		_context->IASetInputLayout(_content->GetInputLayout(geometryInputLayoutID)->GetInputLayout());
-		_currInputLayoutID = geometryInputLayoutID;
-	}
+	_context->IASetInputLayout(_content->GetInputLayout(geometryInputLayoutID)->GetInputLayout());
+	_currInputLayoutID = geometryInputLayoutID;
 
 	static UINT vsID = _content->GetShaderID("VS_Geometry");
-	if (_currVsID != vsID)
+	if (!_content->GetShader(vsID)->BindShader(_context))
 	{
-		if (!_content->GetShader(vsID)->BindShader(_context))
-		{
-			ErrMsg("Failed to bind geometry vertex shader!");
-			return false;
-		}
-		_currVsID = vsID;
+		ErrMsg("Failed to bind geometry vertex shader!");
+		return false;
 	}
+	_currVsID = vsID;
 
 	static UINT hsID = _content->GetShaderID("HS_LOD");
 	if (!_content->GetShader(hsID)->BindShader(_context))
@@ -639,15 +644,12 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	}
 
 	static UINT psID = _content->GetShaderID("PS_Geometry");
-	if (_currPsID != psID)
+	if (!_content->GetShader(psID)->BindShader(_context))
 	{
-		if (!_content->GetShader(psID)->BindShader(_context))
-		{
-			ErrMsg("Failed to bind geometry pixel shader!");
-			return false;
-		}
-		_currPsID = psID;
+		ErrMsg("Failed to bind geometry pixel shader!");
+		return false;
 	}
+	_currPsID = psID;
 
 	static UINT ssID = _content->GetSamplerID("SS_Fallback");
 	if (_currSamplerID != ssID)
@@ -659,36 +661,29 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	}
 
 	static UINT defaultNormalID = _content->GetTextureMapID("TexMap_Default_Normal");
-	if (_currNormalID != defaultNormalID)
-	{
-		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultNormalID)->GetSRV();
-		_context->PSSetShaderResources(1, 1, &srv);
-		_currNormalID = defaultNormalID;
-	}
+	ID3D11ShaderResourceView *srv = _content->GetTextureMap(defaultNormalID)->GetSRV();
+	_context->PSSetShaderResources(1, 1, &srv);
+	_currNormalID = defaultNormalID;
 
 	static UINT defaultSpecularID = _content->GetTextureMapID("TexMap_Default_Specular");
-	if (_currSpecularID != defaultSpecularID)
-	{
-		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultSpecularID)->GetSRV();
-		_context->PSSetShaderResources(2, 1, &srv);
-		_currSpecularID = defaultSpecularID;
-	}
+	srv = _content->GetTextureMap(defaultSpecularID)->GetSRV();
+	_context->PSSetShaderResources(2, 1, &srv);
+	_currSpecularID = defaultSpecularID;
 
 	static UINT defaultReflectiveID = _content->GetTextureMapID("TexMap_Default_Reflective");
-	if (_currReflectiveID != defaultReflectiveID)
-	{
-		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultReflectiveID)->GetSRV();
-		_context->PSSetShaderResources(3, 1, &srv);
-		_currReflectiveID = defaultReflectiveID;
-	}
+	srv = _content->GetTextureMap(defaultReflectiveID)->GetSRV();
+	_context->PSSetShaderResources(3, 1, &srv);
+	_currReflectiveID = defaultReflectiveID;
+
+	static UINT defaultAmbientID = _content->GetTextureID("Tex_Ambient");
+	srv = _content->GetTexture(defaultAmbientID)->GetSRV();
+	_context->PSSetShaderResources(4, 1, &srv);
+	_currAmbientID = defaultAmbientID;
 
 	static UINT defaultHeightID = _content->GetTextureMapID("TexMap_Default_Height");
-	if (_currHeightID != defaultHeightID)
-	{
-		ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
-		_context->DSSetShaderResources(0, 1, &srv);
-		_currHeightID = defaultHeightID;
-	}
+	srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+	_context->DSSetShaderResources(0, 1, &srv);
+	_currHeightID = defaultHeightID;
 
 	const MeshD3D11 *loadedMesh = nullptr;
 	UINT entity_i = 0;
@@ -743,6 +738,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
 				_context->PSSetShaderResources(3, 1, &srv);
 				_currReflectiveID = resources.reflectiveID;
+			}
+
+		if (resources.ambientID != CONTENT_LOAD_ERROR)
+			if (_currAmbientID != resources.ambientID)
+			{
+				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.ambientID)->GetSRV();
+				_context->PSSetShaderResources(4, 1, &srv);
+				_currAmbientID = resources.ambientID;
 			}
 
 		if (resources.heightID != CONTENT_LOAD_ERROR)
@@ -818,9 +821,6 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		srvs[i] = targetGBuffers->at(i).GetSRV();
 	_context->CSSetShaderResources(0, G_BUFFER_COUNT, srvs);
 
-	// Bind global light data
-	ID3D11Buffer *const globalLightBuffer = _globalLightBuffer.GetBuffer();
-	_context->CSSetConstantBuffers(0, 1, &globalLightBuffer);
 
 	// Bind spotlight collection
 	if (!_currSpotLightCollection->BindCSBuffers(_context))
@@ -840,7 +840,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
-		_context->CSSetShaderResources(7, 1, &srv);
+		_context->CSSetShaderResources(8, 1, &srv);
 	}
 
 	static ID3D11SamplerState *const ss = _content->GetSampler("SS_Clamp")->GetSamplerState();
@@ -860,7 +860,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *nullSRV = nullptr;
-		_context->CSSetShaderResources(7, 1, &nullSRV);
+		_context->CSSetShaderResources(8, 1, &nullSRV);
 	}
 
 	// Unbind pointlight collection
@@ -1276,9 +1276,10 @@ bool Graphics::RenderUI(Time &time)
 		minFPS = 1.0f / time.deltaTime;
 
 	std::string currRenderOutput;
-	if		(_renderOutput == 1) currRenderOutput = "Positions";
-	else if (_renderOutput == 2) currRenderOutput = "Colors";
-	else if (_renderOutput == 3) currRenderOutput = "Normals";
+	if		(_renderOutput == 1) currRenderOutput = "Position";
+	else if (_renderOutput == 2) currRenderOutput = "Normal";
+	else if (_renderOutput == 3) currRenderOutput = "Ambient";
+	else if (_renderOutput == 4) currRenderOutput = "Diffuse";
 	else						 currRenderOutput = "Default";
 
 	if (ImGui::Button(std::format("Render Output: {}", currRenderOutput).c_str()))
@@ -1362,6 +1363,7 @@ bool Graphics::ResetRenderState()
 	_currNormalID		= CONTENT_LOAD_ERROR;
 	_currSpecularID		= CONTENT_LOAD_ERROR;
 	_currReflectiveID	= CONTENT_LOAD_ERROR;
+	_currAmbientID		= CONTENT_LOAD_ERROR;
 	_currHeightID		= CONTENT_LOAD_ERROR;
 
 	_isRendering = false;

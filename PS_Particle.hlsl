@@ -25,8 +25,8 @@ struct SpotLight
 	float specularity;
 };
 
-StructuredBuffer<SpotLight> SpotLights : register(t3);
-Texture2DArray<float> SpotShadowMaps : register(t4);
+StructuredBuffer<SpotLight> SpotLights : register(t4);
+Texture2DArray<float> SpotShadowMaps : register(t5);
 
 struct PointLight
 {
@@ -37,8 +37,8 @@ struct PointLight
 	float specularity;
 };
 
-StructuredBuffer<PointLight> PointLights : register(t5);
-Texture2DArray<float> PointShadowMaps : register(t6);
+StructuredBuffer<PointLight> PointLights : register(t6);
+Texture2DArray<float> PointShadowMaps : register(t7);
 
 
 // Generic color-clamping algorithm, not mine but it looks good

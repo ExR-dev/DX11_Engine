@@ -138,10 +138,10 @@ bool PointLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 bool PointLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
-	context->CSSetShaderResources(5, 1, &lightBufferSRV);
+	context->CSSetShaderResources(6, 1, &lightBufferSRV);
 
 	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
-	context->CSSetShaderResources(6, 1, &shadowMapSRV);
+	context->CSSetShaderResources(7, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -149,10 +149,10 @@ bool PointLightCollectionD3D11::BindCSBuffers(ID3D11DeviceContext *context) cons
 bool PointLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
 {
 	ID3D11ShaderResourceView *const lightBufferSRV = _lightBuffer.GetSRV();
-	context->PSSetShaderResources(5, 1, &lightBufferSRV);
+	context->PSSetShaderResources(6, 1, &lightBufferSRV);
 
 	ID3D11ShaderResourceView *const shadowMapSRV = _shadowMaps.GetSRV();
-	context->PSSetShaderResources(6, 1, &shadowMapSRV);
+	context->PSSetShaderResources(7, 1, &shadowMapSRV);
 
 	return true;
 }
@@ -160,7 +160,7 @@ bool PointLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) cons
 bool PointLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->CSSetShaderResources(5, 2, nullSRV);
+	context->CSSetShaderResources(6, 2, nullSRV);
 
 	return true;
 }
@@ -168,7 +168,7 @@ bool PointLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) co
 bool PointLightCollectionD3D11::UnbindPSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->PSSetShaderResources(5, 2, nullSRV);
+	context->PSSetShaderResources(6, 2, nullSRV);
 
 	return true;
 }
@@ -207,12 +207,12 @@ const D3D11_VIEWPORT &PointLightCollectionD3D11::GetViewport() const
 
 bool PointLightCollectionD3D11::IsEnabled(const UINT lightIndex, const UCHAR cameraIndex) const
 {
-	return (_shadowCameraCubes.at(lightIndex).isEnabledFlag & ((UCHAR)0b000001 << cameraIndex)) > 0;
+	return (_shadowCameraCubes.at(lightIndex).isEnabledFlag & (static_cast<UCHAR>(0b000001) << cameraIndex)) > 0;
 }
 
 void PointLightCollectionD3D11::SetEnabled(const UINT lightIndex, const UCHAR cameraIndex, const bool state)
 {
 	if (IsEnabled(lightIndex, cameraIndex) == state) return;
-	_shadowCameraCubes.at(lightIndex).isEnabledFlag += (state ? 1 : -1) * ((UCHAR)0b000001 << cameraIndex);
+	_shadowCameraCubes.at(lightIndex).isEnabledFlag += (state ? 1 : -1) * (static_cast<UCHAR>(0b000001) << cameraIndex);
 }
 

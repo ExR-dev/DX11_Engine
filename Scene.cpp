@@ -89,11 +89,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 20.0f, 0.0f },		// initialPosition
-				{ 10.0f, 10.0f, 10.0f },	// color
+				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
-				1.0f,						// falloff
+				0.75f,						// falloff
 				512.0f,						// specularity
 				0.1f,						// projectionNearZ
 				25.0f						// projectionFarZ
@@ -155,10 +155,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = content->GetTextureMapID("TexMap_Gray_Specular"),
 			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, heightID, reflectiveID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, heightID, ambientID, reflectiveID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
@@ -175,10 +176,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = content->GetTextureMapID("TexMap_Gray_Specular"),
 			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
@@ -197,10 +199,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = CONTENT_LOAD_ERROR,
 			reflectiveID = content->GetTextureMapID("TexMap_White_Reflective"),
+			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize reflective sphere object!");
 			return false;
@@ -217,10 +220,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = content->GetTextureMapID("TexMap_Cobble_Normal"),
 			specularID = content->GetTextureMapID("TexMap_Cobble_Specular"),
 			reflectiveID = content->GetTextureMapID("TexMap_Cobble_Reflective"),
+			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = content->GetTextureMapID("TexMap_Cobble_Height");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize PBR object!");
 			return false;
@@ -228,6 +232,27 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 2.5f, -7.5f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f, 0 });
+	}
+	
+	// Create specular sphere
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_White"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = content->GetTextureMapID("TexMap_Test_Specular"),
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = CONTENT_LOAD_ERROR,
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize specular object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 6.0f, 7.5f, 0 });
 	}
 
 	// Create error
@@ -238,10 +263,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = CONTENT_LOAD_ERROR,
 			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Fallback"),
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
@@ -260,10 +286,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
 			specularID = content->GetTextureMapID("TexMap_Bricks_Specular"),
 			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = CONTENT_LOAD_ERROR,
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, heightID, true))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
 			return false;

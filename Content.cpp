@@ -270,7 +270,15 @@ UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const
 
 	switch (mapType)
 	{
-		case TextureType::SPECULAR:
+		case TextureType::HEIGHT:
+			textureDesc.Format = DXGI_FORMAT_R8_UNORM;
+			srData.SysMemPitch = width * sizeof(unsigned char);
+
+			for (size_t i = 0; i < texData.size(); i += 4)
+				texMapData.push_back(texData.at(i));
+			break;
+
+		case TextureType::REFLECTIVE:
 			textureDesc.Format = DXGI_FORMAT_R8_UNORM;
 			srData.SysMemPitch = width * sizeof(unsigned char);
 

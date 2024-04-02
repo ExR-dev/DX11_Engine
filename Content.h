@@ -18,7 +18,7 @@ struct MaterialProperties
 	int sampleNormal; // Use normal map if greater than zero.
 	int sampleSpecular; // Use specular map if greater than zero.
 	int sampleReflection; // Use reflection map & environment cubemap if greater than zero.
-	float padding[1];
+	int sampleAmbient; // Use ambient map if greater than zero.
 };
 
 

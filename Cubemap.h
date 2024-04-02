@@ -8,7 +8,7 @@
 #include "Time.h"
 
 
-constexpr UINT G_BUFFER_COUNT = 3;
+constexpr UINT G_BUFFER_COUNT = 4;
 
 
 class Cubemap
