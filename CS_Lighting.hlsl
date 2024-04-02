@@ -46,12 +46,23 @@ cbuffer CameraData : register(b1)
 	float4 cam_position;
 };
 
+
 // Generic color-clamping algorithm, not mine but it looks good
 float3 ACESFilm(const float3 x)
 {
 	return clamp((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f), 0.0f, 1.0f);
 }
 
+void BlinnPhong(float3 toLightDir, float3 viewDir, float3 normal, float3 lightCol, float specularity, out float3 diffuse, out float3 specular)
+{
+	const float3 halfwayDir = normalize(toLightDir + viewDir);
+		
+	float directionScalar = max(dot(normal, toLightDir), 0.0f);
+	diffuse = lightCol * directionScalar;
+	
+	const float specFactor = pow(max(dot(normal, halfwayDir), 0.0f), specularity);
+	specular = lightCol * directionScalar * smoothstep(0.0f, 1.0f, specFactor);
+}
 
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -95,22 +106,18 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 		const float3
 			toLight = light.position - pos,
-			toLightDir = normalize(toLight),
-			halfwayDir = normalize(toLightDir + viewDir);
+			toLightDir = normalize(toLight);
 		
 		const float
 			inverseLightDistSqr = 1.0f / (1.0f + (pow(toLight.x * light.falloff, 2) + pow(toLight.y * light.falloff, 2) + pow(toLight.z * light.falloff, 2))),
 			maxOffsetAngle = light.angle * 0.5f,
 			lightDirOffset = dot(-toLightDir, light.direction),
 			offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));
-		
 
-		// Calculate Blinn-Phong shading
-		float directionScalar = max(dot(norm, toLightDir), 0.0f);
-		const float3 diffuseLightCol = light.color.xyz * directionScalar;
-		
-		const float specFactor = pow(max(dot(norm, halfwayDir), 0.0f), specularity);
-		const float3 specularLightCol = specularCol * directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor);
+
+		float3 diffuseLightCol, specularLightCol;
+		BlinnPhong(toLightDir, viewDir, norm, light.color.xyz, specularity, diffuseLightCol, specularLightCol);
+		specularLightCol *= specularCol;
 
 
 		// Calculate shadow projection
@@ -173,8 +180,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 		const float3
 			toLight = light.position - pos,
-			toLightDir = normalize(toLight),
-			halfwayDir = normalize(toLightDir + viewDir);
+			toLightDir = normalize(toLight);
 		
 		const float inverseLightDistSqr = 1.0f / (1.0f + (
 			pow(toLight.x * light.falloff, 2) + 
@@ -183,12 +189,9 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		));
 		
 
-		// Calculate Blinn-Phong shading
-		float directionScalar = max(dot(norm, toLightDir), 0.0f);
-		const float3 diffuseLightCol = light.color.xyz * directionScalar;
-		
-		const float specFactor = pow(max(dot(norm, halfwayDir), 0.0f), specularity);
-		const float3 specularLightCol = specularCol * directionScalar * specularity * smoothstep(0.0f, 1.0f, specFactor);
+		float3 diffuseLightCol, specularLightCol;
+		BlinnPhong(toLightDir, viewDir, norm, light.color.xyz, specularity, diffuseLightCol, specularLightCol);
+		specularLightCol *= specularCol;
 
 
 		// Calculate shadow projection
@@ -235,6 +238,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	}
 
 
-	const float3 result = ACESFilm(ambientCol + diffuseCol * totalDiffuseLight + totalSpecularLight);
+	totalDiffuseLight *= diffuseCol;
+	const float3 result = ACESFilm(ambientCol + totalDiffuseLight + totalSpecularLight);
 	BackBufferUAV[DTid.xy] = float4(lerp(result, reflection, reflectivity), 1.0f);
 }

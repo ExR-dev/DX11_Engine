@@ -60,7 +60,7 @@ PixelShaderOutput main(PixelShaderInput input)
 	output.position = float4(input.world_position.xyz, specularity.x);
 	output.normal	= float4(normal, specularity.y);
 	output.ambient	= float4(ambient, specularity.z);
-	output.diffuse = float4(diffuse, (float) ((uint) (specularity.w * 255.0f * max(max(specularity.x, specularity.y), specularity.z))) + reflectivity * 0.99f);
+	output.diffuse = float4(diffuse, (float)((uint) (specularity.w * 512.0f)) + reflectivity * 0.99f);
 
 	return output;
 }

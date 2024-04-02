@@ -52,36 +52,36 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		1024,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
-				{ 4.0f, 2.0f, 0.0f },		// initialPosition
+				{ 4.0f, 2.5f, 0.0f },		// initialPosition
 				{ 15.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
-				0.75f,						// falloff
+				1.0f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 6.0f, 0.0f },		// initialPosition
+				{ 0.0f, 6.5f, 0.0f },		// initialPosition
 				{ 0.0f, 15.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
-				0.75f,						// falloff
+				1.0f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
 
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 2.0f, 4.0f },		// initialPosition
+				{ 0.0f, 2.5f, 4.0f },		// initialPosition
 				{ 0.0f, 0.0f, 15.0f },		// color
 				XM_PI,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
-				0.75f,						// falloff
+				1.0f,						// falloff
 				32.0f,						// specularity
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
@@ -153,7 +153,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Room"),
 			textureID = content->GetTextureID("Tex_texture1"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = content->GetTextureMapID("TexMap_Gray_Specular"),
+			specularID = CONTENT_LOAD_ERROR,
 			reflectiveID = CONTENT_LOAD_ERROR,
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
@@ -240,7 +240,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_Sphere"),
 			textureID = content->GetTextureID("Tex_White"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = content->GetTextureMapID("TexMap_Test_Specular"),
+			specularID = content->GetTextureMapID("TexMap_White_Specular"),
 			reflectiveID = CONTENT_LOAD_ERROR,
 			ambientID = CONTENT_LOAD_ERROR,
 			heightID = CONTENT_LOAD_ERROR;
@@ -327,15 +327,21 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	if (!_initialized)
 		return false;
 
+	static bool rotateLights = false;
+	if (input.GetKey(KeyCode::G) == KeyState::Pressed)
+		rotateLights = !rotateLights;
 
-	_spotlights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
-	_spotlights->GetLightCamera(0)->MoveUp(time.deltaTime * 1.5f);
+	if (rotateLights)
+	{
+		_spotlights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
+		_spotlights->GetLightCamera(0)->MoveUp(time.deltaTime * 2.0f);
 
-	_spotlights->GetLightCamera(1)->LookY(time.deltaTime * 0.5f);
-	_spotlights->GetLightCamera(1)->MoveUp(time.deltaTime * 1.5f);
+		_spotlights->GetLightCamera(1)->LookY(time.deltaTime * 0.5f);
+		_spotlights->GetLightCamera(1)->MoveUp(time.deltaTime * 2.0f);
 
-	_spotlights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f);
-	_spotlights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f);
+		_spotlights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f);
+		_spotlights->GetLightCamera(2)->MoveRight(time.deltaTime * -2.0f);
+	}
 	
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
