@@ -39,22 +39,15 @@ HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
 	uint patchID : SV_PrimitiveID)
 {
 	HS_CONSTANT_DATA_OUTPUT output;
-
-	/*const float
-		r = 1.2f,
-		d = 0.75f,
-		h = 8.0f,
-		t = 3.0f;*/
+	
+	const float
+		d = 0.8f,
+		h = 6.0f,
+		t = 16.0f;
 
 	const float
-		r = 2.0f,
-		d = 0.75f,
-		h = 8.0f,
-		t = 3.0f;
-
-	const float
-		dist = distance(camPos, objPos),
-		tessFactor = clamp((((h - d) * t) / (pow(dist, r) + t)) + d, 1, h);
+		distSqr = pow(camPos.x - objPos.x, 2) + pow(camPos.y - objPos.y, 2) + pow(camPos.z - objPos.z, 2),
+		tessFactor = clamp((h - d) * t / (distSqr + t) + d, 1, h);
 
 	output.EdgeTessFactor[0] = tessFactor;
 	output.EdgeTessFactor[1] = tessFactor;

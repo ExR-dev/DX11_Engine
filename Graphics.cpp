@@ -15,11 +15,11 @@
 
 Graphics::~Graphics()
 {
-	if (_wireframeRasterizer != nullptr)
-		_wireframeRasterizer->Release();
-
 	if (_shadowRasterizer != nullptr)
 		_shadowRasterizer->Release();
+
+	if (_wireframeRasterizer != nullptr)
+		_wireframeRasterizer->Release();
 
 	if (_defaultRasterizer != nullptr)
 		_defaultRasterizer->Release();
@@ -97,7 +97,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	rasterizerDesc.DepthBias = 0;
 	rasterizerDesc.DepthBiasClamp = 0;
 	rasterizerDesc.SlopeScaledDepthBias = 0;
-	rasterizerDesc.DepthClipEnable = false;
+	rasterizerDesc.DepthClipEnable = true;
 	rasterizerDesc.ScissorEnable = false;
 	rasterizerDesc.MultisampleEnable = false;
 	rasterizerDesc.AntialiasedLineEnable = false;
@@ -108,25 +108,25 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 		return false;
 	}
 
-	rasterizerDesc.DepthBias = -1;
-	rasterizerDesc.DepthBiasClamp = -0.01f;
-	rasterizerDesc.SlopeScaledDepthBias = -3.0f;
-
-	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_shadowRasterizer)))
-	{
-		ErrMsg("Failed to create shadow rasterizer state!");
-		return false;
-	}
-
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	rasterizerDesc.DepthBias = 0;
-	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
 
 	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_wireframeRasterizer)))
 	{
 		ErrMsg("Failed to create wireframe rasterizer state!");
+		return false;
+	}
+
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.DepthBias = -1;
+	rasterizerDesc.DepthBiasClamp = -0.01f;
+	rasterizerDesc.SlopeScaledDepthBias = -3.0f;
+	rasterizerDesc.DepthClipEnable = false;
+
+	if (FAILED(device->CreateRasterizerState(&rasterizerDesc, &_shadowRasterizer)))
+	{
+		ErrMsg("Failed to create shadow rasterizer state!");
 		return false;
 	}
 

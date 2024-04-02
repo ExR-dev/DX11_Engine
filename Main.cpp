@@ -27,23 +27,28 @@ int APIENTRY wWinMain(
 		return -1;
 	}
 
+	Time time = { };
+	Input input = { };
+	MSG msg = { };
+
 	Game game = { };
-	if (!game.Setup(WIDTH, HEIGHT, window))
+	if (!game.Setup(time, WIDTH, HEIGHT, window))
 	{
 		ErrMsg("Failed to setup graphics!");
 		return -1;
 	}
+	ErrMsg(std::format("Mesh Load: {} s", time.CompareSnapshots("LoadMeshes")));
+	ErrMsg(std::format("Texture Load: {} s", time.CompareSnapshots("LoadTextures")));
+	ErrMsg(std::format("Texture Map Load: {} s", time.CompareSnapshots("LoadTextureMaps")));
+	ErrMsg(std::format("Shader Load: {} s", time.CompareSnapshots("LoadShaders")));
 
 	Scene scene = { };
-	if (!game.SetScene(&scene))
+	if (!game.SetScene(time, &scene))
 	{
 		ErrMsg("Failed to set scene!");
 		return -1;
 	}
 	
-	Time time = { };
-	Input input = { };
-	MSG msg = { };
 
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{

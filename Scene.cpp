@@ -49,11 +49,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		512,
+		1024,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
 				{ 4.0f, 2.0f, 0.0f },		// initialPosition
-				{ 15.0f, 0.0f, 0.0f },	// color
+				{ 15.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
@@ -65,7 +65,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 6.0f, 0.0f },		// initialPosition
-				{ 0.0f, 15.0f, 0.0f },	// color
+				{ 0.0f, 15.0f, 0.0f },		// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
@@ -77,7 +77,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 			SpotLightData::PerLightInfo {
 				{ 0.0f, 2.0f, 4.0f },		// initialPosition
-				{ 0.0f, 0.0f, 15.0f },	// color
+				{ 0.0f, 0.0f, 15.0f },		// color
 				XM_PI,						// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
@@ -88,7 +88,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			},
 			
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },	// initialPosition
+				{ 0.0f, 20.0f, 0.0f },		// initialPosition
 				{ 10.0f, 10.0f, 10.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
@@ -113,7 +113,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		512,
 		std::vector<PointLightData::PerLightInfo> {
 			PointLightData::PerLightInfo {
-				{ 7.0f, 5.0f, -9.0f },		// initialPosition
+				{ 7.0f, 5.0f, -9.0f },			// initialPosition
 				{ 15.0f, 15.0f, 15.0f },		// color
 				3.0f,							// falloff
 				32.0f,							// specularity
@@ -123,7 +123,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 			PointLightData::PerLightInfo {
 				{ -6.0f, 24.0f, -14.0f },		// initialPosition
-				{ 0.0f, 20.0f, 15.0f },		// color
+				{ 0.0f, 20.0f, 15.0f },			// color
 				4.0f,							// falloff
 				32.0f,							// specularity
 				0.1f,							// projectionNearZ
@@ -140,7 +140,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 256, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 128, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -301,14 +301,14 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 
-	/*_spotLights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
-	_spotLights->GetLightCamera(0)->MoveUp(time.deltaTime * 1.5f);
+	_spotlights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
+	_spotlights->GetLightCamera(0)->MoveUp(time.deltaTime * 1.5f);
 
-	_spotLights->GetLightCamera(1)->LookY(time.deltaTime * 0.5f);
-	_spotLights->GetLightCamera(1)->MoveUp(time.deltaTime * 1.5f);
+	_spotlights->GetLightCamera(1)->LookY(time.deltaTime * 0.5f);
+	_spotlights->GetLightCamera(1)->MoveUp(time.deltaTime * 1.5f);
 
-	_spotLights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f);
-	_spotLights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f);*/
+	_spotlights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f);
+	_spotlights->GetLightCamera(2)->MoveRight(time.deltaTime * -1.5f);
 	
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
@@ -342,8 +342,13 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 		const UINT transparentStart = _content->GetTextureID("Tex_Transparent");
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 50 random entities
-			for (size_t i = 0; i < 50; i++)
+		{ // Create 25 random entities within the scene bounds
+			const DirectX::BoundingBox sceneBounds = _sceneHolder.GetBounds();
+			const DirectX::XMFLOAT3
+				sceneCenter = sceneBounds.Center,
+				sceneExtents = sceneBounds.Extents;
+
+			for (size_t i = 0; i < 25; i++)
 			{
 				const UINT
 					meshID = rand() % _content->GetMeshCount(),
@@ -361,9 +366,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				}
 
 				reinterpret_cast<Entity *>(obj)->GetTransform()->Move({
-					static_cast<float>((rand() % 2000) - 1000) / 10.0f,
-					static_cast<float>((rand() % 1000)) / 10.0f,
-					static_cast<float>((rand() % 2000) - 1000) / 10.0f,
+					sceneCenter.x + sceneExtents.x * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
+					sceneCenter.y + sceneExtents.y * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
+					sceneCenter.z + sceneExtents.z * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
 					0
 				});
 

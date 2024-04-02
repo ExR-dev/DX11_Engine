@@ -35,8 +35,8 @@ private:
 	D3D11_VIEWPORT _viewport		= { };
 
 	ID3D11RasterizerState *_defaultRasterizer = nullptr;
-	ID3D11RasterizerState *_shadowRasterizer = nullptr;
 	ID3D11RasterizerState *_wireframeRasterizer = nullptr;
+	ID3D11RasterizerState *_shadowRasterizer = nullptr;
 	bool _wireframe = false;
 
 	std::array<RenderTargetD3D11, G_BUFFER_COUNT> _gBuffers;
@@ -65,7 +65,7 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	XMFLOAT4A _ambientColor = { 0.05f, 0.055f, 0.06f, 0.0f };
+	XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
 
 
 	[[nodiscard]] bool RenderToTarget(

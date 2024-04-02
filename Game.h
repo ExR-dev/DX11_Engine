@@ -24,8 +24,8 @@ public:
 	Game();
 	~Game();
 
-	[[nodiscard]] bool Setup(UINT width, UINT height, HWND window);
-	[[nodiscard]] bool SetScene(Scene *scene);
+	[[nodiscard]] bool Setup(Time &time, UINT width, UINT height, HWND window);
+	[[nodiscard]] bool SetScene(Time &time, Scene *scene);
 
 	[[nodiscard]] bool Update(Time &time, const Input &input);
 	[[nodiscard]] bool Render(Time &time, const Input &input);

@@ -11,6 +11,7 @@ SceneHolder::~SceneHolder()
 
 bool SceneHolder::Initialize(const DirectX::BoundingBox &sceneBounds)
 {
+	_bounds = sceneBounds;
 	if (!_volumeTree.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize volume tree!");
@@ -126,6 +127,11 @@ bool SceneHolder::UpdateEntityPosition(Entity *entity)
 
 	_volumeTree.Insert(entity, entityBounds);
 	return true;
+}
+
+const DirectX::BoundingBox& SceneHolder::GetBounds() const
+{
+	return _bounds;
 }
 
 

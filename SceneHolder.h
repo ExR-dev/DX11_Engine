@@ -63,7 +63,8 @@ private:
 		SceneEntity &operator=(SceneEntity &&other) = delete;
 	};
 
-	std::vector<SceneEntity *> _entities;
+	DirectX::BoundingBox _bounds;
+	std::vector<SceneEntity *> _entities; 
 
 	Octree _volumeTree;
 	//Quadtree _volumeTree;
@@ -88,6 +89,7 @@ public:
 
 	[[nodiscard]] bool UpdateEntityPosition(Entity *entity);
 
+	[[nodiscard]] const DirectX::BoundingBox &GetBounds() const;
 	[[nodiscard]] Entity *GetEntity(UINT id) const;
 	[[nodiscard]] UINT GetEntityCount() const;
 	void GetEntities(std::vector<Entity *> entities) const;

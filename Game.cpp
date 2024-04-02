@@ -20,7 +20,7 @@ Game::~Game()
 		_device->Release();
 }
 
-bool Game::Setup(const UINT width, const UINT height, const HWND window)
+bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND window)
 {
 	if (!_graphics.Setup(width, height, window, _device, _immediateContext, &_content))
 	{
@@ -46,12 +46,14 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		"IsoSphereSmooth",
 	};
 
+	time.TakeSnapshot("LoadMeshes");
 	for (const std::string &meshName : meshNames)
 		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add Mesh_{}!", meshName));
 			return false;
 		}
+	time.TakeSnapshot("LoadMeshes");
 
 
 	struct TextureData { std::string name; std::string file; };
@@ -79,6 +81,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ "Particle",						"Particle"						},
 	};
 
+	time.TakeSnapshot("LoadTextures");
 	for (const TextureData &textureName : textureNames)
 		if (_content.AddTexture(_device, std::format("Tex_{}", textureName.name), 
 			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
@@ -86,6 +89,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
 			return false;
 		}
+	time.TakeSnapshot("LoadTextures");
 
 
 	struct TextureMapData { TextureType type; std::string name; std::string file; };
@@ -117,6 +121,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ TextureType::HEIGHT,		"Cobble_Height",				"Cobble_Height"					},
 	};
 
+	time.TakeSnapshot("LoadTextureMaps");
 	for (const TextureMapData &textureMap : textureMapNames)
 		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name), 
 			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
@@ -124,6 +129,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
 			return false;
 		}
+	time.TakeSnapshot("LoadTextureMaps");
 
 
 	struct ShaderData { ShaderType type; std::string name; std::string file; };
@@ -143,12 +149,14 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 		{ ShaderType::COMPUTE_SHADER,		"CS_Particle",			"CS_Particle"			},
 	};
 
+	time.TakeSnapshot("LoadShaders");
 	for (const ShaderData &shader : shaderNames)
 		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add {} shader!", shader.name));
 			return false;
 		}
+	time.TakeSnapshot("LoadShaders");
 
 
 	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
@@ -180,7 +188,7 @@ bool Game::Setup(const UINT width, const UINT height, const HWND window)
 	return true;
 }
 
-bool Game::SetScene(Scene *scene)
+bool Game::SetScene(Time &time, Scene *scene)
 {
 	if (scene == nullptr)
 		return false;
