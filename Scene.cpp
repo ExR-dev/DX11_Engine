@@ -39,7 +39,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create camera
-	if (!_camera->Initialize(device, 
+	if (!_camera->Initialize(device,
 		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
 		{ 0.0f, 2.0f, -2.0f, 0.0f }))
 	{
@@ -47,9 +47,18 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 
+	// Create camera
+	/*if (!_camera->Initialize(device,
+		{ 4.0f, 16.0f / 9.0f, 0.05f, 50.0f }, 
+		{ 0.0f, 2.0f, -2.0f, 0.0f }, true, true))
+	{
+		ErrMsg("Failed to initialize camera!");
+		return false;
+	}*/
+
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		1024,
+		512,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
 				{ 4.0f, 2.5f, 0.0f },		// initialPosition
@@ -140,7 +149,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 128, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 64, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -694,18 +703,40 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	std::vector<Entity *> entitiesToRender;
 	entitiesToRender.reserve(_camera->GetCullCount());
 
-	DirectX::BoundingFrustum viewFrustum;
-	if (!_camera->StoreBounds(viewFrustum))
-	{
-		ErrMsg("Failed to store camera frustum!");
-		return false;
-	}
+	union {
+		DirectX::BoundingFrustum frustum = {};
+		DirectX::BoundingOrientedBox box;
+	} view;
+	bool isOrtho = _camera->GetOrtho();
 
 	time.TakeSnapshot("FrustumCull");
-	if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
+	if (isOrtho)
 	{
-		ErrMsg("Failed to perform frustum culling!");
-		return false;
+		if (!_camera->StoreBounds(view.box))
+		{
+			ErrMsg("Failed to store camera box!");
+			return false;
+		}
+
+		if (!_sceneHolder.BoxCull(view.box, entitiesToRender))
+		{
+			ErrMsg("Failed to perform box culling!");
+			return false;
+		}
+	}
+	else
+	{
+		if (!_camera->StoreBounds(view.frustum))
+		{
+			ErrMsg("Failed to store camera frustum!");
+			return false;
+		}
+
+		if (!_sceneHolder.FrustumCull(view.frustum, entitiesToRender))
+		{
+			ErrMsg("Failed to perform frustum culling!");
+			return false;
+		}
 	}
 
 	for (Entity *ent : entitiesToRender)
@@ -736,7 +767,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				continue;
 			}
 
-			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
+			bool intersectResult = !_cubemap.GetUpdate();
+			if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(spotlightFrustum);
+			else			intersectResult = intersectResult && !view.frustum.Intersects(spotlightFrustum);
+
+			if (intersectResult)
 			{ // Skip rendering if the frustums don't intersect
 				_spotlights->SetEnabled(i, false);
 				continue;
@@ -773,10 +808,14 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				return false;
 			}
 
-			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
+			bool intersectResult = !_cubemap.GetUpdate();
+			if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(spotlightFrustum);
+			else			intersectResult = intersectResult && !view.frustum.Intersects(spotlightFrustum);
+
+			if (intersectResult)
 			{ // Skip rendering if the frustums don't intersect
 				_spotlights->SetEnabled(i, false);
-				continue; 
+				continue;
 			}
 			_spotlights->SetEnabled(i, true);
 
@@ -818,7 +857,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 					continue;
 				}
 
-				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
+				bool intersectResult = !_cubemap.GetUpdate();
+				if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(pointlightFrustum);
+				else			intersectResult = intersectResult && !view.frustum.Intersects(pointlightFrustum);
+
+				if (intersectResult)
 				{ // Skip rendering if the frustums don't intersect
 					_pointlights->SetEnabled(i, j, false);
 					continue;
@@ -858,7 +901,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 					return false;
 				}
 
-				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
+				bool intersectResult = !_cubemap.GetUpdate();
+				if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(pointlightFrustum);
+				else			intersectResult = intersectResult && !view.frustum.Intersects(pointlightFrustum);
+
+				if (intersectResult)
 				{ // Skip rendering if the frustums don't intersect
 					_pointlights->SetEnabled(i, j, false);
 					continue;
@@ -930,13 +977,13 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				entitiesToRender.clear();
 				entitiesToRender.reserve(cubemapCamera->GetCullCount());
 
-				if (!cubemapCamera->StoreBounds(viewFrustum))
+				if (!cubemapCamera->StoreBounds(view.frustum)) // using predefined view frustum to save memory :}
 				{
 					ErrMsg("Failed to store cubemap camera frustum!");
 					return false;
 				}
 
-				if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
+				if (!_sceneHolder.FrustumCull(view.frustum, entitiesToRender))
 				{
 					ErrMsg(std::format("Failed to perform frustum culling for cubemap camera #{}!", i));
 					return false;

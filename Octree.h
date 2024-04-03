@@ -206,6 +206,43 @@ private:
 					break;
 			}
 		}
+
+		void BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems, const UINT depth = 0) const
+		{
+			switch (box.Contains(bounds))
+			{
+				case DISJOINT:
+					return;
+
+				case CONTAINS:
+					AddToVector(containingItems, depth + 1);
+					break;
+
+				case INTERSECTS:
+					if (isLeaf)
+					{
+						for (Entity *item : data)
+						{
+							if (item == nullptr)
+								continue;
+
+							if (std::ranges::find(containingItems, item) == containingItems.end())
+								containingItems.push_back(item);
+						}
+
+						return;
+					}
+
+					for (int i = 0; i < 8; i++)
+					{
+						if (children[i] == nullptr)
+							continue;
+
+						children[i]->BoxCull(box, containingItems, depth + 1);
+					}
+					break;
+			}
+		}
 	};
 
 	std::unique_ptr<Node> _root;
@@ -257,6 +294,15 @@ public:
 			return false;
 
 		_root->FrustumCull(frustum, containingItems);
+		return true;
+	}
+
+	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const
+	{
+		if (_root == nullptr)
+			return false;
+
+		_root->BoxCull(box, containingItems);
 		return true;
 	}
 

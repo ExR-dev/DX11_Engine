@@ -18,7 +18,6 @@ private:
 		{
 			Object *object = nullptr;
 			Emitter *emitter;
-			//Light *item = nullptr;
 		} _item;
 
 		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds, EntityType type)
@@ -34,9 +33,6 @@ private:
 				case EntityType::EMITTER:
 					_item.emitter = new Emitter(id, bounds);
 					break;
-
-				case EntityType::LIGHT:
-					break;
 			}
 		}
 
@@ -50,9 +46,6 @@ private:
 
 				case EntityType::EMITTER:
 					delete _item.emitter;
-					break;
-
-				case EntityType::LIGHT:
 					break;
 			}
 		}
@@ -73,6 +66,11 @@ private:
 
 
 public:
+	enum BoundsType {
+		Frustum		= 0,
+		OrientedBox = 1
+	};
+
 	SceneHolder() = default;
 	~SceneHolder();
 	SceneHolder(const SceneHolder &other) = delete;
@@ -95,4 +93,5 @@ public:
 	void GetEntities(std::vector<Entity *> entities) const;
 
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const;
+	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const;
 };

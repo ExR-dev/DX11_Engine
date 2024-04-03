@@ -193,3 +193,19 @@ bool SceneHolder::FrustumCull(const DirectX::BoundingFrustum &frustum, std::vect
 	return true;
 }
 
+bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const
+{
+	std::vector<Entity *> containingInterfaces;
+	containingInterfaces.reserve(_entities.capacity());
+
+	if (!_volumeTree.BoxCull(box, containingInterfaces))
+	{
+		ErrMsg("Failed to box cull volume tree!");
+		return false;
+	}
+
+	for (Entity *iEnt : containingInterfaces)
+		containingItems.push_back(iEnt);
+
+	return true;
+}
