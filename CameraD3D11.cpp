@@ -12,9 +12,9 @@ using namespace DirectX;
 #define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
 
 
-CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer)
+CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer, const bool isOrtho)
 {
-	if (!Initialize(device, projectionInfo, initialPosition, hasCSBuffer))
+	if (!Initialize(device, projectionInfo, initialPosition, hasCSBuffer, isOrtho))
 		ErrMsg("Failed to initialize camera buffer in camera constructor!");
 }
 
@@ -25,8 +25,9 @@ CameraD3D11::~CameraD3D11()
 }
 
 
-bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer)
+bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer, const bool isOrtho)
 {
+	_ortho = isOrtho;
 	_currProjInfo = _defaultProjInfo = projectionInfo;
 	_transform.SetPosition(initialPosition);
 
@@ -55,8 +56,32 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 		}
 	}
 
-	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	if (_ortho)
+	{
+		const float
+			nearZ = _currProjInfo.nearZ,
+			farZ = _currProjInfo.farZ,
+			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			height = 0.5f * _currProjInfo.fovAngleY;
+
+		const XMFLOAT3 corners[8] = {
+			XMFLOAT3(-width, -height, nearZ),
+			XMFLOAT3(width, -height, nearZ),
+			XMFLOAT3(-width,  height, nearZ),
+			XMFLOAT3(width,  height, nearZ),
+			XMFLOAT3(-width, -height, farZ),
+			XMFLOAT3(width, -height, farZ),
+			XMFLOAT3(-width,  height, farZ),
+			XMFLOAT3(width,  height, farZ)
+		};
+
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+	}
+	else
+	{
+		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+	}
 
 	return true;
 }
@@ -71,7 +96,7 @@ void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
 		0.0f
 	});
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
@@ -83,7 +108,7 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 		0.0f
 	});
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 
@@ -91,21 +116,21 @@ void CameraD3D11::MoveForward(const float amount)
 {
 	MoveLocal(amount, { 0.0f, 0.0f, 1.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveRight(const float amount)
 {
 	MoveLocal(amount, { 1.0f, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveUp(const float amount)
 {
 	MoveLocal(amount, { 0.0f, 1.0f, 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 
@@ -113,21 +138,21 @@ void CameraD3D11::RotateRoll(const float amount)
 {
 	_transform.RotateLocal({ 0.0f, 0.0f, amount, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::RotatePitch(const float amount)
 {
 	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::RotateYaw(const float amount)
 {
 	_transform.RotateLocal({ 0.0f, amount, 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 
@@ -135,25 +160,49 @@ void CameraD3D11::LookX(const float amount)
 {
 	_transform.Rotate({ 0.0f, amount * (XMVectorGetX(XMVector3Dot(TO_CONST_VEC(_transform.GetUp()), {0, 1, 0, 0})) > 0.0f ? 1.0f : -1.0f), 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 void CameraD3D11::LookY(const float amount)
 {
 	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
-void CameraD3D11::SetFOV(float amount)
+void CameraD3D11::SetFOV(const float amount)
 {
 	_currProjInfo.fovAngleY = amount;
 
-	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	if (_ortho)
+	{
+		const float
+			nearZ = _currProjInfo.nearZ,
+			farZ = _currProjInfo.farZ,
+			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			height = 0.5f * _currProjInfo.fovAngleY;
+
+		const XMFLOAT3 corners[8] = {
+			XMFLOAT3(-width, -height, nearZ),
+			XMFLOAT3(width, -height, nearZ),
+			XMFLOAT3(-width,  height, nearZ),
+			XMFLOAT3(width,  height, nearZ),
+			XMFLOAT3(-width, -height, farZ),
+			XMFLOAT3(width, -height, farZ),
+			XMFLOAT3(-width,  height, farZ),
+			XMFLOAT3(width,  height, farZ)
+		};
+
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+	}
+	else
+	{
+		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+	}
 
 	_isDirty = true;
-	_recalculateFrustum = true;
+	_recalculateBounds = true;
 }
 
 
@@ -181,12 +230,26 @@ XMFLOAT4X4A CameraD3D11::GetViewMatrix() const
 
 XMFLOAT4X4A CameraD3D11::GetProjectionMatrix() const
 {
-	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(
-		_currProjInfo.fovAngleY,
-		_currProjInfo.aspectRatio,
-		_currProjInfo.nearZ,
-		_currProjInfo.farZ
-	);
+	XMMATRIX projectionMatrix;
+
+	if (_ortho)
+	{
+		projectionMatrix = XMMatrixOrthographicLH(
+			_currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			_currProjInfo.fovAngleY,
+			_currProjInfo.nearZ,
+			_currProjInfo.farZ
+		);
+	}
+	else
+	{
+		projectionMatrix = XMMatrixPerspectiveFovLH(
+			_currProjInfo.fovAngleY,
+			_currProjInfo.aspectRatio,
+			_currProjInfo.nearZ,
+			_currProjInfo.farZ
+		);
+	}
 
 	return *reinterpret_cast<XMFLOAT4X4A *>(&projectionMatrix);
 }
@@ -207,13 +270,19 @@ XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
 				TO_VEC(cPos),
 				TO_VEC(cPos) + TO_VEC(cFwd),
 				TO_VEC(cUp)
-			) *
+			) * (_ortho ? 
+			XMMatrixOrthographicLH(
+				_currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+				_currProjInfo.fovAngleY,
+				_currProjInfo.farZ,
+				_currProjInfo.nearZ
+			) :
 			XMMatrixPerspectiveFovLH(
 				_currProjInfo.fovAngleY,
 				_currProjInfo.aspectRatio,
 				_currProjInfo.farZ,
 				_currProjInfo.nearZ
-			)
+			))
 		)
 	);
 
@@ -259,12 +328,38 @@ bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 		return false;
 	}
 
-	XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-	DirectX::BoundingFrustum::CreateFromMatrix(_frustum, *reinterpret_cast<XMMATRIX *>(&projMatrix));
+	if (_ortho)
+	{
+		const float
+			nearZ = _currProjInfo.nearZ,
+			farZ = _currProjInfo.farZ,
+			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			height = 0.5f * _currProjInfo.fovAngleY;
 
-	_isDirty = true;
+		const XMFLOAT3 corners[8] = {
+			XMFLOAT3( -width, -height, nearZ ),
+			XMFLOAT3(  width, -height, nearZ ),
+			XMFLOAT3( -width,  height, nearZ ),
+			XMFLOAT3(  width,  height, nearZ ),
+			XMFLOAT3( -width, -height, farZ  ),
+			XMFLOAT3(  width, -height, farZ  ),
+			XMFLOAT3( -width,  height, farZ  ),
+			XMFLOAT3(  width,  height, farZ  )
+		};
+
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+	}
+	else
+	{
+		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+	}
+
 	if (abs(currNear - _currProjInfo.nearZ) + abs(currFar - _currProjInfo.farZ) > 0.01f)
-		_recalculateFrustum = true;
+	{
+		_isDirty = true;
+		_recalculateBounds = true;
+	}
 	return true;
 }
 
@@ -367,15 +462,34 @@ bool CameraD3D11::BindMainBuffers(ID3D11DeviceContext *context) const
 }
 
 
-void CameraD3D11::StoreFrustum(DirectX::BoundingFrustum &frustum)
+bool CameraD3D11::StoreBounds(BoundingFrustum &bounds)
 {
-	if (_recalculateFrustum)
+	if (_ortho)
+		return false;
+
+	if (_recalculateBounds)
 	{
-		_frustum.Transform(_transformedFrustum, _transform.GetWorldMatrix());
-		_recalculateFrustum = false;
+		_bounds.perspective.Transform(_transformedBounds.perspective, _transform.GetWorldMatrix());
+		_recalculateBounds = false;
 	}
 
-	frustum = _transformedFrustum;
+	bounds = _transformedBounds.perspective;
+	return true;
+}
+
+bool CameraD3D11::StoreBounds(BoundingOrientedBox &bounds)
+{
+	if (!_ortho)
+		return false;
+
+	if (_recalculateBounds)
+	{
+		_bounds.ortho.Transform(_transformedBounds.ortho, _transform.GetWorldMatrix());
+		_recalculateBounds = false;
+	}
+
+	bounds = _transformedBounds.ortho;
+	return true;
 }
 
 
@@ -428,6 +542,11 @@ const std::multimap<ResourceGroup, RenderInstance> &CameraD3D11::GetParticleQueu
 	return _particleRenderQueue;
 }
 
+
+bool CameraD3D11::GetOrtho() const
+{
+	return _ortho;
+}
 
 const Transform &CameraD3D11::GetTransform() const 
 {

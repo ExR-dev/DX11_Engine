@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-//#include <array>
 #include <map>
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
@@ -25,29 +24,6 @@ struct GeometryBufferData
 	DirectX::XMFLOAT4X4A viewMatrix;
 	DirectX::XMFLOAT4A position;
 };
-
-/*struct LightingBufferData
-{
-	float lightPos[4];
-	float ambCol[4];
-	float diffCol[4];
-	float specCol[4];
-
-	LightingBufferData(
-		const std::array<float, 4> &lightPosition, 
-		const std::array<float, 4> &ambientColour, 
-		const std::array<float, 4> &diffuseColour, 
-		const std::array<float, 4> &specularColour)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			lightPos[i] = lightPosition[i];
-			ambCol[i] = ambientColour[i];
-			diffCol[i] = diffuseColour[i];
-			specCol[i] = specularColour[i];
-		}
-	}
-};*/
 
 
 struct ResourceGroup
@@ -97,10 +73,19 @@ class CameraD3D11
 private:
 	Transform _transform;
 	ProjectionInfo _defaultProjInfo, _currProjInfo;
+	bool _ortho = false;
 
-	DirectX::BoundingFrustum _frustum;
-	DirectX::BoundingFrustum _transformedFrustum;
-	bool _recalculateFrustum = true;
+	union
+	{
+		DirectX::BoundingFrustum perspective = {};
+		DirectX::BoundingOrientedBox ortho;
+	} _bounds;
+	union
+	{
+		DirectX::BoundingFrustum perspective = {};
+		DirectX::BoundingOrientedBox ortho;
+	} _transformedBounds;
+	bool _recalculateBounds = true;
 
 	ConstantBufferD3D11 _viewProjBuffer;
 	ConstantBufferD3D11 *_viewProjPosBuffer = nullptr;
@@ -116,7 +101,8 @@ private:
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), 
+		bool hasCSBuffer = true, bool isOrtho = false);
 	~CameraD3D11();
 	CameraD3D11(const CameraD3D11 &other) = delete;
 	CameraD3D11 &operator=(const CameraD3D11 &other) = delete;
@@ -124,7 +110,7 @@ public:
 	CameraD3D11 &operator=(CameraD3D11 &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true);
+		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true, bool isOrtho = false);
 
 	void Move(float amount, const DirectX::XMFLOAT4A &direction);
 	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
@@ -162,7 +148,8 @@ public:
 	[[nodiscard]] bool BindViewBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindMainBuffers(ID3D11DeviceContext *context) const;
 
-	void StoreFrustum(DirectX::BoundingFrustum &frustum);
+	[[nodiscard]] bool StoreBounds(DirectX::BoundingFrustum &bounds);
+	[[nodiscard]] bool StoreBounds(DirectX::BoundingOrientedBox &bounds);
 
 	void QueueGeometry(const ResourceGroup &resources, const RenderInstance &instance);
 	void QueueTransparent(const ResourceGroup &resources, const RenderInstance &instance);
@@ -174,6 +161,7 @@ public:
 	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetTransparentQueue() const;
 	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetParticleQueue() const;
 
+	[[nodiscard]] bool GetOrtho() const;
 	[[nodiscard]] const Transform &GetTransform() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraGSBuffer() const;

@@ -695,7 +695,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	entitiesToRender.reserve(_camera->GetCullCount());
 
 	DirectX::BoundingFrustum viewFrustum;
-	_camera->StoreFrustum(viewFrustum);
+	if (!_camera->StoreBounds(viewFrustum))
+	{
+		ErrMsg("Failed to store camera frustum!");
+		return false;
+	}
 
 	time.TakeSnapshot("FrustumCull");
 	if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
@@ -726,7 +730,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
 			DirectX::BoundingFrustum spotlightFrustum;
-			spotlightCamera->StoreFrustum(spotlightFrustum);
+			if (!spotlightCamera->StoreBounds(spotlightFrustum))
+			{
+				ErrMsg("Failed to store spotlight camera frustum!");
+				continue;
+			}
 
 			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
@@ -759,7 +767,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
 			DirectX::BoundingFrustum spotlightFrustum;
-			spotlightCamera->StoreFrustum(spotlightFrustum);
+			if (!spotlightCamera->StoreBounds(spotlightFrustum))
+			{
+				ErrMsg("Failed to store spotlight camera frustum!");
+				return false;
+			}
 
 			if (!viewFrustum.Intersects(spotlightFrustum) && !_cubemap.GetUpdate())
 			{ // Skip rendering if the frustums don't intersect
@@ -800,7 +812,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
 
 				DirectX::BoundingFrustum pointlightFrustum;
-				pointlightCamera->StoreFrustum(pointlightFrustum);
+				if (!pointlightCamera->StoreBounds(pointlightFrustum))
+				{
+					ErrMsg("Failed to store pointlight camera frustum!");
+					continue;
+				}
 
 				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
 				{ // Skip rendering if the frustums don't intersect
@@ -836,7 +852,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
 
 				DirectX::BoundingFrustum pointlightFrustum;
-				pointlightCamera->StoreFrustum(pointlightFrustum);
+				if (!pointlightCamera->StoreBounds(pointlightFrustum))
+				{
+					ErrMsg("Failed to store pointlight camera frustum!");
+					return false;
+				}
 
 				if (!viewFrustum.Intersects(pointlightFrustum) && !_cubemap.GetUpdate())
 				{ // Skip rendering if the frustums don't intersect
@@ -881,7 +901,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				entitiesToReflect.clear();
 				entitiesToReflect.reserve(cubemapCamera->GetCullCount());
 
-				cubemapCamera->StoreFrustum(cubemapViewFrustum);
+				if (!cubemapCamera->StoreBounds(cubemapViewFrustum))
+				{
+					ErrMsg("Failed to store cubemap camera frustum!");
+					continue;
+				}
 
 				if (!_sceneHolder.FrustumCull(cubemapViewFrustum, entitiesToReflect))
 				{
@@ -906,7 +930,11 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				entitiesToRender.clear();
 				entitiesToRender.reserve(cubemapCamera->GetCullCount());
 
-				cubemapCamera->StoreFrustum(viewFrustum);
+				if (!cubemapCamera->StoreBounds(viewFrustum))
+				{
+					ErrMsg("Failed to store cubemap camera frustum!");
+					return false;
+				}
 
 				if (!_sceneHolder.FrustumCull(viewFrustum, entitiesToRender))
 				{
