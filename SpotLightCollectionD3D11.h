@@ -27,7 +27,7 @@ struct SpotLightData
 		float rotationY	= 0.0f;
 		float angle	= 0.0f;
 		float falloff = 0.0f;
-		float specularity = 0.0f;
+		bool orthographic = false;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
 	};
@@ -52,7 +52,7 @@ private:
 		XMFLOAT3 color = { };
 		float angle = 0.0f;
 		float falloff = 0.0f;
-		float specularity = 0.0f;
+		int orthographic = -1;
 	};
 
 	std::vector<LightBuffer> _bufferData;

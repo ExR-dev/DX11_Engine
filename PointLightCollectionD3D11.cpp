@@ -55,7 +55,6 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 			lightBuffer.position = iLightInfo.initialPosition;
 			lightBuffer.color = iLightInfo.color;
 			lightBuffer.falloff = iLightInfo.falloff;
-			lightBuffer.specularity = iLightInfo.specularity;
 
 			_bufferData.push_back(lightBuffer);
 		}

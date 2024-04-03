@@ -24,7 +24,6 @@ struct PointLightData
 		XMFLOAT3 initialPosition;
 		XMFLOAT3 color;
 		float falloff = 0.0f;
-		float specularity = 0.0f;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
 	};
@@ -48,7 +47,7 @@ private:
 		XMFLOAT3 position = { };
 		XMFLOAT3 color = { };
 		float falloff = 0.0f;
-		float specularity = 0.0f;
+		float padding = 0.0f;
 	};
 
 	std::vector<LightBuffer> _bufferData;

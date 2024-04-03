@@ -20,7 +20,7 @@ struct SpotLight
 	float3 color;
 	float angle;
 	float falloff;
-	float specularity;
+	int orthographic;
 };
 
 StructuredBuffer<SpotLight> SpotLights : register(t4);
@@ -32,7 +32,7 @@ struct PointLight
 	float3 position;
 	float3 color;
 	float falloff;
-	float specularity;
+	float padding;
 };
 
 StructuredBuffer<PointLight> PointLights : register(t6);
@@ -109,10 +109,16 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			toLightDir = normalize(toLight);
 		
 		const float
-			inverseLightDistSqr = 1.0f / (1.0f + (pow(toLight.x * light.falloff, 2) + pow(toLight.y * light.falloff, 2) + pow(toLight.z * light.falloff, 2))),
-			maxOffsetAngle = light.angle * 0.5f,
-			lightDirOffset = dot(-toLightDir, light.direction),
-			offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));
+			projectedDist = dot(light.direction, -toLight),
+			inverseLightDistSqr = light.orthographic > 0 ?
+			(projectedDist > 0.0f ? 1.0f : 0.0f) * (1.0f / (1.0f + pow(projectedDist, 2))) :
+			1.0f / (1.0f + (pow(toLight.x * light.falloff, 2) + pow(toLight.y * light.falloff, 2) + pow(toLight.z * light.falloff, 2)));
+
+		const float offsetAngle = saturate(1.0f - (
+			light.orthographic > 0 ? 
+			length(cross(light.direction, toLight)) : 
+			acos(dot(-toLightDir, light.direction))
+			) / (light.angle * 0.5f));
 
 
 		float3 diffuseLightCol, specularLightCol;

@@ -60,14 +60,14 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const SpotLightData spotlightInfo = {
 		512,
 		std::vector<SpotLightData::PerLightInfo> {
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 4.0f, 2.5f, 0.0f },		// initialPosition
 				{ 15.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				32.0f,						// specularity
+				false,						// orthographic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
@@ -79,7 +79,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				XM_PIDIV2,					// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				32.0f,						// specularity
+				false,						// orthographic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
@@ -91,21 +91,21 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				0.0f,						// rotationY
 				XM_PI * 0.5f,				// angle
 				1.0f,						// falloff
-				32.0f,						// specularity
+				false,						// orthographic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
-			},
+			},*/
 			
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },		// initialPosition
+				{ 0.0f, 17.5f, 0.0f },		// initialPosition
 				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
-				XM_PI * 0.5f,				// angle
+				15.0f,						// angle
 				0.75f,						// falloff
-				512.0f,						// specularity
+				true,						// orthographic
 				0.1f,						// projectionNearZ
-				25.0f						// projectionFarZ
+				35.0f						// projectionFarZ
 			},
 		}
 	};
@@ -121,22 +121,20 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const PointLightData pointlightInfo = {
 		512,
 		std::vector<PointLightData::PerLightInfo> {
-			PointLightData::PerLightInfo {
+			/*PointLightData::PerLightInfo {
 				{ 7.0f, 5.0f, -9.0f },			// initialPosition
 				{ 15.0f, 15.0f, 15.0f },		// color
 				3.0f,							// falloff
-				32.0f,							// specularity
 				0.1f,							// projectionNearZ
 				35.0f							// projectionFarZ
-			},
+			},*/
 
 			PointLightData::PerLightInfo {
-				{ -6.0f, 24.0f, -14.0f },		// initialPosition
-				{ 0.0f, 20.0f, 15.0f },			// color
-				4.0f,							// falloff
-				32.0f,							// specularity
+				{ 0.0f, 60.0f, 0.0f },			// initialPosition
+				{ 0.0f, 0.0f, 0.0f },			// color
+				1.0f,							// falloff
 				0.1f,							// projectionNearZ
-				20.0f							// projectionFarZ
+				1.0f							// projectionFarZ
 			},
 		}
 	};

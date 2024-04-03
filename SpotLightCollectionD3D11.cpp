@@ -26,7 +26,8 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		shadowCamera.camera = new CameraD3D11(
 			device,
 			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
-			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f }
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
+			true, iLightInfo.orthographic
 		);
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
@@ -41,7 +42,7 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		lightBuffer.color = iLightInfo.color;
 		lightBuffer.angle = iLightInfo.angle;
 		lightBuffer.falloff = iLightInfo.falloff;
-		lightBuffer.specularity = iLightInfo.specularity;
+		lightBuffer.orthographic = iLightInfo.orthographic ? 1 : -1;
 
 		_bufferData.push_back(lightBuffer);
 	}
