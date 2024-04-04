@@ -1,7 +1,7 @@
 #pragma once
 
 
-class Material
+/*class Material
 {
 private:
 
@@ -11,4 +11,4 @@ public:
 	~Material();
 
 
-};
+};*/

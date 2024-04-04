@@ -30,7 +30,7 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 		if (!subMesh.Initialize(
 			meshInfo.subMeshInfo.at(i).startIndexValue, 
 			meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh,
-			meshInfo.subMeshInfo.at(i).mtlName,
+			"", //meshInfo.subMeshInfo.at(i).mtlName,
 			nullptr, nullptr, nullptr)) // TODO
 		{
 			ErrMsg("Failed to initialize sub mesh!");
@@ -41,7 +41,7 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 	}
 
 	_boundingBox = meshInfo.boundingBox;
-	_mtlFile = meshInfo.mtlFile;
+	//_mtlFile = meshInfo.mtlFile;
 
 	return true;
 }

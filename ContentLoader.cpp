@@ -363,12 +363,12 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 	for (size_t group_i = 0; group_i < groupCount; group_i++)
 	{
 		MeshData::SubMeshInfo subMeshInfo = { };
-		const std::vector<uint32_t> *currGroup = &formattedIndexGroups.at(group_i);
+		const FormattedIndexGroup *currGroup = &formattedIndexGroups.at(group_i);
 
 		subMeshInfo.startIndexValue = inlineIndices.size();
-		subMeshInfo.nrOfIndicesInSubMesh = currGroup->size();
+		subMeshInfo.nrOfIndicesInSubMesh = currGroup->indices.size();
 
-		inlineIndices.insert(inlineIndices.end(), currGroup->begin(), currGroup->end());
+		inlineIndices.insert(inlineIndices.end(), currGroup->indices.begin(), currGroup->indices.end());
 		meshData.subMeshInfo.push_back(subMeshInfo);
 	}
 
@@ -442,9 +442,9 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	}
 
 	std::vector<FormattedVertex> formattedVertices;
-	std::vector<IndexGroup> formattedIndexGroups;
+	std::vector<FormattedIndexGroup> formattedIndexGroups;
 
-	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups);
+	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups, mtlGroups);
 
 	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups, mtlGroups);
 

@@ -133,27 +133,6 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 }
 
 
-UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const UINT width, const UINT height, const void *dataPtr)
-{
-	const UINT id = static_cast<UINT>(_textures.size());
-	for (UINT i = 0; i < id; i++)
-	{
-		if (_textures.at(i)->name == name)
-			return i;
-	}
-
-	Texture *addedTexture = new Texture(name, id);
-	if (!addedTexture->data.Initialize(device, width, height, dataPtr))
-	{
-		ErrMsg("Failed to initialize added texture!");
-		delete addedTexture;
-		return CONTENT_LOAD_ERROR;
-	}
-	_textures.push_back(addedTexture);
-
-	return id;
-}
-
 UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const char *path)
 {
 	const UINT id = static_cast<UINT>(_textures.size());
@@ -172,7 +151,7 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 		return CONTENT_LOAD_ERROR;
 	}
 
-	Texture *addedTexture = new Texture(name, id);
+	Texture *addedTexture = new Texture(name, (std::string)path, id);
 	if (!addedTexture->data.Initialize(device, width, height, texData.data()))
 	{
 		ErrMsg("Failed to initialize added texture!");
@@ -184,56 +163,6 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 	return id;
 }
 
-
-UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const TextureType mapType, const UINT width, const UINT height, const void *dataPtr)
-{
-	const UINT id = static_cast<UINT>(_textureMaps.size());
-	for (UINT i = 0; i < id; i++)
-	{
-		if (_textureMaps.at(i)->name == name)
-			return i;
-	}
-
-	D3D11_TEXTURE2D_DESC textureDesc = { };
-	textureDesc.Width = width;
-	textureDesc.Height = height;
-	textureDesc.ArraySize = 1;
-	textureDesc.MipLevels = 1;
-	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.MiscFlags = 0;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-
-	D3D11_SUBRESOURCE_DATA srData = { };
-	srData.pSysMem = dataPtr;
-	srData.SysMemSlicePitch = 0;
-
-	switch (mapType)
-	{
-		case TextureType::SPECULAR:
-			textureDesc.Format = DXGI_FORMAT_R8_UNORM;
-			srData.SysMemPitch = width * sizeof(unsigned char);
-			break;
-
-		default:
-			textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-			srData.SysMemPitch = width * sizeof(unsigned char) * 4;
-			break;
-	}
-
-	TextureMap *addedTextureMap = new TextureMap(name, id);
-	if (!addedTextureMap->data.Initialize(device, textureDesc, &srData))
-	{
-		ErrMsg("Failed to initialize added texture map!");
-		delete addedTextureMap;
-		return CONTENT_LOAD_ERROR;
-	}
-	_textureMaps.push_back(addedTextureMap);
-
-	return id;
-}
 
 UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const TextureType mapType, const char *path)
 {
@@ -296,7 +225,7 @@ UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const
 
 	srData.pSysMem = texMapData.data();
 
-	TextureMap *addedTextureMap = new TextureMap(name, id);
+	TextureMap *addedTextureMap = new TextureMap(name, (std::string)path, id);
 	if (!addedTextureMap->data.Initialize(device, textureDesc, &srData))
 	{
 		ErrMsg("Failed to initialize added texture map!");
@@ -487,6 +416,19 @@ UINT Content::GetTextureID(const std::string &name) const
 	return CONTENT_LOAD_ERROR;
 }
 
+UINT Content::GetTextureIDByPath(const std::string &path) const
+{
+	const UINT count = static_cast<UINT>(_textures.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_textures.at(i)->path == path)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
+
 ShaderResourceTextureD3D11 *Content::GetTexture(const std::string &name) const
 {
 	const UINT count = static_cast<UINT>(_textures.size());
@@ -518,6 +460,19 @@ UINT Content::GetTextureMapID(const std::string &name) const
 	for (UINT i = 0; i < count; i++)
 	{
 		if (_textureMaps.at(i)->name == name)
+			return i;
+	}
+
+	return CONTENT_LOAD_ERROR;
+}
+
+UINT Content::GetTextureMapIDByPath(const std::string &path) const
+{
+	const UINT count = static_cast<UINT>(_textureMaps.size());
+
+	for (UINT i = 0; i < count; i++)
+	{
+		if (_textureMaps.at(i)->path == path)
 			return i;
 	}
 

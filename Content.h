@@ -13,6 +13,19 @@
 constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
 
 
+struct SubMaterial
+{
+	std::string
+		mtlName,
+		kdPath;
+};
+
+struct Material
+{
+	std::string mtlName;
+	std::vector<SubMaterial> subMaterials;
+};
+
 struct MaterialProperties
 {
 	int sampleNormal; // Use normal map if greater than zero.
@@ -52,11 +65,11 @@ struct Shader
 
 struct Texture
 {
-	std::string name;
+	std::string name, path;
 	UINT id;
 	ShaderResourceTextureD3D11 data;
 
-	Texture(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	Texture(std::string name, std::string path, const UINT id) : name(std::move(name)), path(std::move(path)), id(id) { }
 	~Texture() = default;
 	Texture(const Texture &other) = delete;
 	Texture &operator=(const Texture &other) = delete;
@@ -66,11 +79,11 @@ struct Texture
 
 struct TextureMap
 {
-	std::string name;
+	std::string name, path;
 	UINT id;
 	ShaderResourceTextureD3D11 data;
 
-	TextureMap(std::string name, const UINT id) : name(std::move(name)), id(id) { }
+	TextureMap(std::string name, std::string path, const UINT id) : name(std::move(name)), path(std::move(path)), id(id) { }
 	~TextureMap() = default;
 	TextureMap(const TextureMap &other) = delete;
 	TextureMap &operator=(const TextureMap &other) = delete;
@@ -134,10 +147,8 @@ public:
 	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const void *dataPtr, size_t dataSize);
 	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const char *path);
 
-	UINT AddTexture(ID3D11Device *device, const std::string &name, UINT width, UINT height, const void *dataPtr);
 	UINT AddTexture(ID3D11Device *device, const std::string &name, const char *path);
 
-	UINT AddTextureMap(ID3D11Device *device, const std::string &name, TextureType mapType, UINT width, UINT height, const void *dataPtr);
 	UINT AddTextureMap(ID3D11Device *device, const std::string &name, TextureType mapType, const char *path);
 
 	UINT AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode,
@@ -161,10 +172,12 @@ public:
 	[[nodiscard]] ShaderD3D11 *GetShader(UINT id) const;
 
 	[[nodiscard]] UINT GetTextureID(const std::string &name) const;
+	[[nodiscard]] UINT GetTextureIDByPath(const std::string &path) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
 
 	[[nodiscard]] UINT GetTextureMapID(const std::string &name) const;
+	[[nodiscard]] UINT GetTextureMapIDByPath(const std::string &path) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(UINT id) const;
 

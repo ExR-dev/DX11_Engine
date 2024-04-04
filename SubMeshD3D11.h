@@ -11,10 +11,14 @@ private:
 	size_t _nrOfIndices = 0;
 
 	std::string _materialName;
+	ID3D11ShaderResourceView *_ambientTextureSRV = nullptr;
+	ID3D11ShaderResourceView *_diffuseTextureSRV = nullptr;
+	ID3D11ShaderResourceView *_specularTextureSRV = nullptr;
+	float _specularExponent = 0.0f;
 
 public:
 	SubMeshD3D11() = default;
-	~SubMeshD3D11() = default;
+	~SubMeshD3D11();
 	SubMeshD3D11(const SubMeshD3D11 &other) = default;
 	SubMeshD3D11 &operator=(const SubMeshD3D11 &other) = default;
 	SubMeshD3D11(SubMeshD3D11 &&other) = default;
