@@ -67,7 +67,9 @@ static bool ReadWavefront(const char *path,
 	std::vector<RawPosition> &vertexPositions, 
 	std::vector<RawTexCoord> &vertexTexCoords,
 	std::vector<RawNormal> &vertexNormals,
-	std::vector<std::vector<RawIndex>> &indexGroups)
+	std::vector<std::vector<RawIndex>> &indexGroups,
+	std::vector<std::string> &mtlGroups,
+	std::string &mtlFile)
 {
 	std::ifstream fileStream(path);
 	std::string line;
@@ -110,7 +112,11 @@ static bool ReadWavefront(const char *path,
 
 		if (dataType == "mtllib")
 		{ // Define where to find materials
-
+			if (!(segments >> mtlFile))
+			{
+				ErrMsg(std::format("Failed to get mtl name from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 		}
 		else if (dataType == "g")
 		{ // Mesh Group
@@ -118,10 +124,12 @@ static bool ReadWavefront(const char *path,
 			{ // First submesh
 				begunReadingSubMesh = true;
 				indexGroups.emplace_back();
+				mtlGroups.emplace_back("");
 				continue;
 			}
 
 			indexGroups.emplace_back();
+			mtlGroups.emplace_back("");
 		}
 		else if (dataType == "o")
 		{ // Mesh Object
@@ -129,10 +137,12 @@ static bool ReadWavefront(const char *path,
 			{ // First submesh
 				begunReadingSubMesh = true;
 				indexGroups.emplace_back();
+				mtlGroups.emplace_back("");
 				continue;
 			}
 
 			indexGroups.emplace_back();
+			mtlGroups.emplace_back("");
 		}
 		else if (dataType == "v")
 		{ // Vertex Position
@@ -205,34 +215,53 @@ static bool ReadWavefront(const char *path,
 			{ // First submesh
 				begunReadingSubMesh = true;
 				indexGroups.emplace_back();
+				mtlGroups.emplace_back("");
 				continue;
 			}
 
 			indexGroups.emplace_back();
+			mtlGroups.emplace_back("");
+
+			if (!(segments >> mtlGroups.back()))
+			{
+				ErrMsg(std::format("Failed to get sub-material name from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 		}
 		else
 		{
 			ErrMsg(std::format(R"(Unimplemented type flag '{}' on line "{}", file "{}"!)", dataType, line, path));
 		}
 	}
+
 	return true;
 }
 
+
+struct FormattedIndexGroup {
+	std::vector<uint32_t> indices;
+	std::string mtlName;
+};
+
 static void FormatRawMesh(
 	std::vector<FormattedVertex> &formattedVertices,
-	std::vector<std::vector<uint32_t>> &formattedIndexGroups,
+	std::vector<FormattedIndexGroup> &formattedIndexGroups,
 	const std::vector<RawPosition> &vertexPositions,
 	const std::vector<RawTexCoord> &vertexTexCoords,
 	const std::vector<RawNormal> &vertexNormals,
-	const std::vector<std::vector<RawIndex>> &indexGroups)
+	const std::vector<std::vector<RawIndex>> &indexGroups,
+	const std::vector<std::string> &mtlGroups)
 {
 	// Format vertices & index groups
 	const size_t groupCount = indexGroups.size();
 	for (size_t groupIndex = 0; groupIndex < groupCount; groupIndex++)
 	{
 		formattedIndexGroups.emplace_back();
-		std::vector<uint32_t> *formattedGroup = &formattedIndexGroups.back();
+		FormattedIndexGroup *formattedGroup = &formattedIndexGroups.back();
 		const std::vector<RawIndex> *rawGroup = &indexGroups.at(groupIndex);
+
+		if (mtlGroups.size() > groupIndex)
+			formattedGroup->mtlName = mtlGroups.at(groupIndex);
 
 		const size_t groupSize = rawGroup->size();
 		for (size_t vertIndex = 0; vertIndex < groupSize; vertIndex++)
@@ -242,7 +271,7 @@ static void FormatRawMesh(
 			const RawTexCoord rT = vertexTexCoords.at(rI.t);
 			const RawNormal rN = vertexNormals.at(rI.n);
 
-			formattedGroup->emplace_back(static_cast<uint32_t>(formattedVertices.size()));
+			formattedGroup->indices.emplace_back(static_cast<uint32_t>(formattedVertices.size()));
 			formattedVertices.emplace_back(
 				rP.x, rP.y, rP.z,
 				rN.x, rN.y, rN.z,
@@ -313,7 +342,8 @@ static void FormatRawMesh(
 
 static void SendFormattedMeshToMeshData(MeshData &meshData,
 	const std::vector<FormattedVertex> &formattedVertices,
-	const std::vector<std::vector<uint32_t>> &formattedIndexGroups)
+	const std::vector<FormattedIndexGroup> &formattedIndexGroups,
+	const std::vector<std::string> &mtlGroups)
 {
 	// Send vertex data to meshData
 	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
@@ -392,14 +422,18 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	std::vector<RawTexCoord> vertexTexCoords;
 	std::vector<RawNormal> vertexNormals;
 	std::vector<std::vector<RawIndex>> indexGroups;
+	std::vector<std::string> mtlGroups;
 
 	if (ext == "obj")
 	{
-		if (!ReadWavefront(path, vertexPositions, vertexTexCoords, vertexNormals, indexGroups))
+		if (!ReadWavefront(path, vertexPositions, vertexTexCoords, vertexNormals, indexGroups, mtlGroups, meshData.mtlFile))
 		{
 			ErrMsg("Failed to read wavefront file!");
 			return false;
 		}
+
+		const std::string materialPath = path;
+		meshData.mtlFile = materialPath.substr(0, materialPath.find_last_of('\\') + 1) + meshData.mtlFile;
 	}
 	else
 	{
@@ -408,11 +442,11 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	}
 
 	std::vector<FormattedVertex> formattedVertices;
-	std::vector<std::vector<uint32_t>> formattedIndexGroups;
+	std::vector<IndexGroup> formattedIndexGroups;
 
 	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups);
 
-	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups);
+	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups, mtlGroups);
 
 	return true;	
 }

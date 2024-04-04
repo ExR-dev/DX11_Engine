@@ -4,31 +4,13 @@
 
 
 bool SubMeshD3D11::Initialize(
-	const size_t startIndexValue, const size_t nrOfIndicesInSubMesh,
+	const size_t startIndexValue, const size_t nrOfIndicesInSubMesh, const std::string &materialName,
 	ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV, ID3D11ShaderResourceView *specularTextureSRV)
 {
-	if (_ambientTexture != nullptr)
-	{
-		ErrMsg("Ambient texture is not nullptr!");
-		return false;
-	}
-	if (_diffuseTexture != nullptr)
-	{
-		ErrMsg("Diffuse texture is not nullptr!");
-		return false;
-	}
-	if (_specularTexture != nullptr)
-	{
-		ErrMsg("Specular texture is not nullptr!");
-		return false;
-	}
-
 	_startIndex = startIndexValue;
 	_nrOfIndices = nrOfIndicesInSubMesh;
 
-	_ambientTexture = ambientTextureSRV;
-	_diffuseTexture = diffuseTextureSRV;
-	_specularTexture = specularTextureSRV;
+	_materialName = materialName;
 
 	return true;
 }
@@ -41,17 +23,7 @@ bool SubMeshD3D11::PerformDrawCall(ID3D11DeviceContext *context) const
 }
 
 
-ID3D11ShaderResourceView *SubMeshD3D11::GetAmbientSRV() const
+const std::string &SubMeshD3D11::GetMaterialName() const
 {
-	return _ambientTexture;
-}
-
-ID3D11ShaderResourceView *SubMeshD3D11::GetDiffuseSRV() const
-{
-	return _diffuseTexture;
-}
-
-ID3D11ShaderResourceView *SubMeshD3D11::GetSpecularSRV() const
-{
-	return _specularTexture;
+	return _materialName;
 }

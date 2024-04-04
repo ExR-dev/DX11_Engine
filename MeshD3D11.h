@@ -32,12 +32,11 @@ struct MeshData
 	{
 		size_t startIndexValue = 0;
 		size_t nrOfIndicesInSubMesh = 0;
-		ID3D11ShaderResourceView *ambientTextureSRV = nullptr;
-		ID3D11ShaderResourceView *diffuseTextureSRV = nullptr;
-		ID3D11ShaderResourceView *specularTextureSRV = nullptr;
+		std::string mtlName;
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
+	std::string mtlFile;
 	DirectX::BoundingBox boundingBox;
 };
 
@@ -47,6 +46,7 @@ private:
 	std::vector<SubMeshD3D11> _subMeshes;
 	VertexBufferD3D11 _vertexBuffer;
 	IndexBufferD3D11 _indexBuffer;
+	std::string _mtlFile;
 	DirectX::BoundingBox _boundingBox;
 
 
@@ -64,9 +64,8 @@ public:
 	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
 
 	[[nodiscard]] const DirectX::BoundingBox &GetBoundingBox() const;
+	[[nodiscard]] const std::string &GetMaterialFile() const;
 
 	[[nodiscard]] size_t GetNrOfSubMeshes() const;
-	[[nodiscard]] ID3D11ShaderResourceView *GetAmbientSRV(size_t subMeshIndex) const;
-	[[nodiscard]] ID3D11ShaderResourceView *GetDiffuseSRV(size_t subMeshIndex) const;
-	[[nodiscard]] ID3D11ShaderResourceView *GetSpecularSRV(size_t subMeshIndex) const;
+	[[nodiscard]] const std::string &GetMaterialName(size_t subMeshIndex) const;
 };

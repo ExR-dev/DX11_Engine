@@ -30,6 +30,7 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 		if (!subMesh.Initialize(
 			meshInfo.subMeshInfo.at(i).startIndexValue, 
 			meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh,
+			meshInfo.subMeshInfo.at(i).mtlName,
 			nullptr, nullptr, nullptr)) // TODO
 		{
 			ErrMsg("Failed to initialize sub mesh!");
@@ -40,6 +41,7 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 	}
 
 	_boundingBox = meshInfo.boundingBox;
+	_mtlFile = meshInfo.mtlFile;
 
 	return true;
 }
@@ -69,9 +71,14 @@ bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_
 	return true;
 }
 
-const DirectX::BoundingBox& MeshD3D11::GetBoundingBox() const
+const DirectX::BoundingBox &MeshD3D11::GetBoundingBox() const
 {
 	return _boundingBox;
+}
+
+const std::string &MeshD3D11::GetMaterialFile() const
+{
+	return _mtlFile;
 }
 
 
@@ -80,17 +87,7 @@ size_t MeshD3D11::GetNrOfSubMeshes() const
 	return _subMeshes.size();
 }
 
-ID3D11ShaderResourceView *MeshD3D11::GetAmbientSRV(const size_t subMeshIndex) const
+const std::string &MeshD3D11::GetMaterialName(const size_t subMeshIndex) const
 {
-	return _subMeshes.at(subMeshIndex).GetAmbientSRV();
-}
-
-ID3D11ShaderResourceView *MeshD3D11::GetDiffuseSRV(const size_t subMeshIndex) const
-{
-	return _subMeshes.at(subMeshIndex).GetDiffuseSRV();
-}
-
-ID3D11ShaderResourceView *MeshD3D11::GetSpecularSRV(const size_t subMeshIndex) const
-{
-	return _subMeshes.at(subMeshIndex).GetSpecularSRV();
+	return _subMeshes.at(subMeshIndex).GetMaterialName();
 }
