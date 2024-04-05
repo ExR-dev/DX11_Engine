@@ -5,4 +5,18 @@ Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd Bricks.png
 Ni 1.00
-Ks 1.00 1.00 1.00
+Ks 0.00 0.00 0.00
+map_Ks Bricks_Specular.png
+Ns 68.47
+newmtl standardSurface2SG2SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Metal.png
+map_Ka Fallback.png
+bump  -bm 1 Metal_Height.png
+Ni 1.00
+Ks 0.00 0.00 0.00
+map_Ks Metal_Specular.png
+Ns 0.06

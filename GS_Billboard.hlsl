@@ -36,7 +36,7 @@ void main(
 	upVec *= input[0].size;
 
 	GeometryShaderOutput newVertex;
-	newVertex.position = float4(input[0].position, 0);
+	///newVertex.position = float4(input[0].position, 0);
 	newVertex.normal = -frontVec;
 	newVertex.color = input[0].color;
 

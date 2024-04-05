@@ -127,6 +127,7 @@ public:
 	void LookY(float amount);
 
 	void SetFOV(float amount);
+	void SetOrtho(bool state);
 
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;

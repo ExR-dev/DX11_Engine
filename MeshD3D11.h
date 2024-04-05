@@ -13,8 +13,8 @@ struct MeshData
 {
 	struct VertexInfo
 	{
-		size_t sizeOfVertex = 0;
-		size_t nrOfVerticesInBuffer = 0;
+		UINT sizeOfVertex = 0;
+		UINT nrOfVerticesInBuffer = 0;
 		float *vertexData = nullptr;
 
 		~VertexInfo() { delete[] vertexData; }
@@ -22,7 +22,7 @@ struct MeshData
 
 	struct IndexInfo
 	{
-		size_t nrOfIndicesInBuffer = 0;
+		UINT nrOfIndicesInBuffer = 0;
 		uint32_t *indexData = nullptr;
 
 		~IndexInfo() { delete[] indexData; }
@@ -30,9 +30,13 @@ struct MeshData
 
 	struct SubMeshInfo
 	{
-		size_t startIndexValue = 0;
-		size_t nrOfIndicesInSubMesh = 0;
-		std::string mtlName;
+		UINT startIndexValue = 0;
+		UINT nrOfIndicesInSubMesh = 0;
+
+		std::string ambientTexturePath = "";
+		std::string diffuseTexturePath = "";
+		std::string specularTexturePath = "";
+		float specularExponent = 0.0f;
 	};
 
 	std::vector<SubMeshInfo> subMeshInfo;
@@ -61,11 +65,14 @@ public:
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const MeshData &meshInfo);
 
 	[[nodiscard]] bool BindMeshBuffers(ID3D11DeviceContext *context, UINT stride = 0, UINT offset = 0) const;
-	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, size_t subMeshIndex) const;
+	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, UINT subMeshIndex) const;
 
 	[[nodiscard]] const DirectX::BoundingBox &GetBoundingBox() const;
 	[[nodiscard]] const std::string &GetMaterialFile() const;
 
-	[[nodiscard]] size_t GetNrOfSubMeshes() const;
-	[[nodiscard]] const std::string &GetMaterialName(size_t subMeshIndex) const;
+	[[nodiscard]] UINT GetNrOfSubMeshes() const;
+	[[nodiscard]] const std::string &GetAmbientPath(UINT subMeshIndex) const;
+	[[nodiscard]] const std::string &GetDiffusePath(UINT subMeshIndex) const;
+	[[nodiscard]] const std::string &GetSpecularPath(UINT subMeshIndex) const;
+	[[nodiscard]] ID3D11Buffer *GetSpecularBuffer(UINT subMeshIndex) const;
 };

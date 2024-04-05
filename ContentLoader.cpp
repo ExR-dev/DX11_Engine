@@ -137,27 +137,13 @@ static bool ReadWavefront(const char *path,
 		}
 		else if (dataType == "g")
 		{ // Mesh Group
-			if (!begunReadingSubMesh)
-			{ // First submesh
-				begunReadingSubMesh = true;
-				indexGroups.emplace_back();
-				mtlGroups.emplace_back("");
-				continue;
-			}
-
+			begunReadingSubMesh = true;
 			indexGroups.emplace_back();
 			mtlGroups.emplace_back("");
 		}
 		else if (dataType == "o")
 		{ // Mesh Object
-			if (!begunReadingSubMesh)
-			{ // First submesh
-				begunReadingSubMesh = true;
-				indexGroups.emplace_back();
-				mtlGroups.emplace_back("");
-				continue;
-			}
-
+			begunReadingSubMesh = true;
 			indexGroups.emplace_back();
 			mtlGroups.emplace_back("");
 		}
@@ -233,11 +219,7 @@ static bool ReadWavefront(const char *path,
 				begunReadingSubMesh = true;
 				indexGroups.emplace_back();
 				mtlGroups.emplace_back("");
-				continue;
 			}
-
-			indexGroups.emplace_back();
-			mtlGroups.emplace_back("");
 
 			if (!(segments >> mtlGroups.back()))
 			{
@@ -247,7 +229,7 @@ static bool ReadWavefront(const char *path,
 		}
 		else
 		{
-			ErrMsg(std::format(R"(Unimplemented type flag '{}' on line "{}", file "{}"!)", dataType, line, path));
+			ErrMsg(std::format(R"(Unimplemented object flag '{}' on line "{}", file "{}"!)", dataType, line, path));
 		}
 	}
 
@@ -257,7 +239,15 @@ static bool ReadWavefront(const char *path,
 
 static bool ReadMaterial(const char *path, Material &material)
 {
-	material.mtlName = ((std::string)path).substr(((std::string)path).find_last_of('\\') + 1, ((std::string)path).find_last_of('.'));
+	material.mtlName = static_cast<std::string>(path).substr(
+		static_cast<std::string>(path).find_last_of('\\') + 1, 
+		static_cast<std::string>(path).find_last_of('.')
+	);
+
+	const std::string folderPath = static_cast<std::string>(path).substr(
+		0,
+		static_cast<std::string>(path).find_last_of('\\') + 1
+	);
 
 	std::ifstream fileStream(path);
 	std::string line;
@@ -293,27 +283,63 @@ static bool ReadMaterial(const char *path, Material &material)
 		}
 		else if (dataType == "map_Ka")
 		{ 
+			std::string mapPath;
+			if (!(segments >> mapPath))
+			{
+				ErrMsg(std::format("Failed to get map_Ka path from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 
+			if (material.subMaterials.empty())
+				material.subMaterials.push_back({ "", "", "", "", 0.0f });
+			material.subMaterials.back().ambientPath = folderPath + mapPath;
 		}
 		else if (dataType == "map_Kd")
 		{ 
+			std::string mapPath;
+			if (!(segments >> mapPath))
+			{
+				ErrMsg(std::format("Failed to get map_Kd path from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 
+			if (material.subMaterials.empty())
+				material.subMaterials.push_back({ "", "", "", "", 0.0f });
+			material.subMaterials.back().diffusePath = folderPath + mapPath;
 		}
 		else if (dataType == "map_Ks")
 		{ 
+			std::string mapPath;
+			if (!(segments >> mapPath))
+			{
+				ErrMsg(std::format("Failed to get map_Ks path from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 
+			if (material.subMaterials.empty())
+				material.subMaterials.push_back({ "", "", "", "", 0.0f });
+			material.subMaterials.back().specularPath = folderPath + mapPath;
 		}
 		else if (dataType == "Ns")
 		{ 
+			float exponent;
+			if (!(segments >> exponent))
+			{
+				ErrMsg(std::format("Failed to get Ns value from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
 
+			if (material.subMaterials.empty())
+				material.subMaterials.push_back({ "", "", "", "", 0.0f });
+			material.subMaterials.back().specularExponent = exponent;
 		}
 		else
 		{
-			ErrMsg(std::format(R"(Unimplemented type flag '{}' on line "{}", file "{}"!)", dataType, line, path));
+			ErrMsg(std::format(R"(Unimplemented material flag '{}' on line "{}", file "{}"!)", dataType, line, path));
 		}
 	}
 
-	return false;
+	return true;
 }
 
 
@@ -342,6 +368,8 @@ static void FormatRawMesh(
 		if (mtlGroups.size() > groupIndex)
 			formattedGroup->mtlName = mtlGroups.at(groupIndex);
 
+		const size_t startingVertex = formattedVertices.size();
+
 		const size_t groupSize = rawGroup->size();
 		for (size_t vertIndex = 0; vertIndex < groupSize; vertIndex++)
 		{
@@ -363,9 +391,9 @@ static void FormatRawMesh(
 		for (size_t triIndex = 0; triIndex < groupSize; triIndex += 3)
 		{
 			FormattedVertex *verts[3] = {
-			&formattedVertices.at(triIndex + 0),
-			&formattedVertices.at(triIndex + 1),
-			&formattedVertices.at(triIndex + 2)
+				&formattedVertices.at(startingVertex + triIndex + 0),
+				&formattedVertices.at(startingVertex + triIndex + 1),
+				&formattedVertices.at(startingVertex + triIndex + 2)
 			};
 
 			const DirectX::XMFLOAT3A
@@ -417,12 +445,16 @@ static void FormatRawMesh(
 			}
 		}
 	}
+
+	for (UINT i = 0; i < formattedIndexGroups.size(); i++)
+		if (formattedIndexGroups.at(i).indices.empty())
+			formattedIndexGroups.erase(formattedIndexGroups.begin() + i--);
 }
 
 static void SendFormattedMeshToMeshData(MeshData &meshData,
 	const std::vector<FormattedVertex> &formattedVertices,
 	const std::vector<FormattedIndexGroup> &formattedIndexGroups,
-	const std::vector<std::string> &mtlGroups)
+	const Material &material)
 {
 	// Send vertex data to meshData
 	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
@@ -446,6 +478,19 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 
 		subMeshInfo.startIndexValue = inlineIndices.size();
 		subMeshInfo.nrOfIndicesInSubMesh = currGroup->indices.size();
+
+		SubMaterial const *currMat = nullptr;
+		for (const SubMaterial &subMat : material.subMaterials)
+			if (subMat.mtlName == currGroup->mtlName)
+			{
+				currMat = &subMat;
+				break;
+			}
+
+		subMeshInfo.ambientTexturePath	= (currMat != nullptr) ? currMat->ambientPath		: "";
+		subMeshInfo.diffuseTexturePath	= (currMat != nullptr) ? currMat->diffusePath		: "";
+		subMeshInfo.specularTexturePath = (currMat != nullptr) ? currMat->specularPath		: "";
+		subMeshInfo.specularExponent	= (currMat != nullptr) ? currMat->specularExponent	: 0.0f;
 
 		inlineIndices.insert(inlineIndices.end(), currGroup->indices.begin(), currGroup->indices.end());
 		meshData.subMeshInfo.push_back(subMeshInfo);
@@ -523,7 +568,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	Material material;
 	if (!ReadMaterial(meshData.mtlFile.c_str(), material))
 	{
-		ErrMsg("Failed to read wavefront file!");
+		ErrMsg("Failed to read material file!");
 		return false;
 	}
 
@@ -532,7 +577,7 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 
 	FormatRawMesh(formattedVertices, formattedIndexGroups, vertexPositions, vertexTexCoords, vertexNormals, indexGroups, mtlGroups);
 
-	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups, mtlGroups);
+	SendFormattedMeshToMeshData(meshData, formattedVertices, formattedIndexGroups, material);
 
 	return true;	
 }
@@ -549,7 +594,8 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 
 	std::ofstream fileStream(path);
 
-	fileStream << "Loaded Mesh:\n\n";
+	fileStream << "Loaded Mesh:\n";
+	fileStream << "material = " << meshData.mtlFile << "\n\n";
 
 	fileStream << "---------------- Vertex Data ----------------" << '\n';
 	fileStream << "count = " << meshData.vertexInfo.nrOfVerticesInBuffer << '\n';
@@ -611,6 +657,10 @@ bool WriteMeshToFile(const char *path, const MeshData &meshData)
 		fileStream << "Submesh " << i << '\n';
 		fileStream << "\tstart index = " << meshData.subMeshInfo.at(i).startIndexValue << '\n';
 		fileStream << "\tlength = " << meshData.subMeshInfo.at(i).nrOfIndicesInSubMesh << '\n';
+		fileStream << "\tambient = " << meshData.subMeshInfo.at(i).ambientTexturePath << '\n';
+		fileStream << "\tdiffuse = " << meshData.subMeshInfo.at(i).diffuseTexturePath << '\n';
+		fileStream << "\tspecular = " << meshData.subMeshInfo.at(i).specularTexturePath << '\n';
+		fileStream << "\texponent = " << meshData.subMeshInfo.at(i).specularExponent << '\n';
 		fileStream << '\n';
 	}
 	fileStream << "----------------------------------------------\n\n";

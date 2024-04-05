@@ -8,6 +8,12 @@ Texture2D AmbientMap			: register(t4);
 sampler Sampler					: register(s0);
 
 
+cbuffer SpecularBuffer : register(b1)
+{
+	float specularExponent; 
+	float padding[3]; 
+};
+
 cbuffer MaterialProperties : register(b2)
 {
 	int sampleNormal; // Use normal map if greater than zero.
@@ -60,7 +66,7 @@ PixelShaderOutput main(PixelShaderInput input)
 	output.position = float4(input.world_position.xyz, specularity.x);
 	output.normal	= float4(normal, specularity.y);
 	output.ambient	= float4(ambient, specularity.z);
-	output.diffuse = float4(diffuse, (float)((uint) (specularity.w * 512.0f)) + reflectivity * 0.99f);
+	output.diffuse = float4(diffuse, (float)((uint)specularExponent) + reflectivity * 0.99f);
 
 	return output;
 }

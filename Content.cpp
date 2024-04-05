@@ -70,7 +70,6 @@ UINT Content::AddMesh(ID3D11Device *device, const std::string &name, const char 
 
 	/*std::string meshDebugPath = path;
 	meshDebugPath.replace(meshDebugPath.find_last_of('.'), 4, "_DEBUG.txt");
-
 	if (!WriteMeshToFile(meshDebugPath.c_str(), meshData))
 	{
 		ErrMsg("Failed to write mesh to file!");
@@ -466,15 +465,33 @@ UINT Content::GetTextureMapID(const std::string &name) const
 	return CONTENT_LOAD_ERROR;
 }
 
-UINT Content::GetTextureMapIDByPath(const std::string &path) const
+UINT Content::GetTextureMapIDByPath(const std::string &path, const TextureType type) const
 {
 	const UINT count = static_cast<UINT>(_textureMaps.size());
 
-	for (UINT i = 0; i < count; i++)
+	std::string typeStr;
+	switch (type)
 	{
-		if (_textureMaps.at(i)->path == path)
-			return i;
+		case TextureType::NORMAL:
+			typeStr = "_Normal";
+			break;
+
+		case TextureType::SPECULAR:
+			typeStr = "_Specular";
+			break;
+
+		case TextureType::REFLECTIVE:
+			typeStr = "_Reflective";
+			break;
+
+		case TextureType::HEIGHT:
+			typeStr = "_Height";
+			break;
 	}
+
+	for (UINT i = 0; i < count; i++)
+		if (_textureMaps.at(i)->path == path && _textureMaps.at(i)->name.find(typeStr, 0) != std::string::npos)
+			return i;
 
 	return CONTENT_LOAD_ERROR;
 }

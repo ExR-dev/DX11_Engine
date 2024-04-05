@@ -5,22 +5,39 @@
 
 SubMeshD3D11::~SubMeshD3D11()
 {
-	if (_specularTextureSRV != nullptr)
-		_specularTextureSRV->Release();
-
-	if (_diffuseTextureSRV != nullptr)
-		_diffuseTextureSRV->Release();
-
-	if (_ambientTextureSRV != nullptr)
-		_ambientTextureSRV->Release();
+	delete _specularBuffer;
 }
 
-bool SubMeshD3D11::Initialize(
-	const size_t startIndexValue, const size_t nrOfIndicesInSubMesh, const std::string &materialName,
-	ID3D11ShaderResourceView *ambientTextureSRV, ID3D11ShaderResourceView *diffuseTextureSRV, ID3D11ShaderResourceView *specularTextureSRV)
+SubMeshD3D11::SubMeshD3D11(SubMeshD3D11 &&other) noexcept
+{
+	_startIndex = other._startIndex;
+	_nrOfIndices = other._nrOfIndices;
+
+	_ambientTexturePath = std::move(other._ambientTexturePath);
+	_diffuseTexturePath = std::move(other._diffuseTexturePath);
+	_specularTexturePath = std::move(other._specularTexturePath);
+
+	_specularBuffer = other._specularBuffer;
+	other._specularBuffer = nullptr;
+}
+
+bool SubMeshD3D11::Initialize(ID3D11Device *device, const UINT startIndexValue, const UINT nrOfIndicesInSubMesh,
+	const std::string &ambientPath, const std::string &diffusePath, const std::string &specularPath, const float exponent)
 {
 	_startIndex = startIndexValue;
 	_nrOfIndices = nrOfIndicesInSubMesh;
+
+	_ambientTexturePath = ambientPath;
+	_diffuseTexturePath = diffusePath;
+	_specularTexturePath = specularPath;
+
+	_specularBuffer = new ConstantBufferD3D11();
+	const SpecularBuffer specBuf = { exponent, { 0, 0, 0 } };
+	if (!_specularBuffer->Initialize(device, sizeof(SpecularBuffer), &specBuf))
+	{
+		ErrMsg("Failed to initialize specular buffer!");
+		return false;
+	}
 
 	return true;
 }
@@ -33,7 +50,23 @@ bool SubMeshD3D11::PerformDrawCall(ID3D11DeviceContext *context) const
 }
 
 
-const std::string &SubMeshD3D11::GetMaterialName() const
+const std::string &SubMeshD3D11::GetAmbientPath() const
 {
-	return _materialName;
+	return _ambientTexturePath;
 }
+
+const std::string &SubMeshD3D11::GetDiffusePath() const
+{
+	return _diffuseTexturePath;
+}
+
+const std::string &SubMeshD3D11::GetSpecularPath() const
+{
+	return _specularTexturePath;
+}
+
+ID3D11Buffer *SubMeshD3D11::GetSpecularBuffer() const
+{
+	return _specularBuffer->GetBuffer();
+}
+

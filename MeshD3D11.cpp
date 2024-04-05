@@ -27,17 +27,19 @@ bool MeshD3D11::Initialize(ID3D11Device *device, const MeshData &meshInfo)
 	for (size_t i = 0; i < subMeshCount; i++)
 	{
 		SubMeshD3D11 subMesh;
-		if (!subMesh.Initialize(
+		if (!subMesh.Initialize(device,
 			meshInfo.subMeshInfo.at(i).startIndexValue, 
 			meshInfo.subMeshInfo.at(i).nrOfIndicesInSubMesh,
-			"", //meshInfo.subMeshInfo.at(i).mtlName,
-			nullptr, nullptr, nullptr)) // TODO
+			meshInfo.subMeshInfo.at(i).ambientTexturePath,
+			meshInfo.subMeshInfo.at(i).diffuseTexturePath,
+			meshInfo.subMeshInfo.at(i).specularTexturePath,
+			meshInfo.subMeshInfo.at(i).specularExponent))
 		{
 			ErrMsg("Failed to initialize sub mesh!");
 			return false;
 		}
 
-		_subMeshes.push_back(subMesh);
+		_subMeshes.push_back(std::move(subMesh));
 	}
 
 	_boundingBox = meshInfo.boundingBox;
@@ -53,15 +55,15 @@ bool MeshD3D11::BindMeshBuffers(ID3D11DeviceContext *context, UINT stride, const
 		stride = static_cast<UINT>(_vertexBuffer.GetVertexSize());
 
 	ID3D11Buffer *const vertxBuffer = _vertexBuffer.GetBuffer();
-	ID3D11Buffer *const indexBuffer = _indexBuffer.GetBuffer();
-
 	context->IASetVertexBuffers(0, 1, &vertxBuffer, &stride, &offset);
+
+	ID3D11Buffer *const indexBuffer = _indexBuffer.GetBuffer();
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	return true;
 }
 
-bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const size_t subMeshIndex) const
+bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const UINT subMeshIndex) const
 {
 	if (!_subMeshes.at(subMeshIndex).PerformDrawCall(context))
 	{
@@ -82,12 +84,28 @@ const std::string &MeshD3D11::GetMaterialFile() const
 }
 
 
-size_t MeshD3D11::GetNrOfSubMeshes() const
+UINT MeshD3D11::GetNrOfSubMeshes() const
 {
-	return _subMeshes.size();
+	return static_cast<UINT>(_subMeshes.size());
 }
 
-const std::string &MeshD3D11::GetMaterialName(const size_t subMeshIndex) const
+
+const std::string &MeshD3D11::GetAmbientPath(const UINT subMeshIndex) const
 {
-	return _subMeshes.at(subMeshIndex).GetMaterialName();
+	return _subMeshes.at(subMeshIndex).GetAmbientPath();
+}
+
+const std::string &MeshD3D11::GetDiffusePath(const UINT subMeshIndex) const
+{
+	return _subMeshes.at(subMeshIndex).GetDiffusePath();
+}
+
+const std::string &MeshD3D11::GetSpecularPath(const UINT subMeshIndex) const
+{
+	return _subMeshes.at(subMeshIndex).GetSpecularPath();
+}
+
+ID3D11Buffer *MeshD3D11::GetSpecularBuffer(const UINT subMeshIndex) const
+{
+	return _subMeshes.at(subMeshIndex).GetSpecularBuffer();
 }

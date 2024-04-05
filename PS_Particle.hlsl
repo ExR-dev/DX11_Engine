@@ -143,7 +143,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		totalDiffuseLight += light.color.xyz * shadow * inverseLightDistSqr;
 	}
 
-
-	const float3 result = ACESFilm(col.xyz * (ambient_light.xyz + totalDiffuseLight));
+	const float3 result = saturate(col.xyz * (ambient_light.xyz + totalDiffuseLight));
 	return float4(result, col.w);
 }

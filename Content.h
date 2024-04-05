@@ -165,7 +165,7 @@ public:
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTexture(UINT id) const;
 
 	[[nodiscard]] UINT GetTextureMapID(const std::string &name) const;
-	[[nodiscard]] UINT GetTextureMapIDByPath(const std::string &path) const;
+	[[nodiscard]] UINT GetTextureMapIDByPath(const std::string &path, TextureType type) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(const std::string &name) const;
 	[[nodiscard]] ShaderResourceTextureD3D11 *GetTextureMap(UINT id) const;
 

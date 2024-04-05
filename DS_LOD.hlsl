@@ -1,5 +1,5 @@
 
-Texture2D HeightMap : register(t0);
+Texture2D<float> HeightMap : register(t0);
 sampler Sampler : register(s0);
 
 

@@ -205,6 +205,41 @@ void CameraD3D11::SetFOV(const float amount)
 	_recalculateBounds = true;
 }
 
+void CameraD3D11::SetOrtho(bool state)
+{
+	_ortho = state;
+
+	if (_ortho)
+	{
+		const float
+			nearZ = _currProjInfo.nearZ,
+			farZ = _currProjInfo.farZ,
+			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			height = 0.5f * _currProjInfo.fovAngleY;
+
+		const XMFLOAT3 corners[8] = {
+			XMFLOAT3(-width, -height, nearZ),
+			XMFLOAT3( width, -height, nearZ),
+			XMFLOAT3(-width,  height, nearZ),
+			XMFLOAT3( width,  height, nearZ),
+			XMFLOAT3(-width, -height, farZ),
+			XMFLOAT3( width, -height, farZ),
+			XMFLOAT3(-width,  height, farZ),
+			XMFLOAT3( width,  height, farZ)
+		};
+
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+	}
+	else
+	{
+		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX*>(&projMatrix));
+	}
+
+	_isDirty = true;
+	_recalculateBounds = true;
+}
+
 
 const XMFLOAT4A &CameraD3D11::GetRight() const		{ return _transform.GetRight();		}
 const XMFLOAT4A &CameraD3D11::GetUp() const			{ return _transform.GetUp();		}

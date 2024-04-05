@@ -35,7 +35,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		"Fallback",
 		"Cube",
 		"Room",
-		//"SimpleSubmesh",
+		"SimpleSubmesh",
 		//"ControlChair",
 		//"ControlDesk",
 		//"CharacterSculptLow0",
@@ -44,6 +44,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		"Sphere",
 		//"IsoSphereEdged",
 		"IsoSphereSmooth",
+		//"Torus",
 	};
 
 	time.TakeSnapshot("LoadMeshes");
@@ -78,7 +79,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 
 		//Transparent
 		{ "Transparent",					"Transparent"					},
-		{ "Transparent2",					"Transparent2"					},
+		{ "Flower",							"Transparent2"					},
 		{ "Particle",						"Particle"						},
 	};
 

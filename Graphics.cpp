@@ -778,9 +778,72 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			return false;
 		}
 
+		const UINT
+			prevTexID = _currTexID,
+			prevAmbientID = _currAmbientID,
+			prevSpecularID = _currSpecularID;
+
 		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
 		for (size_t i = 0; i < subMeshCount; i++)
 		{
+			// Bind sub-mesh material textures if defined
+			std::string path = loadedMesh->GetDiffusePath(i);
+			if (path != "")
+			{
+				const UINT id = _content->GetTextureIDByPath(path);
+				if (id != CONTENT_LOAD_ERROR && id != _currTexID)
+				{
+					ID3D11ShaderResourceView* const srv = _content->GetTexture(id)->GetSRV();
+					_context->PSSetShaderResources(0, 1, &srv);
+					_currTexID = id;
+				}
+			}
+			else if (prevTexID != _currTexID && prevTexID != CONTENT_LOAD_ERROR)
+			{
+				ID3D11ShaderResourceView* const srv = _content->GetTexture(prevTexID)->GetSRV();
+				_context->PSSetShaderResources(0, 1, &srv);
+				_currTexID = prevTexID;
+			}
+
+			path = loadedMesh->GetAmbientPath(i);
+			if (path != "")
+			{
+				const UINT id = _content->GetTextureIDByPath(path);
+				if (id != CONTENT_LOAD_ERROR && id != _currAmbientID)
+				{
+					ID3D11ShaderResourceView* const srv = _content->GetTexture(id)->GetSRV();
+					_context->PSSetShaderResources(4, 1, &srv);
+					_currAmbientID = id;
+				}
+			}
+			else if (prevAmbientID != _currAmbientID && prevAmbientID != CONTENT_LOAD_ERROR)
+			{
+				ID3D11ShaderResourceView* const srv = _content->GetTexture(prevAmbientID)->GetSRV();
+				_context->PSSetShaderResources(4, 1, &srv);
+				_currAmbientID = prevAmbientID;
+			}
+
+			path = loadedMesh->GetSpecularPath(i);
+			if (path != "")
+			{
+				const UINT id = _content->GetTextureMapIDByPath(path, TextureType::SPECULAR);
+				if (id != CONTENT_LOAD_ERROR && id != _currSpecularID)
+				{
+					ID3D11ShaderResourceView* const srv = _content->GetTextureMap(id)->GetSRV();
+					_context->PSSetShaderResources(2, 1, &srv);
+					_currSpecularID = id;
+				}
+			}
+			else if (prevSpecularID != _currSpecularID && prevSpecularID != CONTENT_LOAD_ERROR)
+			{
+				ID3D11ShaderResourceView* const srv = _content->GetTextureMap(prevSpecularID)->GetSRV();
+				_context->PSSetShaderResources(2, 1, &srv);
+				_currSpecularID = prevSpecularID;
+			}
+
+			ID3D11Buffer *const specularBuffer = loadedMesh->GetSpecularBuffer(i);
+			_context->PSSetConstantBuffers(1, 1, &specularBuffer);
+
 			if (!loadedMesh->PerformSubMeshDrawCall(_context, i))
 			{
 				ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, i));

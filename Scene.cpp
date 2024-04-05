@@ -1,5 +1,6 @@
 #include "Scene.h"
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "ErrMsg.h"
@@ -47,20 +48,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		return false;
 	}
 
-	// Create camera
-	/*if (!_camera->Initialize(device,
-		{ 4.0f, 16.0f / 9.0f, 0.05f, 50.0f }, 
-		{ 0.0f, 2.0f, -2.0f, 0.0f }, true, true))
-	{
-		ErrMsg("Failed to initialize camera!");
-		return false;
-	}*/
-
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		512,
+		1024,
 		std::vector<SpotLightData::PerLightInfo> {
-			/*SpotLightData::PerLightInfo {
+			SpotLightData::PerLightInfo {
 				{ 4.0f, 2.5f, 0.0f },		// initialPosition
 				{ 15.0f, 0.0f, 0.0f },		// color
 				-XM_PIDIV2,					// rotationX
@@ -94,19 +86,31 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				false,						// orthographic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
-			},*/
+			},
 			
 			SpotLightData::PerLightInfo {
-				{ 0.0f, 17.5f, 0.0f },		// initialPosition
+				{ 0.0f, 20.0f, 0.0f },		// initialPosition
+				{ 20.0f, 20.0f, 20.0f },	// color
+				0.0f,						// rotationX
+				XM_PIDIV2,					// rotationY
+				XM_PI * 0.65f,				// angle
+				1.0f,						// falloff
+				false,						// orthographic
+				0.1f,						// projectionNearZ
+				35.0f						// projectionFarZ
+			},
+
+			/*SpotLightData::PerLightInfo {
+				{ 6.0f, 15.0f, 6.0f },		// initialPosition
 				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
 				XM_PIDIV2,					// rotationY
 				15.0f,						// angle
-				0.75f,						// falloff
+				1.0f,						// falloff
 				true,						// orthographic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
-			},
+			},*/
 		}
 	};
 
@@ -121,20 +125,20 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	const PointLightData pointlightInfo = {
 		512,
 		std::vector<PointLightData::PerLightInfo> {
-			/*PointLightData::PerLightInfo {
+			PointLightData::PerLightInfo {
 				{ 7.0f, 5.0f, -9.0f },			// initialPosition
-				{ 15.0f, 15.0f, 15.0f },		// color
+				{ 0.0f, 6.0f, 15.0f },			// color
 				3.0f,							// falloff
 				0.1f,							// projectionNearZ
-				35.0f							// projectionFarZ
-			},*/
+				10.0f							// projectionFarZ
+			},
 
 			PointLightData::PerLightInfo {
-				{ 0.0f, 60.0f, 0.0f },			// initialPosition
-				{ 0.0f, 0.0f, 0.0f },			// color
+				{ 0.0f, 15.0f, 0.0f },			// initialPosition
+				{ 7.0f, 7.0f, 7.0f },			// color
 				1.0f,							// falloff
 				0.1f,							// projectionNearZ
-				1.0f							// projectionFarZ
+				25.0f							// projectionFarZ
 			},
 		}
 	};
@@ -147,7 +151,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 64, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 256, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -181,7 +185,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
 			normalID = CONTENT_LOAD_ERROR,
-			specularID = content->GetTextureMapID("TexMap_Gray_Specular"),
+			specularID = CONTENT_LOAD_ERROR,
 			reflectiveID = CONTENT_LOAD_ERROR,
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
@@ -218,6 +222,27 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0.0f });
 	}
+
+	// Create submesh
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_SimpleSubmesh"),
+			textureID = content->GetTextureID("Tex_White"),
+			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Default_Specular"),
+			reflectiveID = content->GetTextureMapID("TexMap_Default_Reflective"),
+			ambientID = content->GetTextureID("Tex_Ambient"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize submesh object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -5.0f, 10.0f, 5.0f, 0.0f });
+	}
 	
 	// Create PBR-sphere
 	{
@@ -239,27 +264,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 2.5f, -7.5f, 0 });
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f, 0 });
-	}
-	
-	// Create specular sphere
-	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_Sphere"),
-			textureID = content->GetTextureID("Tex_White"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = content->GetTextureMapID("TexMap_White_Specular"),
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = CONTENT_LOAD_ERROR,
-			heightID = CONTENT_LOAD_ERROR;
-
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
-		{
-			ErrMsg("Failed to initialize specular object!");
-			return false;
-		}
-
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 6.0f, 7.5f, 0 });
 	}
 
 	// Create error
@@ -286,7 +290,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create transparent
-	{
+	/*{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Fallback"),
 			textureID = content->GetTextureID("Tex_Transparent"),
@@ -304,7 +308,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 1.5f, 4.0f, 0 });
-	}
+	}*/
 
 	// Create emitter
 	{
@@ -315,7 +319,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 5.0f;
 
-		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Particle")))
+		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Flower")))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
@@ -399,6 +403,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					meshID, textureID, 
 					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
 					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
+					CONTENT_LOAD_ERROR, 
 					(textureID >= transparentStart)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
@@ -426,7 +431,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			if (!obj->Initialize(_device, 
 				selectedMeshID, selectedTextureID, 
 				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
-				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
+				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
+				CONTENT_LOAD_ERROR,
 				(selectedTextureID >= transparentStart)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
@@ -462,6 +468,16 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
 			currSelection = -1;
 
+		static bool movePointLights = false;
+
+		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+			movePointLights = false;
+		else if (input.GetKey(KeyCode::F) == KeyState::Pressed)
+		{
+			movePointLights = !movePointLights;
+			currSelection = movePointLights ? 0 : -1;
+		}
+
 		if (input.IsCursorLocked())
 		{
 			if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
@@ -471,8 +487,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 			if (currSelection < -1)
 				currSelection = -1;
-			else if (currSelection >= (int)_sceneHolder.GetEntityCount())
-				currSelection = (int)_sceneHolder.GetEntityCount() - 1;
+			else if (currSelection >= static_cast<int>(_sceneHolder.GetEntityCount()))
+				currSelection = static_cast<int>(_sceneHolder.GetEntityCount()) - 1;
 
 			float currSpeed = 3.0f;
 			if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
@@ -480,7 +496,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
 				currSpeed = 0.5f;
 
-			if (currSelection == -1)
+			if (currSelection == -1 && !movePointLights)
 			{ // Move camera
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
 					basisCamera->MoveRight(time.deltaTime * currSpeed);
@@ -502,7 +518,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				if (mState.dy != 0) basisCamera->LookY(static_cast<float>(mState.dy) / 360.0f);
 			}
 			else
-			{ // Move selected entity
+			{ // Move selected entity or point light
 				static bool relativeToCamera = false;
 				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
 					relativeToCamera = !relativeToCamera;
@@ -567,23 +583,31 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 				if (doMove)
 				{
-					Entity *ent = _sceneHolder.GetEntity(currSelection);
-					Transform *entityTransform = ent->GetTransform();
-
-					if (isRotating)
-						entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
-					else if (isScaling)
-						entityTransform->ScaleAbsolute(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
-					else
-						entityTransform->Move(*reinterpret_cast<XMFLOAT4A *>(&transformationVector));
-
-
-					if (!_sceneHolder.UpdateEntityPosition(ent))
+					if (movePointLights)
 					{
-						ErrMsg("Failed to update entity position!");
-						return false;
+						currSelection = std::clamp(currSelection, 0, static_cast<int>(_pointlights->GetNrOfLights()) - 1);
+						_pointlights->Move(currSelection, *reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+					}
+					else
+					{
+						Entity* ent = _sceneHolder.GetEntity(currSelection);
+						Transform* entityTransform = ent->GetTransform();
+
+						if (isRotating)
+							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+						else if (isScaling)
+							entityTransform->ScaleAbsolute(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+						else
+							entityTransform->Move(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+
+						if (!_sceneHolder.UpdateEntityPosition(ent))
+						{
+							ErrMsg("Failed to update entity position!");
+							return false;
+						}
 					}
 				}
+
 			}
 		}
 	}
@@ -758,28 +782,63 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
-			DirectX::BoundingFrustum spotlightFrustum;
-			if (!spotlightCamera->StoreBounds(spotlightFrustum))
+			union {
+				DirectX::BoundingFrustum frustum = {};
+				DirectX::BoundingOrientedBox box;
+			} lightBounds;
+			bool isSpotlightOrtho = spotlightCamera->GetOrtho();
+
+			if (isSpotlightOrtho)
 			{
-				ErrMsg("Failed to store spotlight camera frustum!");
-				continue;
+				if (!spotlightCamera->StoreBounds(lightBounds.box))
+				{
+					ErrMsg("Failed to store spotlight camera oriented box!");
+					continue;
+				}
+			}
+			else
+			{
+				if (!spotlightCamera->StoreBounds(lightBounds.frustum))
+				{
+					ErrMsg("Failed to store spotlight camera frustum!");
+					continue;
+				}
 			}
 
 			bool intersectResult = !_cubemap.GetUpdate();
-			if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(spotlightFrustum);
-			else			intersectResult = intersectResult && !view.frustum.Intersects(spotlightFrustum);
+			if (isOrtho)
+			{
+				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.box.Intersects(lightBounds.box);
+				else					intersectResult = intersectResult && !view.box.Intersects(lightBounds.frustum);
+			}
+			else
+			{
+				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.box);
+				else					intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.frustum);
+			}
 
 			if (intersectResult)
-			{ // Skip rendering if the frustums don't intersect
+			{ // Skip rendering if the bounds don't intersect
 				_spotlights->SetEnabled(i, false);
 				continue;
 			}
 			_spotlights->SetEnabled(i, true);
 
-			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
+			if (isOrtho)
 			{
-				ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
-				continue;
+				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+					continue;
+				}
+			}
+			else
+			{
+				if (!_sceneHolder.FrustumCull(lightBounds.frustum, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+					continue;
+				}
 			}
 
 			for (Entity *ent : entitiesToCastShadows)
@@ -799,29 +858,64 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
-			DirectX::BoundingFrustum spotlightFrustum;
-			if (!spotlightCamera->StoreBounds(spotlightFrustum))
+			union {
+				DirectX::BoundingFrustum frustum = {};
+				DirectX::BoundingOrientedBox box;
+			} lightBounds;
+			bool isSpotlightOrtho = spotlightCamera->GetOrtho();
+
+			if (isSpotlightOrtho)
 			{
-				ErrMsg("Failed to store spotlight camera frustum!");
-				return false;
+				if (!spotlightCamera->StoreBounds(lightBounds.box))
+				{
+					ErrMsg("Failed to store spotlight camera oriented box!");
+					return false;
+				}
+			}
+			else
+			{
+				if (!spotlightCamera->StoreBounds(lightBounds.frustum))
+				{
+					ErrMsg("Failed to store spotlight camera frustum!");
+					return false;
+				}
 			}
 
 			bool intersectResult = !_cubemap.GetUpdate();
-			if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(spotlightFrustum);
-			else			intersectResult = intersectResult && !view.frustum.Intersects(spotlightFrustum);
+			if (isOrtho)
+			{
+				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.box.Intersects(lightBounds.box);
+				else					intersectResult = intersectResult && !view.box.Intersects(lightBounds.frustum);
+			}
+			else
+			{
+				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.box);
+				else					intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.frustum);
+			}
 
 			if (intersectResult)
-			{ // Skip rendering if the frustums don't intersect
+			{ // Skip rendering if the bounds don't intersect
 				_spotlights->SetEnabled(i, false);
 				continue;
 			}
 			_spotlights->SetEnabled(i, true);
 
 			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
-			if (!_sceneHolder.FrustumCull(spotlightFrustum, entitiesToCastShadows))
+			if (isOrtho)
 			{
-				ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
-				return false;
+				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+					return false;
+				}
+			}
+			else
+			{
+				if (!_sceneHolder.FrustumCull(lightBounds.frustum, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+					return false;
+				}
 			}
 			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
 
@@ -1012,12 +1106,34 @@ bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
-	static char fovText[32] = "90.0";
-	if (ImGui::InputText("FOV", fovText, 32))
+	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
+		_doMultiThread = !_doMultiThread;
+
+	bool isOrtho = _camera->GetOrtho();
+	if (ImGui::Button(isOrtho ? "Orthographic: true" : "Orthographic: false"))
 	{
-		float newFOV = static_cast<float>(atof(fovText));
-		if (newFOV > 0.0f && newFOV < 180.0f)
-			_camera->SetFOV(newFOV * (XM_PI / 180.0f));
+		isOrtho = !isOrtho;
+		_camera->SetOrtho(isOrtho);
+	}
+
+	static char fovText[16] = "90.0";
+	if (isOrtho)
+	{
+		if (ImGui::InputText("View Width", fovText, 16))
+		{
+			float newWidth = static_cast<float>(atof(fovText));
+			if (newWidth > 0.0f)
+				_camera->SetFOV(newWidth);
+		}
+	}
+	else
+	{
+		if (ImGui::InputText("FOV", fovText, 16))
+		{
+			float newFOV = static_cast<float>(atof(fovText));
+			if (newFOV > 0.0f && newFOV < 180.0f)
+				_camera->SetFOV(newFOV * (XM_PI / 180.0f));
+		}
 	}
 
 	XMFLOAT4A camPos = _camera->GetPosition();
@@ -1035,9 +1151,6 @@ bool Scene::RenderUI()
 		snprintf(camZCoord, sizeof(camZCoord), "%.2f", camPos.z);
 		ImGui::Text(std::format("Virt Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
 	}
-
-	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
-		_doMultiThread = !_doMultiThread;
 
 	ImGui::Separator();
 
