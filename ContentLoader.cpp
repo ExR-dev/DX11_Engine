@@ -16,6 +16,23 @@ struct RawNormal	{ float	x, y, z; };
 struct RawTexCoord	{ float	u, v;	 };
 struct RawIndex		{ int	v, t, n; };
 
+
+struct SubMaterial
+{
+	std::string
+		mtlName,
+		ambientPath,
+		diffusePath,
+		specularPath;
+	float specularExponent;
+};
+
+struct Material
+{
+	std::string mtlName;
+	std::vector<SubMaterial> subMaterials;
+};
+
 struct FormattedVertex {
 	float 
 		px, py, pz,
@@ -238,6 +255,68 @@ static bool ReadWavefront(const char *path,
 }
 
 
+static bool ReadMaterial(const char *path, Material &material)
+{
+	material.mtlName = ((std::string)path).substr(((std::string)path).find_last_of('\\') + 1, ((std::string)path).find_last_of('.'));
+
+	std::ifstream fileStream(path);
+	std::string line;
+
+	while (std::getline(fileStream, line))
+	{
+		size_t commentStart = line.find_first_of('#');
+		if (commentStart != std::string::npos)
+			line = line.substr(0, commentStart); // Exclude comments
+
+		if (line.empty())
+			continue; // Skip filler line
+
+		std::istringstream segments(line);
+
+		std::string dataType;
+		if (!(segments >> dataType))
+		{
+			ErrMsg(std::format("Failed to get data type from line \"{}\", file \"{}\"!", line, path));
+			return false;
+		}
+
+		if (dataType == "newmtl")
+		{ // New Sub-material
+			std::string mtlName;
+			if (!(segments >> mtlName))
+			{
+				ErrMsg(std::format("Failed to get sub-material name from line \"{}\", file \"{}\"!", line, path));
+				return false;
+			}
+
+			material.subMaterials.push_back({ mtlName, "", "", "", 0.0f });
+		}
+		else if (dataType == "map_Ka")
+		{ 
+
+		}
+		else if (dataType == "map_Kd")
+		{ 
+
+		}
+		else if (dataType == "map_Ks")
+		{ 
+
+		}
+		else if (dataType == "Ns")
+		{ 
+
+		}
+		else
+		{
+			ErrMsg(std::format(R"(Unimplemented type flag '{}' on line "{}", file "{}"!)", dataType, line, path));
+		}
+	}
+
+	return false;
+}
+
+
 struct FormattedIndexGroup {
 	std::vector<uint32_t> indices;
 	std::string mtlName;
@@ -438,6 +517,13 @@ bool LoadMeshFromFile(const char *path, MeshData &meshData)
 	else
 	{
 		ErrMsg(std::format("Unimplemented mesh file extension '{}'!", ext));
+		return false;
+	}
+
+	Material material;
+	if (!ReadMaterial(meshData.mtlFile.c_str(), material))
+	{
+		ErrMsg("Failed to read wavefront file!");
 		return false;
 	}
 

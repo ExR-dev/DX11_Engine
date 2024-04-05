@@ -13,18 +13,6 @@
 constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
 
 
-struct SubMaterial
-{
-	std::string
-		mtlName,
-		kdPath;
-};
-
-struct Material
-{
-	std::string mtlName;
-	std::vector<SubMaterial> subMaterials;
-};
 
 struct MaterialProperties
 {
