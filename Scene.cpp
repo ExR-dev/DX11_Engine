@@ -6,6 +6,8 @@
 #include "ErrMsg.h"
 #include "ImGui/imgui.h"
 
+using namespace DirectX;
+
 
 Scene::Scene()
 {
@@ -128,9 +130,9 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			PointLightData::PerLightInfo {
 				{ 7.0f, 5.0f, -9.0f },			// initialPosition
 				{ 0.0f, 6.0f, 15.0f },			// color
-				3.0f,							// falloff
+				4.0f,							// falloff
 				0.1f,							// projectionNearZ
-				10.0f							// projectionFarZ
+				15.0f							// projectionFarZ
 			},
 
 			PointLightData::PerLightInfo {
@@ -138,7 +140,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 				{ 7.0f, 7.0f, 7.0f },			// color
 				1.0f,							// falloff
 				0.1f,							// projectionNearZ
-				25.0f							// projectionFarZ
+				16.0f							// projectionFarZ
 			},
 		}
 	};
@@ -151,12 +153,34 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 256, 0.1f, 25.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 256, 0.1f, 16.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
 	}
 
+
+	// Create pointer dot
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_Red"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Red"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		constexpr BoundingBox dotBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0.00001f, 0.00001f, 0.00001f));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize pointer dot object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleAbsolute({ -0.9f, -0.9f, -0.9f, 0 });
+	}
 
 	// Create room
 	{
@@ -170,7 +194,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, heightID, ambientID, reflectiveID))
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
@@ -290,7 +314,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 	}
 
 	// Create transparent
-	/*{
+	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Fallback"),
 			textureID = content->GetTextureID("Tex_Transparent"),
@@ -308,14 +332,14 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		}
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 1.5f, 4.0f, 0 });
-	}*/
+	}
 
 	// Create emitter
 	{
 		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {15,15,15}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
-		emitterData.particleCount = 2048;
+		emitterData.particleCount = 1024;
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 5.0f;
 
@@ -339,9 +363,6 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 
 	static bool rotateLights = false;
-	if (input.GetKey(KeyCode::G) == KeyState::Pressed)
-		rotateLights = !rotateLights;
-
 	if (rotateLights)
 	{
 		_spotlights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
@@ -353,10 +374,12 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		_spotlights->GetLightCamera(2)->LookX(time.deltaTime * 0.5f);
 		_spotlights->GetLightCamera(2)->MoveRight(time.deltaTime * -2.0f);
 	}
-	
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
+		if (input.GetKey(KeyCode::G) == KeyState::Pressed)
+			rotateLights = !rotateLights;
+
 		static bool useMainCamera = true;
 		if (input.GetKey(KeyCode::Z) == KeyState::Pressed)
 			useMainCamera = !useMainCamera;
@@ -449,6 +472,32 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				basisCamera->GetUp(),
 				basisCamera->GetForward()
 			);
+		}
+
+		if (input.GetKey(KeyCode::I) == KeyState::Held)
+		{
+			RaycastOut out;
+
+			const XMFLOAT4A
+				camPos = basisCamera->GetPosition(),
+				camDir = basisCamera->GetForward();
+
+			bool hit = _sceneHolder.Raycast(
+				{ camPos.x, camPos.y, camPos.z }, 
+				{ camDir.x, camDir.y, camDir.z }, 
+				out
+			);
+
+			out.distance = hit ? out.distance : 0.0f;
+
+			const XMFLOAT4A destination = XMFLOAT4A(
+				camPos.x + camDir.x * out.distance, 
+				camPos.y + camDir.y * out.distance, 
+				camPos.z + camDir.z * out.distance, 
+				0.0f
+			);
+
+			_sceneHolder.GetEntity(0)->GetTransform()->SetPosition(destination);
 		}
 
 		static int currSelection = -1;
@@ -819,12 +868,12 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 			if (intersectResult)
 			{ // Skip rendering if the bounds don't intersect
-				_spotlights->SetEnabled(i, false);
+				_spotlights->SetLightEnabled(i, false);
 				continue;
 			}
-			_spotlights->SetEnabled(i, true);
+			_spotlights->SetLightEnabled(i, true);
 
-			if (isOrtho)
+			if (isSpotlightOrtho)
 			{
 				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
 				{
@@ -895,13 +944,13 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 			if (intersectResult)
 			{ // Skip rendering if the bounds don't intersect
-				_spotlights->SetEnabled(i, false);
+				_spotlights->SetLightEnabled(i, false);
 				continue;
 			}
-			_spotlights->SetEnabled(i, true);
+			_spotlights->SetLightEnabled(i, true);
 
 			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
-			if (isOrtho)
+			if (isSpotlightOrtho)
 			{
 				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
 				{

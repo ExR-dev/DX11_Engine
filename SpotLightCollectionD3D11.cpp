@@ -1,8 +1,11 @@
+
 #include "SpotLightCollectionD3D11.h"
 
 #include <DirectXCollision.h>
 
 #include "ErrMsg.h"
+
+using namespace DirectX;
 
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
@@ -199,12 +202,55 @@ const D3D11_VIEWPORT &SpotLightCollectionD3D11::GetViewport() const
 }
 
 
-bool SpotLightCollectionD3D11::IsEnabled(const UINT lightIndex) const
+bool SpotLightCollectionD3D11::GetLightEnabled(const UINT lightIndex) const
 {
 	return _shadowCameras.at(lightIndex).isEnabled;
 }
 
-void SpotLightCollectionD3D11::SetEnabled(const UINT lightIndex, const bool state)
+const XMFLOAT3 &SpotLightCollectionD3D11::GetLightColor(const UINT lightIndex) const
+{
+	return _bufferData.at(lightIndex).color;
+}
+
+float SpotLightCollectionD3D11::GetLightAngle(const UINT lightIndex) const
+{
+	return _bufferData.at(lightIndex).angle;
+}
+
+float SpotLightCollectionD3D11::GetLightFalloff(const UINT lightIndex) const
+{
+	return _bufferData.at(lightIndex).falloff;
+}
+
+bool SpotLightCollectionD3D11::GetLightOrthographic(const UINT lightIndex) const
+{
+	return _bufferData.at(lightIndex).orthographic > 0;
+}
+
+
+void SpotLightCollectionD3D11::SetLightEnabled(const UINT lightIndex, const bool state)
 {
 	_shadowCameras.at(lightIndex).isEnabled = state;
+}
+
+void SpotLightCollectionD3D11::SetLightColor(const UINT lightIndex, const XMFLOAT3 &color)
+{
+	_bufferData.at(lightIndex).color = color;
+}
+
+void SpotLightCollectionD3D11::SetLightAngle(const UINT lightIndex, const float angle)
+{
+	_bufferData.at(lightIndex).angle = angle;
+	_shadowCameras.at(lightIndex).camera->SetFOV(angle);
+}
+
+void SpotLightCollectionD3D11::SetLightFalloff(const UINT lightIndex, const float falloff)
+{
+	_bufferData.at(lightIndex).falloff = falloff;
+}
+
+void SpotLightCollectionD3D11::SetLightOrthographic(const UINT lightIndex, const bool state)
+{
+	_bufferData.at(lightIndex).orthographic = state ? 1 : -1;
+	_shadowCameras.at(lightIndex).camera->SetOrtho(state);
 }

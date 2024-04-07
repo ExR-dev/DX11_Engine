@@ -195,10 +195,12 @@ enum class KeyState
 	Released = 3,
 };
 
+
 struct MouseState
 {
     int x, y, dx, dy;
 };
+
 
 class Input
 {

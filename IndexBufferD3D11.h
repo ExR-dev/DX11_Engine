@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-
 #include <d3d11_4.h>
+
 
 class IndexBufferD3D11
 {

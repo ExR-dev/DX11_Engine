@@ -147,26 +147,6 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 }
 
 
-ID3D11RenderTargetView *Graphics::GetRTV() const
-{
-	return _rtv;
-}
-
-ID3D11Texture2D *Graphics::GetDsTexture() const
-{
-	return _dsTexture;
-}
-
-ID3D11DepthStencilView *Graphics::GetDsView() const
-{
-	return _dsView;
-}
-
-D3D11_VIEWPORT &Graphics::GetViewport()
-{
-	return _viewport;
-}
-
 bool Graphics::GetUpdateCubemap() const
 {
 	return _updateCubemap;
@@ -339,11 +319,12 @@ bool Graphics::RenderToTarget(
 			return false;
 		}
 
-		if (!RenderTransparency(targetRTV, targetDSV, targetViewport))
-		{
-			ErrMsg("Failed to render transparency!");
-			return false;
-		}
+		if (_renderTransparency)
+			if (!RenderTransparency(targetRTV, targetDSV, targetViewport))
+			{
+				ErrMsg("Failed to render transparency!");
+				return false;
+			}
 	}
 	else
 	{
@@ -385,7 +366,7 @@ bool Graphics::RenderSpotlights()
 	for (UINT spotlight_i = 0; spotlight_i < spotLightCount; spotlight_i++)
 	{
 		// Skip rendering if disabled
-		if (!_currSpotLightCollection->IsEnabled(spotlight_i))
+		if (!_currSpotLightCollection->GetLightEnabled(spotlight_i))
 			continue;
 
 		ID3D11DepthStencilView *dsView = _currSpotLightCollection->GetShadowMapDSV(spotlight_i);
@@ -436,8 +417,8 @@ bool Graphics::RenderSpotlights()
 				return false;
 			}
 
-			const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
-			for (size_t submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
+			const UINT subMeshCount = loadedMesh->GetNrOfSubMeshes();
+			for (UINT submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
 			{
 				if (!loadedMesh->PerformSubMeshDrawCall(_context, submesh_i))
 				{
@@ -521,8 +502,8 @@ bool Graphics::RenderPointlights()
 					return false;
 				}
 
-				const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
-				for (size_t submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
+				const UINT subMeshCount = loadedMesh->GetNrOfSubMeshes();
+				for (UINT submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
 				{
 					if (!loadedMesh->PerformSubMeshDrawCall(_context, submesh_i))
 					{
@@ -711,7 +692,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 		if (_currTexID != resources.texID)
 		{
-			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+			srv = _content->GetTexture(resources.texID)->GetSRV();
 			_context->PSSetShaderResources(0, 1, &srv);
 			_currTexID = resources.texID;
 		}
@@ -719,7 +700,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		if (resources.normalID != CONTENT_LOAD_ERROR)
 			if (_currNormalID != resources.normalID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.normalID)->GetSRV();
+				srv = _content->GetTextureMap(resources.normalID)->GetSRV();
 				_context->PSSetShaderResources(1, 1, &srv);
 				_currNormalID = resources.normalID;
 			}
@@ -727,7 +708,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		if (resources.specularID != CONTENT_LOAD_ERROR)
 			if (_currSpecularID != resources.specularID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.specularID)->GetSRV();
+				srv = _content->GetTextureMap(resources.specularID)->GetSRV();
 				_context->PSSetShaderResources(2, 1, &srv);
 				_currSpecularID = resources.specularID;
 			}
@@ -735,7 +716,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		if (resources.reflectiveID != CONTENT_LOAD_ERROR)
 			if (_currReflectiveID != resources.reflectiveID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
+				srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
 				_context->PSSetShaderResources(3, 1, &srv);
 				_currReflectiveID = resources.reflectiveID;
 			}
@@ -743,7 +724,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		if (resources.ambientID != CONTENT_LOAD_ERROR)
 			if (_currAmbientID != resources.ambientID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.ambientID)->GetSRV();
+				srv = _content->GetTexture(resources.ambientID)->GetSRV();
 				_context->PSSetShaderResources(4, 1, &srv);
 				_currAmbientID = resources.ambientID;
 			}
@@ -752,14 +733,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		{
 			if (_currHeightID != resources.heightID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.heightID)->GetSRV();
+				srv = _content->GetTextureMap(resources.heightID)->GetSRV();
 				_context->DSSetShaderResources(0, 1, &srv);
 				_currHeightID = resources.heightID;
 			}
 		}
 		else if (_currHeightID != defaultHeightID)
 		{
-			ID3D11ShaderResourceView *const srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
+			srv = _content->GetTextureMap(defaultHeightID)->GetSRV();
 			_context->DSSetShaderResources(0, 1, &srv);
 			_currHeightID = defaultHeightID;
 		}
@@ -783,8 +764,8 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			prevAmbientID = _currAmbientID,
 			prevSpecularID = _currSpecularID;
 
-		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
-		for (size_t i = 0; i < subMeshCount; i++)
+		const UINT subMeshCount = loadedMesh->GetNrOfSubMeshes();
+		for (UINT i = 0; i < subMeshCount; i++)
 		{
 			// Bind sub-mesh material textures if defined
 			std::string path = loadedMesh->GetDiffusePath(i);
@@ -793,14 +774,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				const UINT id = _content->GetTextureIDByPath(path);
 				if (id != CONTENT_LOAD_ERROR && id != _currTexID)
 				{
-					ID3D11ShaderResourceView* const srv = _content->GetTexture(id)->GetSRV();
+					srv = _content->GetTexture(id)->GetSRV();
 					_context->PSSetShaderResources(0, 1, &srv);
 					_currTexID = id;
 				}
 			}
 			else if (prevTexID != _currTexID && prevTexID != CONTENT_LOAD_ERROR)
 			{
-				ID3D11ShaderResourceView* const srv = _content->GetTexture(prevTexID)->GetSRV();
+				srv = _content->GetTexture(prevTexID)->GetSRV();
 				_context->PSSetShaderResources(0, 1, &srv);
 				_currTexID = prevTexID;
 			}
@@ -811,14 +792,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				const UINT id = _content->GetTextureIDByPath(path);
 				if (id != CONTENT_LOAD_ERROR && id != _currAmbientID)
 				{
-					ID3D11ShaderResourceView* const srv = _content->GetTexture(id)->GetSRV();
+					srv = _content->GetTexture(id)->GetSRV();
 					_context->PSSetShaderResources(4, 1, &srv);
 					_currAmbientID = id;
 				}
 			}
 			else if (prevAmbientID != _currAmbientID && prevAmbientID != CONTENT_LOAD_ERROR)
 			{
-				ID3D11ShaderResourceView* const srv = _content->GetTexture(prevAmbientID)->GetSRV();
+				srv = _content->GetTexture(prevAmbientID)->GetSRV();
 				_context->PSSetShaderResources(4, 1, &srv);
 				_currAmbientID = prevAmbientID;
 			}
@@ -829,14 +810,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				const UINT id = _content->GetTextureMapIDByPath(path, TextureType::SPECULAR);
 				if (id != CONTENT_LOAD_ERROR && id != _currSpecularID)
 				{
-					ID3D11ShaderResourceView* const srv = _content->GetTextureMap(id)->GetSRV();
+					srv = _content->GetTextureMap(id)->GetSRV();
 					_context->PSSetShaderResources(2, 1, &srv);
 					_currSpecularID = id;
 				}
 			}
 			else if (prevSpecularID != _currSpecularID && prevSpecularID != CONTENT_LOAD_ERROR)
 			{
-				ID3D11ShaderResourceView* const srv = _content->GetTextureMap(prevSpecularID)->GetSRV();
+				srv = _content->GetTextureMap(prevSpecularID)->GetSRV();
 				_context->PSSetShaderResources(2, 1, &srv);
 				_currSpecularID = prevSpecularID;
 			}
@@ -1193,8 +1174,8 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 			return false;
 		}
 
-		const size_t subMeshCount = loadedMesh->GetNrOfSubMeshes();
-		for (size_t i = 0; i < subMeshCount; i++)
+		const UINT subMeshCount = loadedMesh->GetNrOfSubMeshes();
+		for (UINT i = 0; i < subMeshCount; i++)
 		{
 			if (!loadedMesh->PerformSubMeshDrawCall(_context, i))
 			{
@@ -1353,6 +1334,9 @@ bool Graphics::RenderUI(Time &time)
 
 	if (ImGui::Button(std::format("Reflections: {}", _updateCubemap ? "Enabled" : "Disabled").c_str()))
 		_updateCubemap = !_updateCubemap;
+
+	if (ImGui::Button(std::format("Transparency: {}", _renderTransparency ? "Enabled" : "Disabled").c_str()))
+		_renderTransparency = !_renderTransparency;
 
 	ImGui::Text(std::format("Main Draws: {}", _currMainCamera->GetCullCount()).c_str());
 	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)

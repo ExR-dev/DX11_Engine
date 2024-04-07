@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-constexpr float UPDATE_INTERVAL = 0.025f;
+constexpr float UPDATE_INTERVAL = 0.0f;//0.025f;
 
 
 Cubemap::Cubemap()

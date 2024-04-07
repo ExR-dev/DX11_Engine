@@ -457,7 +457,7 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 	const Material &material)
 {
 	// Send vertex data to meshData
-	meshData.vertexInfo.nrOfVerticesInBuffer = formattedVertices.size();
+	meshData.vertexInfo.nrOfVerticesInBuffer = static_cast<UINT>(formattedVertices.size());
 	meshData.vertexInfo.sizeOfVertex = sizeof(FormattedVertex);
 	meshData.vertexInfo.vertexData = reinterpret_cast<float *>(new FormattedVertex[meshData.vertexInfo.nrOfVerticesInBuffer]);
 
@@ -476,8 +476,8 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		MeshData::SubMeshInfo subMeshInfo = { };
 		const FormattedIndexGroup *currGroup = &formattedIndexGroups.at(group_i);
 
-		subMeshInfo.startIndexValue = inlineIndices.size();
-		subMeshInfo.nrOfIndicesInSubMesh = currGroup->indices.size();
+		subMeshInfo.startIndexValue = static_cast<UINT>(inlineIndices.size());
+		subMeshInfo.nrOfIndicesInSubMesh = static_cast<UINT>(currGroup->indices.size());
 
 		SubMaterial const *currMat = nullptr;
 		for (const SubMaterial &subMat : material.subMaterials)
@@ -496,7 +496,7 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		meshData.subMeshInfo.push_back(subMeshInfo);
 	}
 
-	meshData.indexInfo.nrOfIndicesInBuffer = inlineIndices.size();
+	meshData.indexInfo.nrOfIndicesInBuffer = static_cast<UINT>(inlineIndices.size());
 	meshData.indexInfo.indexData = new uint32_t[meshData.indexInfo.nrOfIndicesInBuffer];
 
 	std::memcpy(

@@ -4,8 +4,6 @@
 
 #include "ConstantBufferD3D11.h"
 
-//using namespace DirectX;
-
 
 class Transform
 {

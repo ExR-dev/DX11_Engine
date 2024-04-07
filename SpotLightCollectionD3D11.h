@@ -9,8 +9,6 @@
 #include "DepthBufferD3D11.h"
 #include "CameraD3D11.h"
 
-using namespace DirectX;
-
 
 struct SpotLightData
 {
@@ -21,8 +19,8 @@ struct SpotLightData
 
 	struct PerLightInfo
 	{
-		XMFLOAT3 initialPosition = { };
-		XMFLOAT3 color = { };
+		DirectX::XMFLOAT3 initialPosition = { };
+		DirectX::XMFLOAT3 color = { };
 		float rotationX	= 0.0f;
 		float rotationY	= 0.0f;
 		float angle	= 0.0f;
@@ -46,10 +44,10 @@ class SpotLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		XMFLOAT4X4 vpMatrix = { };
-		XMFLOAT3 position = { };
-		XMFLOAT3 direction = { };
-		XMFLOAT3 color = { };
+		DirectX::XMFLOAT4X4 vpMatrix = { };
+		DirectX::XMFLOAT3 position = { };
+		DirectX::XMFLOAT3 direction = { };
+		DirectX::XMFLOAT3 color = { };
 		float angle = 0.0f;
 		float falloff = 0.0f;
 		int orthographic = -1;
@@ -87,6 +85,16 @@ public:
 	[[nodiscard]] ID3D11ShaderResourceView *GetLightBufferSRV() const;
 	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
 
-	[[nodiscard]] bool IsEnabled(UINT lightIndex) const;
-	void SetEnabled(UINT lightIndex, bool state);
+
+	[[nodiscard]] bool GetLightEnabled(UINT lightIndex) const;
+	[[nodiscard]] const DirectX::XMFLOAT3 &GetLightColor(UINT lightIndex) const;
+	[[nodiscard]] float GetLightAngle(UINT lightIndex) const;
+	[[nodiscard]] float GetLightFalloff(UINT lightIndex) const;
+	[[nodiscard]] bool GetLightOrthographic(UINT lightIndex) const;
+
+	void SetLightEnabled(UINT lightIndex, bool state);
+	void SetLightColor(UINT lightIndex, const DirectX::XMFLOAT3 &color);
+	void SetLightAngle(UINT lightIndex, float angle);
+	void SetLightFalloff(UINT lightIndex, float falloff);
+	void SetLightOrthographic(UINT lightIndex, bool state);
 };

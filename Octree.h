@@ -1,10 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include <DirectXCollision.h>
 
 #include "Entity.h"
+
+
+#define TO_VEC(x)		( *reinterpret_cast<DirectX::XMVECTOR *>(&(x))			)
+#define TO_VEC_PTR(x)	(  reinterpret_cast<DirectX::XMVECTOR *>(&(x))			)
+#define TO_CONST_VEC(x) ( *reinterpret_cast<const DirectX::XMVECTOR *>(&(x))	)
 
 
 class Octree
@@ -174,14 +180,14 @@ private:
 		{
 			switch (frustum.Contains(bounds))
 			{
-				case DISJOINT:
+				case DirectX::DISJOINT:
 					return;
 
-				case CONTAINS:
+				case DirectX::CONTAINS:
 					AddToVector(containingItems, depth + 1);
 					break;
 
-				case INTERSECTS:
+				case DirectX::INTERSECTS:
 					if (isLeaf)
 					{
 						for (Entity *item : data)
@@ -211,14 +217,14 @@ private:
 		{
 			switch (box.Contains(bounds))
 			{
-				case DISJOINT:
+				case DirectX::DISJOINT:
 					return;
 
-				case CONTAINS:
+				case DirectX::CONTAINS:
 					AddToVector(containingItems, depth + 1);
 					break;
 
-				case INTERSECTS:
+				case DirectX::INTERSECTS:
 					if (isLeaf)
 					{
 						for (Entity *item : data)
@@ -243,6 +249,81 @@ private:
 					break;
 			}
 		}
+
+
+		bool Raycast(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
+		{
+			if (isLeaf)
+			{ // Check all items in leaf for intersection & return result.
+				for (Entity *item : data)
+				{
+					if (item == nullptr)
+						continue;
+
+					DirectX::BoundingBox itemBounds;
+					item->StoreBounds(itemBounds);
+
+					float newLength = 0.0f;
+					if (itemBounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), newLength))
+					{
+						if (newLength < 0.0f)
+							continue;
+
+						if (newLength >= length)
+							continue;
+
+						length = newLength;
+						entity = item;
+					}
+				}
+
+				return (entity != nullptr);
+			}
+
+			struct ChildHit { int index; float length; };
+			std::vector<ChildHit> childHits = {
+				{ 0, FLT_MAX }, { 1, FLT_MAX }, { 2, FLT_MAX }, { 3, FLT_MAX },
+				{ 4, FLT_MAX }, { 5, FLT_MAX }, { 6, FLT_MAX }, { 7, FLT_MAX }
+			};
+
+			int childHitCount = 8;
+			for (int i = 0; i < childHitCount; i++)
+			{
+				const Node *child = children[childHits[i].index].get();
+				if (child != nullptr)
+					if (child->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), childHits[i].length))
+						continue;
+
+				// Remove child node from hits.
+				childHits.erase(childHits.begin() + i);
+				childHitCount--;
+				i--;
+			}
+
+			// Insertion sort by length.
+			for (int i = 1; i < childHitCount; i++)
+			{
+				int j = i;
+				while (childHits[j].length < childHits[j-1].length)
+				{
+					std::swap(childHits[j], childHits[j-1]);
+					if (--j <= 0) 
+						break;
+				}
+			}
+
+			// Check children in order of closest to furthest. Return first intersection found.
+			for (int i = 0; i < childHitCount; i++)
+			{
+				length = FLT_MAX;
+				entity = nullptr;
+
+				if (children[childHits[i].index]->Raycast(orig, dir, length, entity))
+					return true;
+			}
+
+			return false;
+		}
 	};
 
 	std::unique_ptr<Node> _root;
@@ -255,6 +336,7 @@ public:
 	Octree &operator=(const Octree &other) = delete;
 	Octree(Octree &&other) = delete;
 	Octree &operator=(Octree &&other) = delete;
+
 
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds)
 	{
@@ -269,6 +351,7 @@ public:
 		if (_root != nullptr)
 			_root->Insert(data, bounds);
 	}
+
 
 	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
@@ -288,6 +371,7 @@ public:
 		return true;
 	}
 
+
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 	{
 		if (_root == nullptr)
@@ -305,6 +389,23 @@ public:
 		_root->BoxCull(box, containingItems);
 		return true;
 	}
+
+
+	bool Raycast(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
+	{
+		if (_root == nullptr)
+			return false;
+
+		float _ = FLT_MAX; // In case Intersects() uses the initial dist value as a maximum. Docs don't specify.
+		if (!_root->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), _))
+			return false;
+
+		length = FLT_MAX;
+		entity = nullptr;
+
+		return _root->Raycast(orig, dir, length, entity);
+	}
+
 
 	[[nodiscard]] DirectX::BoundingBox *GetBounds() const
 	{

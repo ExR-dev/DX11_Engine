@@ -13,11 +13,11 @@ struct EmitterData
 
 struct Particle
 {
-	XMFLOAT4A position	= { 0, 0, 0, 1 };
-	XMFLOAT4A velocity	= { 0, 0, 0, 0 };
-	XMFLOAT4A color		= { 0, 0, 0, 1 };
-	XMFLOAT4A startPos	= { 0, 0, 0, 1 };
-	XMFLOAT4A endPos	= { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4A position	= { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4A velocity	= { 0, 0, 0, 0 };
+	DirectX::XMFLOAT4A color		= { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4A startPos	= { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4A endPos	= { 0, 0, 0, 1 };
 	//float size		= 1;
 	//float lifetime	= 0;
 };

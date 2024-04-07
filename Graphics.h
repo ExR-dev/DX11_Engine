@@ -12,7 +12,7 @@
 #include "PointLightCollectionD3D11.h"
 
 
-//constexpr UINT G_BUFFER_COUNT = 3;
+//constexpr UINT G_BUFFER_COUNT = 4;
 
 
 class Graphics
@@ -66,7 +66,8 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
+	DirectX::XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
+	bool _renderTransparency = true;
 
 
 	[[nodiscard]] bool RenderToTarget(
@@ -98,11 +99,6 @@ public:
 
 	[[nodiscard]] bool Setup(UINT width, UINT height, HWND window,
 		ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content);
-
-	[[nodiscard]] ID3D11RenderTargetView *GetRTV() const;
-	[[nodiscard]] ID3D11Texture2D *GetDsTexture() const;
-	[[nodiscard]] ID3D11DepthStencilView *GetDsView() const;
-	[[nodiscard]] D3D11_VIEWPORT &GetViewport();
 
 	[[nodiscard]] bool GetUpdateCubemap() const;
 

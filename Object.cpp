@@ -42,7 +42,7 @@ bool Object::Initialize(ID3D11Device *device,
 	}
 
 
-	if (!_posBuffer.Initialize(device, sizeof(XMFLOAT4A), &_transform.GetPosition()))
+	if (!_posBuffer.Initialize(device, sizeof(DirectX::XMFLOAT4A), &_transform.GetPosition()))
 	{
 		ErrMsg("Failed to initialize position buffer!");
 		return false;
@@ -72,9 +72,9 @@ bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input
 
 	if (updatePosBuffer)
 	{
-		BoundingBox worldSpaceBounds;
+		DirectX::BoundingBox worldSpaceBounds;
 		StoreBounds(worldSpaceBounds);
-		const XMFLOAT4A center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0.0f };
+		const DirectX::XMFLOAT4A center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0.0f };
 
 		if (!_posBuffer.UpdateBuffer(context, &center))
 		{

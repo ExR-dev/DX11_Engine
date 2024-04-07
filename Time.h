@@ -1,7 +1,9 @@
 #pragma once
 
 #include <chrono>
-#include <intsafe.h>
+
+typedef unsigned int UINT;
+
 
 struct Snapshot
 {

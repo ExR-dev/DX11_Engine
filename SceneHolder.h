@@ -7,6 +7,13 @@
 #include "Octree.h"
 
 
+struct RaycastOut
+{
+	Entity *entity = nullptr;
+	float distance = FLT_MAX;
+};
+
+
 class SceneHolder
 {
 private:
@@ -81,7 +88,7 @@ public:
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds);
 	[[nodiscard]] bool Update();
 
-	[[nodiscard]] Entity *AddEntity(const BoundingBox &bounds, EntityType type);
+	[[nodiscard]] Entity *AddEntity(const DirectX::BoundingBox &bounds, EntityType type);
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
 	[[nodiscard]] bool RemoveEntity(UINT id);
 
@@ -94,4 +101,6 @@ public:
 
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const;
 	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const;
+
+	bool Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const;
 };

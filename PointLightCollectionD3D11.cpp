@@ -2,6 +2,8 @@
 
 #include "ErrMsg.h"
 
+using namespace DirectX;
+
 
 PointLightCollectionD3D11::~PointLightCollectionD3D11()
 {

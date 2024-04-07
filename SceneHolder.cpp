@@ -209,3 +209,9 @@ bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<E
 
 	return true;
 }
+
+
+bool SceneHolder::Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const
+{
+	return _volumeTree.Raycast(origin, direction, result.distance, result.entity);
+}

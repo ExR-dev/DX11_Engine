@@ -1,15 +1,12 @@
 #pragma once
 
 #include <vector>
-
 #include <d3d11_4.h>
 #include <DirectXMath.h>
 
 #include "StructuredBufferD3D11.h"
 #include "DepthBufferD3D11.h"
 #include "CameraD3D11.h"
-
-using namespace DirectX;
 
 
 struct PointLightData
@@ -21,8 +18,8 @@ struct PointLightData
 
 	struct PerLightInfo
 	{
-		XMFLOAT3 initialPosition;
-		XMFLOAT3 color;
+		DirectX::XMFLOAT3 initialPosition;
+		DirectX::XMFLOAT3 color;
 		float falloff = 0.0f;
 		float projectionNearZ = 0.0f;
 		float projectionFarZ = 0.0f;
@@ -43,9 +40,9 @@ class PointLightCollectionD3D11
 private:
 	struct LightBuffer
 	{
-		XMFLOAT4X4 vpMatrix = { };
-		XMFLOAT3 position = { };
-		XMFLOAT3 color = { };
+		DirectX::XMFLOAT4X4 vpMatrix = { };
+		DirectX::XMFLOAT3 position = { };
+		DirectX::XMFLOAT3 color = { };
 		float falloff = 0.0f;
 		float padding = 0.0f;
 	};

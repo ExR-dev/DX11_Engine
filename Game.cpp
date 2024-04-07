@@ -1,3 +1,5 @@
+// ReSharper disable CppClangTidyCertErr33C
+
 #include "Game.h"
 
 #include "ErrMsg.h"
@@ -72,6 +74,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		{ "White",							"White"							},
 		{ "Black",							"Black"							},
 		{ "Ambient",						"Ambient"						},
+		{ "Red",							"Red"							},
 		{ "Fade",							"Fade"							},
 		{ "Bricks",							"Bricks"						},
 		{ "Metal",							"Metal"							},
@@ -296,8 +299,12 @@ bool Game::Render(Time &time, const Input &input)
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.deltaTime);
 	ImGui::Text(std::format("{} Frame", timeStr).c_str());
 
+	ImGui::Spacing();
+
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneUpdateTime"));
 	ImGui::Text(std::format("{} Scene Update", timeStr).c_str());
+
+	ImGui::Spacing();
 
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneRenderTime"));
 	ImGui::Text(std::format("{} Scene Render", timeStr).c_str());

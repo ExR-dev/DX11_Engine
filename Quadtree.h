@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <DirectXCollision.h>
 #include <vector>
+#include <DirectXCollision.h>
 
 #include "Entity.h"
 
