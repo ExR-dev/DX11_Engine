@@ -80,8 +80,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		specularCol = float3(positionGBuf.w, normalGBuf.w, ambientGBuf.w),
 		norm = normalize(normalGBuf.xyz),
 		viewDir = normalize(cam_position.xyz - pos);
-
-	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
+		
+	float3 totalDiffuseLight = float3(0.02f, 0.03f, 0.04f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 

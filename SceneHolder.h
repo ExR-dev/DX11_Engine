@@ -103,4 +103,6 @@ public:
 	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const;
 
 	bool Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const;
+
+	void DebugGetTreeStructure(std::vector<DirectX::BoundingBox> &boxCollection) const;
 };

@@ -47,6 +47,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		//"IsoSphereEdged",
 		"IsoSphereSmooth",
 		//"Torus",
+		"WireframeCube",
 	};
 
 	time.TakeSnapshot("LoadMeshes");
@@ -201,7 +202,7 @@ bool Game::SetScene(Time &time, Scene *scene)
 
 	_scene = scene;
 
-	if (!_scene->Initialize(_device, &_content))
+	if (!_scene->Initialize(_device, &_content, &_graphics))
 	{
 		ErrMsg("Failed to initialize scene!");
 		return false;

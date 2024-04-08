@@ -215,3 +215,9 @@ bool SceneHolder::Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLO
 {
 	return _volumeTree.Raycast(origin, direction, result.distance, result.entity);
 }
+
+
+void SceneHolder::DebugGetTreeStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
+{
+	_volumeTree.DebugGetStructure(boxCollection);
+}

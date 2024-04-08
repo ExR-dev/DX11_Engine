@@ -87,7 +87,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		? EnvironmentCubemap.SampleLevel(Sampler, reflect(viewDir, norm) * float3(-1, 1, 1), 0).xyz
 		: float3(0,0,0);
 
-	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
+	float3 totalDiffuseLight = float3(0.02f, 0.03f, 0.04f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 	uint spotlightCount, spotWidth, spotHeight, _u;

@@ -25,13 +25,14 @@ Scene::~Scene()
 	delete _camera;
 }
 
-bool Scene::Initialize(ID3D11Device *device, Content *content)
+bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphics)
 {
 	if (_initialized)
 		return false;
 
 	_device = device;
 	_content = content;
+	_graphics = graphics;
 
 	// Create scene content holder
 	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 150, 150));
@@ -43,7 +44,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 
 	// Create camera
 	if (!_camera->Initialize(device,
-		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
+		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 250.0f }, 
 		{ 0.0f, 2.0f, -2.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize camera!");
@@ -339,11 +340,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content)
 		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {15,15,15}), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
-		emitterData.particleCount = 1024;
+		emitterData.particleCount = 1024;	
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 5.0f;
 
-		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Flower")))
+		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Particle")))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
@@ -407,11 +408,13 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				selectedTextureID = (selectedTextureID + 1) % _content->GetTextureCount();
 		}
 
-		const UINT transparentStart = _content->GetTextureID("Tex_Transparent");
+		static UINT transparentStart = _content->GetTextureID("Tex_Transparent");
+		static UINT ambientID = _content->GetTextureID("Tex_Ambient");
+
 		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
 		{ // Create 25 random entities within the scene bounds
-			const DirectX::BoundingBox sceneBounds = _sceneHolder.GetBounds();
-			const DirectX::XMFLOAT3
+			const BoundingBox sceneBounds = _sceneHolder.GetBounds();
+			const XMFLOAT3
 				sceneCenter = sceneBounds.Center,
 				sceneExtents = sceneBounds.Extents;
 
@@ -425,7 +428,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				if (!obj->Initialize(_device, 
 					meshID, textureID, 
 					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
-					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
+					CONTENT_LOAD_ERROR, ambientID,
 					CONTENT_LOAD_ERROR, 
 					(textureID >= transparentStart)))
 				{
@@ -454,7 +457,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			if (!obj->Initialize(_device, 
 				selectedMeshID, selectedTextureID, 
 				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
-				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
+				CONTENT_LOAD_ERROR, ambientID,
 				CONTENT_LOAD_ERROR,
 				(selectedTextureID >= transparentStart)))
 			{
@@ -539,9 +542,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			else if (currSelection >= static_cast<int>(_sceneHolder.GetEntityCount()))
 				currSelection = static_cast<int>(_sceneHolder.GetEntityCount()) - 1;
 
-			float currSpeed = 3.0f;
+			float currSpeed = 3.5f;
 			if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
-				currSpeed = 6.5f;
+				currSpeed = 15.0f;
 			if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
 				currSpeed = 0.5f;
 
@@ -686,7 +689,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
-	if (_updateCubemap)
+	if (_graphics->GetUpdateCubemap())
 		if (!_cubemap.Update(context, time))
 		{
 			ErrMsg("Failed to update cubemap!");
@@ -719,12 +722,11 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	return true;
 }
 
+
 bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
-
-	_updateCubemap = graphics->GetUpdateCubemap();
 
 	static bool hasSetCamera = false;
 	if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
@@ -775,13 +777,13 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	entitiesToRender.reserve(_camera->GetCullCount());
 
 	union {
-		DirectX::BoundingFrustum frustum = {};
-		DirectX::BoundingOrientedBox box;
+		BoundingFrustum frustum = {};
+		BoundingOrientedBox box;
 	} view;
-	bool isOrtho = _camera->GetOrtho();
+	bool isCameraOrtho = _camera->GetOrtho();
 
 	time.TakeSnapshot("FrustumCull");
-	if (isOrtho)
+	if (isCameraOrtho)
 	{
 		if (!_camera->StoreBounds(view.box))
 		{
@@ -831,59 +833,53 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
-			union {
-				DirectX::BoundingFrustum frustum = {};
-				DirectX::BoundingOrientedBox box;
-			} lightBounds;
 			bool isSpotlightOrtho = spotlightCamera->GetOrtho();
 
+			bool intersectResult = _graphics->GetUpdateCubemap() && _cubemap.GetUpdate();
 			if (isSpotlightOrtho)
 			{
-				if (!spotlightCamera->StoreBounds(lightBounds.box))
+				BoundingOrientedBox lightBounds;
+				if (!spotlightCamera->StoreBounds(lightBounds))
 				{
 					ErrMsg("Failed to store spotlight camera oriented box!");
 					continue;
 				}
+
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(lightBounds);
+				else				intersectResult = intersectResult || view.frustum.Intersects(lightBounds);
+
+				if (!intersectResult)
+				{ // Skip rendering if the bounds don't intersect
+					_spotlights->SetLightEnabled(i, false);
+					continue;
+				}
+
+				if (!_sceneHolder.BoxCull(lightBounds, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform box culling for spotlight #{}!", i));
+					continue;
+				}
 			}
 			else
 			{
-				if (!spotlightCamera->StoreBounds(lightBounds.frustum))
+				BoundingFrustum lightBounds;
+				if (!spotlightCamera->StoreBounds(lightBounds))
 				{
 					ErrMsg("Failed to store spotlight camera frustum!");
 					continue;
 				}
-			}
 
-			bool intersectResult = !_cubemap.GetUpdate();
-			if (isOrtho)
-			{
-				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.box.Intersects(lightBounds.box);
-				else					intersectResult = intersectResult && !view.box.Intersects(lightBounds.frustum);
-			}
-			else
-			{
-				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.box);
-				else					intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.frustum);
-			}
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(lightBounds);
+				else				intersectResult = intersectResult || view.frustum.Intersects(lightBounds);
 
-			if (intersectResult)
-			{ // Skip rendering if the bounds don't intersect
-				_spotlights->SetLightEnabled(i, false);
-				continue;
-			}
-			_spotlights->SetLightEnabled(i, true);
-
-			if (isSpotlightOrtho)
-			{
-				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
-				{
-					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
+				if (!intersectResult)
+				{ // Skip rendering if the bounds don't intersect
+					_spotlights->SetLightEnabled(i, false);
 					continue;
 				}
-			}
-			else
-			{
-				if (!_sceneHolder.FrustumCull(lightBounds.frustum, entitiesToCastShadows))
+				_spotlights->SetLightEnabled(i, true);
+
+				if (!_sceneHolder.FrustumCull(lightBounds, entitiesToCastShadows))
 				{
 					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
 					continue;
@@ -907,66 +903,62 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			std::vector<Entity *> entitiesToCastShadows;
 			entitiesToCastShadows.reserve(spotlightCamera->GetCullCount());
 
-			union {
-				DirectX::BoundingFrustum frustum = {};
-				DirectX::BoundingOrientedBox box;
-			} lightBounds;
 			bool isSpotlightOrtho = spotlightCamera->GetOrtho();
 
+			bool intersectResult = _graphics->GetUpdateCubemap() && _cubemap.GetUpdate();
 			if (isSpotlightOrtho)
 			{
-				if (!spotlightCamera->StoreBounds(lightBounds.box))
+				BoundingOrientedBox lightBounds;
+				if (!spotlightCamera->StoreBounds(lightBounds))
 				{
 					ErrMsg("Failed to store spotlight camera oriented box!");
 					return false;
 				}
+
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(lightBounds);
+				else				intersectResult = intersectResult || view.frustum.Intersects(lightBounds);
+
+				if (!intersectResult)
+				{ // Skip rendering if the bounds don't intersect
+					_spotlights->SetLightEnabled(i, false);
+					continue;
+				}
+
+				time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
+				if (!_sceneHolder.BoxCull(lightBounds, entitiesToCastShadows))
+				{
+					ErrMsg(std::format("Failed to perform box culling for spotlight #{}!", i));
+					return false;
+				}
+				time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
 			}
 			else
 			{
-				if (!spotlightCamera->StoreBounds(lightBounds.frustum))
+				BoundingFrustum lightBounds;
+				if (!spotlightCamera->StoreBounds(lightBounds))
 				{
 					ErrMsg("Failed to store spotlight camera frustum!");
 					return false;
 				}
-			}
 
-			bool intersectResult = !_cubemap.GetUpdate();
-			if (isOrtho)
-			{
-				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.box.Intersects(lightBounds.box);
-				else					intersectResult = intersectResult && !view.box.Intersects(lightBounds.frustum);
-			}
-			else
-			{
-				if (isSpotlightOrtho)	intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.box);
-				else					intersectResult = intersectResult && !view.frustum.Intersects(lightBounds.frustum);
-			}
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(lightBounds);
+				else				intersectResult = intersectResult || view.frustum.Intersects(lightBounds);
 
-			if (intersectResult)
-			{ // Skip rendering if the bounds don't intersect
-				_spotlights->SetLightEnabled(i, false);
-				continue;
-			}
-			_spotlights->SetLightEnabled(i, true);
+				if (!intersectResult)
+				{ // Skip rendering if the bounds don't intersect
+					_spotlights->SetLightEnabled(i, false);
+					continue;
+				}
+				_spotlights->SetLightEnabled(i, true);
 
-			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
-			if (isSpotlightOrtho)
-			{
-				if (!_sceneHolder.BoxCull(lightBounds.box, entitiesToCastShadows))
+				time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
+				if (!_sceneHolder.FrustumCull(lightBounds, entitiesToCastShadows))
 				{
 					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
 					return false;
 				}
+				time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
 			}
-			else
-			{
-				if (!_sceneHolder.FrustumCull(lightBounds.frustum, entitiesToCastShadows))
-				{
-					ErrMsg(std::format("Failed to perform frustum culling for spotlight #{}!", i));
-					return false;
-				}
-			}
-			time.TakeSnapshot(std::format("FrustumCullSpotlight{}", i));
 
 			for (Entity *ent : entitiesToCastShadows)
 			{
@@ -991,18 +983,18 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				std::vector<Entity *> entitiesToCastShadows;
 				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
 
-				DirectX::BoundingFrustum pointlightFrustum;
+				BoundingFrustum pointlightFrustum;
 				if (!pointlightCamera->StoreBounds(pointlightFrustum))
 				{
 					ErrMsg("Failed to store pointlight camera frustum!");
 					continue;
 				}
 
-				bool intersectResult = !_cubemap.GetUpdate();
-				if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(pointlightFrustum);
-				else			intersectResult = intersectResult && !view.frustum.Intersects(pointlightFrustum);
+				bool intersectResult = _graphics->GetUpdateCubemap() && _cubemap.GetUpdate();
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(pointlightFrustum);
+				else				intersectResult = intersectResult || view.frustum.Intersects(pointlightFrustum);
 
-				if (intersectResult)
+				if (!intersectResult)
 				{ // Skip rendering if the frustums don't intersect
 					_pointlights->SetEnabled(i, j, false);
 					continue;
@@ -1035,18 +1027,18 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 				std::vector<Entity *> entitiesToCastShadows;
 				entitiesToCastShadows.reserve(pointlightCamera->GetCullCount());
 
-				DirectX::BoundingFrustum pointlightFrustum;
+				BoundingFrustum pointlightFrustum;
 				if (!pointlightCamera->StoreBounds(pointlightFrustum))
 				{
 					ErrMsg("Failed to store pointlight camera frustum!");
 					return false;
 				}
 
-				bool intersectResult = !_cubemap.GetUpdate();
-				if (isOrtho)	intersectResult = intersectResult && !view.box.Intersects(pointlightFrustum);
-				else			intersectResult = intersectResult && !view.frustum.Intersects(pointlightFrustum);
+				bool intersectResult = _graphics->GetUpdateCubemap() && _cubemap.GetUpdate();
+				if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(pointlightFrustum);
+				else				intersectResult = intersectResult || view.frustum.Intersects(pointlightFrustum);
 
-				if (intersectResult)
+				if (!intersectResult)
 				{ // Skip rendering if the frustums don't intersect
 					_pointlights->SetEnabled(i, j, false);
 					continue;
@@ -1074,7 +1066,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 
 	time.TakeSnapshot("FrustumCullCubemap");
-	if (_updateCubemap && _cubemap.GetUpdate())
+	if (_graphics->GetUpdateCubemap() && _cubemap.GetUpdate())
 	{
 		if (_doMultiThread)
 			#pragma omp parallel for num_threads(2)
@@ -1155,6 +1147,9 @@ bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
+	if (ImGui::Button("Generate volume tree structure"))
+		DebugGenerateVolumeTreeStructure();
+
 	if (ImGui::Button(_doMultiThread ? "Threading On" : "Threading Off"))
 		_doMultiThread = !_doMultiThread;
 
@@ -1213,4 +1208,55 @@ bool Scene::RenderUI()
 	}
 
 	return true;
+}
+
+
+void Scene::DebugGenerateVolumeTreeStructure()
+{
+	static int lastEntityCount = -1;
+	static int lastBoxCount = 0;
+
+	if (lastEntityCount >= 0)
+		for (int i = 0; i < lastBoxCount; i++)
+		{
+			const Entity *ent = _sceneHolder.GetEntity(lastEntityCount);
+			if (!_sceneHolder.RemoveEntity(lastEntityCount))
+			{
+				ErrMsg("Failed to remove entity!");
+				delete ent;
+				return;
+			}
+			delete ent;
+		}
+	lastEntityCount = _sceneHolder.GetEntityCount();
+
+	std::vector<BoundingBox> treeStructure;
+	_sceneHolder.DebugGetTreeStructure(treeStructure);
+	lastBoxCount = static_cast<int>(treeStructure.size());
+
+	for (const BoundingBox &box : treeStructure)
+	{
+		static UINT
+			meshID = _content->GetMeshID("Mesh_WireframeCube"),
+			textureID = _content->GetTextureID("Tex_Red"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = _content->GetTextureID("Tex_Red"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room object!");
+			return;
+		}
+
+		const XMFLOAT4A
+			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
+			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
+	}
 }

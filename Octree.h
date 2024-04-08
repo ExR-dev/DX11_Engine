@@ -290,9 +290,8 @@ private:
 			for (int i = 0; i < childHitCount; i++)
 			{
 				const Node *child = children[childHits[i].index].get();
-				if (child != nullptr)
-					if (child->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), childHits[i].length))
-						continue;
+				if (child->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), childHits[i].length))
+					continue;
 
 				// Remove child node from hits.
 				childHits.erase(childHits.begin() + i);
@@ -323,6 +322,19 @@ private:
 			}
 
 			return false;
+		}
+
+
+		void DebugGetStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
+		{
+			if (isLeaf)
+			{
+				boxCollection.push_back(bounds);
+				return;
+			}
+
+			for (int i = 0; i < 8; i++)
+				children[i]->DebugGetStructure(boxCollection);
 		}
 	};
 
@@ -413,5 +425,14 @@ public:
 			return nullptr;
 
 		return &_root->bounds;
+	}
+
+
+	void DebugGetStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
+	{
+		if (_root == nullptr)
+			return;
+
+		_root->DebugGetStructure(boxCollection);
 	}
 };
