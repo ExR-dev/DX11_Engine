@@ -10,7 +10,6 @@ enum class EntityType
 {
 	OBJECT,
 	EMITTER,
-	LIGHT,
 };
 
 

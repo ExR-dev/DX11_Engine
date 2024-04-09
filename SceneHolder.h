@@ -63,6 +63,8 @@ private:
 		SceneEntity &operator=(SceneEntity &&other) = delete;
 	};
 
+	UINT _entityCounter = 0;
+
 	DirectX::BoundingBox _bounds;
 	std::vector<SceneEntity *> _entities; 
 
@@ -95,7 +97,10 @@ public:
 	[[nodiscard]] bool UpdateEntityPosition(Entity *entity);
 
 	[[nodiscard]] const DirectX::BoundingBox &GetBounds() const;
-	[[nodiscard]] Entity *GetEntity(UINT id) const;
+	[[nodiscard]] Entity *GetEntity(UINT i) const;
+	[[nodiscard]] Entity *GetEntityByID(UINT id) const;
+	[[nodiscard]] UINT GetEntityID(const Entity *entity) const;
+	[[nodiscard]] UINT GetEntityIndex(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityCount() const;
 	void GetEntities(std::vector<Entity *> entities) const;
 

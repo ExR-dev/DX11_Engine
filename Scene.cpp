@@ -161,10 +161,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	}
 
 
-	// Create pointer dot
+	// Create selection marker
 	{
 		const UINT
-			meshID = content->GetMeshID("Mesh_Sphere"),
+			meshID = content->GetMeshID("Mesh_WireframeCube"),
 			textureID = content->GetTextureID("Tex_Red"),
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = CONTENT_LOAD_ERROR,
@@ -172,7 +172,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		constexpr BoundingBox dotBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0.00001f, 0.00001f, 0.00001f));
+		constexpr BoundingBox dotBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0));
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
 		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
@@ -180,7 +180,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleAbsolute({ -0.9f, -0.9f, -0.9f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0, 0, 0, 0 });
 	}
 
 	// Create room
@@ -358,6 +358,25 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 }
 
 
+void Scene::UpdateSelectionMarker(const int i) const
+{
+	Entity
+		*selection = i < 0 ? nullptr : _sceneHolder.GetEntity(i),
+		*marker = _sceneHolder.GetEntity(0);
+
+	BoundingBox box = { {0, 0, 0}, {0, 0, 0} };
+	if (selection != nullptr)
+		selection->StoreBounds(box);
+
+	const XMFLOAT4A
+		center = { box.Center.x, box.Center.y, box.Center.z, 0 },
+		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
+
+	marker->GetTransform()->SetPosition(center);
+	marker->GetTransform()->SetScale(extents);
+}
+
+
 bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
 	if (!_initialized)
@@ -477,33 +496,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			);
 		}
 
-		if (input.GetKey(KeyCode::I) == KeyState::Held)
-		{
-			RaycastOut out;
-
-			const XMFLOAT4A
-				camPos = basisCamera->GetPosition(),
-				camDir = basisCamera->GetForward();
-
-			bool hit = _sceneHolder.Raycast(
-				{ camPos.x, camPos.y, camPos.z }, 
-				{ camDir.x, camDir.y, camDir.z }, 
-				out
-			);
-
-			out.distance = hit ? out.distance : 0.0f;
-
-			const XMFLOAT4A destination = XMFLOAT4A(
-				camPos.x + camDir.x * out.distance, 
-				camPos.y + camDir.y * out.distance, 
-				camPos.z + camDir.z * out.distance, 
-				0.0f
-			);
-
-			_sceneHolder.GetEntity(0)->GetTransform()->SetPosition(destination);
-		}
-
 		static int currSelection = -1;
+		UpdateSelectionMarker(currSelection);
+
 		const UINT entityCount = _sceneHolder.GetEntityCount();
 		for (UCHAR i = 0; i < entityCount; i++)
 		{
@@ -514,6 +509,32 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			{
 				currSelection = (currSelection == i) ? -1 : i;
 				break;
+			}
+		}
+
+		if (input.GetKey(KeyCode::M4) == KeyState::Pressed)
+		{
+			if (currSelection != -1)
+			{
+				currSelection = -1;
+			}
+			else
+			{
+				RaycastOut out;
+				const XMFLOAT4A
+					camPos = basisCamera->GetPosition(),
+					camDir = basisCamera->GetForward();
+
+				if (_sceneHolder.Raycast(
+					{ camPos.x, camPos.y, camPos.z },
+					{ camDir.x, camDir.y, camDir.z },
+					out))
+				{
+					const UINT entityI = _sceneHolder.GetEntityIndex(out.entity);
+					currSelection = (entityI == 0xffffffff) ? -1 : (int)entityI;
+				}
+				else
+					currSelection = -1;
 			}
 		}
 
@@ -664,12 +685,6 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		}
 	}
 
-
-	/*if (!_spotLights->ScaleLightFrustumsToCamera(*_camera))
-	{
-		ErrMsg("Failed to scale light frustums to camera!");
-		return false;
-	}*/
 
 	if (!_camera->UpdateBuffers(context))
 	{

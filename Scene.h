@@ -34,6 +34,8 @@ private:
 	bool _doMultiThread = true;
 
 
+	void UpdateSelectionMarker(int i) const;
+
 	void DebugGenerateVolumeTreeStructure();
 
 public:

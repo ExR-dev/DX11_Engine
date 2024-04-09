@@ -51,8 +51,9 @@ bool SceneHolder::Update()
 // Entity is Not initialized automatically. Initialize manually through the returned pointer.
 Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityType type)
 {
-	SceneEntity *newEntity = new SceneEntity(static_cast<UINT>(_entities.size()), bounds, type);
+	SceneEntity *newEntity = new SceneEntity(_entityCounter, bounds, type);
 	_entities.push_back(newEntity);
+	_entityCounter++;
 
 	switch (type)
 	{
@@ -135,24 +136,90 @@ const DirectX::BoundingBox& SceneHolder::GetBounds() const
 }
 
 
-Entity *SceneHolder::GetEntity(const UINT id) const
+Entity *SceneHolder::GetEntity(const UINT i) const
 {
-	if (id >= _entities.size())
+	if (i >= _entities.size())
 	{
-		ErrMsg("Failed to get entity, ID out of range!");
+		ErrMsg("Failed to get entity, i out of range!");
 		return nullptr;
 	}
 
-	switch (_entities[id]->_type)
+	switch (_entities[i]->_type)
 	{
 		case EntityType::OBJECT:
-			return reinterpret_cast<Entity *>(_entities[id]->_item.object);
+			return reinterpret_cast<Entity *>(_entities[i]->_item.object);
 
 		case EntityType::EMITTER:
-			return reinterpret_cast<Entity *>(_entities[id]->_item.emitter);
+			return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
 	}
 
 	return nullptr;
+}
+
+Entity *SceneHolder::GetEntityByID(const UINT id) const
+{
+	const UINT entityCount = GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		switch (_entities[i]->_type)
+		{
+			case EntityType::OBJECT:
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID() == id)
+					return reinterpret_cast<Entity *>(_entities[i]->_item.object);
+				break;
+
+			case EntityType::EMITTER:
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID() == id)
+					return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
+				break;
+		}
+	}
+
+	return nullptr;
+}
+
+UINT SceneHolder::GetEntityID(const Entity *entity) const
+{
+	const UINT entityCount = GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		switch (_entities[i]->_type)
+		{
+			case EntityType::OBJECT:
+				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.object))
+					return reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID();
+				break;
+
+			case EntityType::EMITTER:
+				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.emitter))
+					return reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID();
+				break;
+		}
+	}
+
+	return 0xffffffff;
+}
+
+UINT SceneHolder::GetEntityIndex(const Entity *entity) const
+{
+	const UINT entityCount = GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		switch (_entities[i]->_type)
+		{
+			case EntityType::OBJECT:
+				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.object))
+					return i;
+				break;
+
+			case EntityType::EMITTER:
+				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.emitter))
+					return i;
+				break;
+		}
+	}
+
+	return 0xffffffff;
 }
 
 UINT SceneHolder::GetEntityCount() const
@@ -213,7 +280,7 @@ bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<E
 
 bool SceneHolder::Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const
 {
-	return _volumeTree.Raycast(origin, direction, result.distance, result.entity);
+	return _volumeTree.RaycastTree(origin, direction, result.distance, result.entity);
 }
 
 

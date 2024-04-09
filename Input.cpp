@@ -73,9 +73,14 @@ bool Input::Update(const HWND window)
 KeyState Input::GetKey(const KeyCode keyCode) const
 {
 	const unsigned char key = static_cast<unsigned char>(keyCode);
+	return GetKey(static_cast<UCHAR>(keyCode));
+}
+
+KeyState Input::GetKey(const UCHAR keyCode) const
+{
 	const bool
-		thisFrame = _vKeys[key],
-		lastFrame = _lvKeys[key];
+		thisFrame = _vKeys[keyCode],
+		lastFrame = _lvKeys[keyCode];
 
 	if (thisFrame)
 	{

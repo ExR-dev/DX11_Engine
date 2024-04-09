@@ -247,7 +247,7 @@ private:
 		}
 
 
-		bool Raycast(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
+		bool RaycastNode(const DirectX::XMFLOAT3 &orig, const DirectX::XMFLOAT3 &dir, float &length, Entity *&entity) const
 		{
 			if (isLeaf)
 			{ // Check all items in leaf for intersection & return result.
@@ -260,7 +260,7 @@ private:
 					item->StoreBounds(itemBounds);
 
 					float newLength = 0.0f;
-					if (itemBounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), newLength))
+					if (Raycast(orig, dir, itemBounds, newLength))
 					{
 						if (newLength < 0.0f)
 							continue;
@@ -286,7 +286,7 @@ private:
 			for (int i = 0; i < childHitCount; i++)
 			{
 				const Node *child = children[childHits[i].index].get();
-				if (child->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), childHits[i].length))
+				if (Raycast(orig, dir, child->bounds, childHits[i].length))
 					continue;
 
 				// Remove child node from hits.
@@ -313,7 +313,7 @@ private:
 				length = FLT_MAX;
 				entity = nullptr;
 
-				if (children[childHits[i].index]->Raycast(orig, dir, length, entity))
+				if (children[childHits[i].index]->RaycastNode(orig, dir, length, entity))
 					return true;
 			}
 
@@ -399,19 +399,19 @@ public:
 	}
 
 
-	bool Raycast(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
+	bool RaycastTree(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
 	{
 		if (_root == nullptr)
 			return false;
 
 		float _ = FLT_MAX; // In case Intersects() uses the initial dist value as a maximum. Docs don't specify.
-		if (!_root->bounds.Intersects(TO_CONST_VEC(orig), TO_CONST_VEC(dir), _))
+		if (!Raycast(orig, dir, _root->bounds, _))
 			return false;
 
 		length = FLT_MAX;
 		entity = nullptr;
 
-		return _root->Raycast(orig, dir, length, entity);
+		return _root->RaycastNode(orig, dir, length, entity);
 	}
 
 

@@ -5,7 +5,13 @@
 
 enum class KeyCode : unsigned char
 {
-    None = 0,
+    None = 0x0,
+
+    M1 = 0x1,
+    M2 = 0x2,
+    M3 = 0x4,
+    M4 = 0x5,
+    M5 = 0x6,
 
     Back = 0x8,
     Tab = 0x9,
@@ -234,6 +240,7 @@ public:
     [[nodiscard]] bool Update(HWND window);
 
 	[[nodiscard]] KeyState GetKey(KeyCode keyCode) const;
+	[[nodiscard]] KeyState GetKey(UCHAR keyCode) const;
     [[nodiscard]] MouseState GetMouse() const;
 
     [[nodiscard]] bool IsInFocus() const;
