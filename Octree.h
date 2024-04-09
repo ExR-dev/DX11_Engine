@@ -6,11 +6,7 @@
 #include <DirectXCollision.h>
 
 #include "Entity.h"
-
-
-#define TO_VEC(x)		( *reinterpret_cast<DirectX::XMVECTOR *>(&(x))			)
-#define TO_VEC_PTR(x)	(  reinterpret_cast<DirectX::XMVECTOR *>(&(x))			)
-#define TO_CONST_VEC(x) ( *reinterpret_cast<const DirectX::XMVECTOR *>(&(x))	)
+#include "Raycast.h"
 
 
 class Octree

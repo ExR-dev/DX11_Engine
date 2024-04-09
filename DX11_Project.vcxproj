@@ -206,6 +206,7 @@
     <ClInclude Include="Octree.h" />
     <ClInclude Include="PointLightCollectionD3D11.h" />
     <ClInclude Include="Quadtree.h" />
+    <ClInclude Include="Raycast.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneHolder.h" />
     <ClInclude Include="stb_image.h" />
