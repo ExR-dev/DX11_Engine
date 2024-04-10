@@ -207,7 +207,7 @@ struct MouseState
     int x, y, dx, dy;
 };
 
-
+// Manages input like keyboard, mouse and window state.
 class Input
 {
 private:

@@ -23,18 +23,14 @@ bool SceneHolder::Initialize(const DirectX::BoundingBox &sceneBounds)
 
 bool SceneHolder::Update()
 {
-	for (const UINT i : _treeInsertionQueue)
+	for (const UINT id : _treeInsertionQueue)
 	{
-		Entity *entity = nullptr;
-		switch (_entities[i]->_type)
-		{
-			case EntityType::OBJECT:
-				entity = reinterpret_cast<Entity *>(_entities[i]->_item.object);
-				break;
+		Entity *entity = GetEntityByID(id);
 
-			case EntityType::EMITTER:
-				entity = reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
-				break;
+		if (entity == nullptr)
+		{
+			ErrMsg(std::format("Failed to update scene holder, entity ID #{} not found!", id));
+			return false;
 		}
 		
 		DirectX::BoundingBox entityBounds;

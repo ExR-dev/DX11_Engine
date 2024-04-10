@@ -212,7 +212,7 @@ bool Game::SetScene(Time &time, Scene *scene)
 }
 
 
-bool Game::Update(Time &time, const Input &input)
+bool Game::Update(Time &time, const Input &input) const
 {
 	/// v==========================================v ///
 	/// v        Update game logic here...         v ///

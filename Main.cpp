@@ -17,11 +17,11 @@ int APIENTRY wWinMain(
 {
 	OutputDebugString(L"\n=======| Start |===========================================================================\n");
 
-	constexpr UINT WIDTH = 1920;
-	constexpr UINT HEIGHT = 1080;
+	constexpr UINT width = 1920;
+	constexpr UINT height = 1080;
 	HWND window;
 
-	if (!SetupWindow(hInstance, WIDTH, HEIGHT, nCmdShow, window))
+	if (!SetupWindow(hInstance, width, height, nCmdShow, window))
 	{
 		ErrMsg("Failed to setup window!");
 		return -1;
@@ -32,11 +32,13 @@ int APIENTRY wWinMain(
 	MSG msg = { };
 
 	Game game = { };
-	if (!game.Setup(time, WIDTH, HEIGHT, window))
+	if (!game.Setup(time, width, height, window))
 	{
 		ErrMsg("Failed to setup graphics!");
 		return -1;
 	}
+
+	// Print asset load times.
 	ErrMsg(std::format("Mesh Load: {} s", time.CompareSnapshots("LoadMeshes")));
 	ErrMsg(std::format("Texture Load: {} s", time.CompareSnapshots("LoadTextures")));
 	ErrMsg(std::format("Texture Map Load: {} s", time.CompareSnapshots("LoadTextureMaps")));
@@ -49,7 +51,7 @@ int APIENTRY wWinMain(
 		return -1;
 	}
 	
-
+	// Main game loop.
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))

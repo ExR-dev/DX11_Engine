@@ -11,6 +11,7 @@ struct Snapshot
 	std::chrono::time_point<std::chrono::high_resolution_clock> snapshot;
 };
 
+// Manages total time and delta time as well as capturing snapshots of time for performance testing.
 class Time
 {
 private:

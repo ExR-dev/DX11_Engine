@@ -295,11 +295,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_Error"),
-			textureID = content->GetTextureID("Tex_Fallback"),
+			textureID = content->GetTextureID("Tex_White"),
 			normalID = CONTENT_LOAD_ERROR,
 			specularID = CONTENT_LOAD_ERROR,
 			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Fallback"),
+			ambientID = content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
@@ -512,7 +512,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 		}
 
-		if (input.GetKey(KeyCode::M4) == KeyState::Pressed)
+		if (input.GetKey(KeyCode::M3) == KeyState::Pressed)
 		{
 			if (currSelection != -1)
 			{
@@ -520,18 +520,18 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 			else
 			{
-				RaycastOut out;
 				const XMFLOAT4A
 					camPos = basisCamera->GetPosition(),
 					camDir = basisCamera->GetForward();
 
+				RaycastOut out;
 				if (_sceneHolder.Raycast(
 					{ camPos.x, camPos.y, camPos.z },
 					{ camDir.x, camDir.y, camDir.z },
 					out))
 				{
 					const UINT entityI = _sceneHolder.GetEntityIndex(out.entity);
-					currSelection = (entityI == 0xffffffff) ? -1 : (int)entityI;
+					currSelection = (entityI == 0xffffffff) ? -1 : static_cast<int>(entityI);
 				}
 				else
 					currSelection = -1;
@@ -617,6 +617,13 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				static bool isScaling = false;
 				if (input.GetKey(KeyCode::T) == KeyState::Pressed)
 					isScaling = !isScaling;
+
+				if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+				{
+					relativeToCamera = false;
+					isRotating = false;
+					isScaling = false;
+				}
 
 				XMVECTOR transformationVector = XMVectorZero();
 				bool doMove = false;
