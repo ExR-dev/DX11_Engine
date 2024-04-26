@@ -38,7 +38,20 @@ struct PointLight
 StructuredBuffer<PointLight> PointLights : register(t6);
 Texture2DArray<float> PointShadowMaps : register(t7);
 
-TextureCube EnvironmentCubemap	: register(t8);
+struct DirLight
+{
+	float4x4 vp_matrix;
+	float3 position;
+	float3 direction;
+	float3 color;
+
+	float padding[3];
+};
+
+StructuredBuffer<DirLight> DirLights : register(t8);
+Texture2DArray<float> DirShadowMaps : register(t9);
+
+TextureCube EnvironmentCubemap	: register(t10);
 
 
 cbuffer CameraData : register(b1)
@@ -168,6 +181,73 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Apply lighting
 		totalDiffuseLight += diffuseLightCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularLightCol * shadow * inverseLightDistSqr;
+	}
+	
+	uint dirlightCount, dirWidth, dirHeight;
+	DirLights.GetDimensions(dirlightCount, _u);
+	DirShadowMaps.GetDimensions(0, dirWidth, dirHeight, _u, _u);
+
+	const float
+		dirDX = 1.0f / (float)dirWidth,
+		dirDY = 1.0f / (float)dirHeight;
+
+	// Per-directional light calculations
+	for (uint dirlight_i = 0; dirlight_i < dirlightCount; dirlight_i++)
+	{
+		// Prerequisite variables
+		const DirLight light = DirLights[dirlight_i];
+
+		const float3
+			toLight = light.position - pos,
+			toLightDir = normalize(toLight);
+
+
+		float3 diffuseLightCol, specularLightCol;
+		BlinnPhong(toLightDir, viewDir, norm, light.color.xyz, specularity, diffuseLightCol, specularLightCol);
+		specularLightCol *= specularCol;
+
+
+		// Calculate shadow projection
+		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
+		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
+		
+		const bool isInsideFrustum = (
+			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
+			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
+		);
+
+		const float3
+			dirUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i),
+			dirUV01 = dirUV00 + float3(0.0f, dirDY, 0.0f),
+			dirUV10 = dirUV00 + float3(dirDX, 0.0f, 0.0f),
+			dirUV11 = dirUV00 + float3(dirDX, dirDY, 0.0f);
+
+		const float
+			dirDepth00 = DirShadowMaps.SampleLevel(Sampler, dirUV00, 0).x,
+			dirDepth01 = DirShadowMaps.SampleLevel(Sampler, dirUV01, 0).x,
+			dirDepth10 = DirShadowMaps.SampleLevel(Sampler, dirUV10, 0).x,
+			dirDepth11 = DirShadowMaps.SampleLevel(Sampler, dirUV11, 0).x;
+
+		const float
+			dirResult00 = dirDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			dirResult01 = dirDepth01 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			dirResult10 = dirDepth10 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
+			dirResult11 = dirDepth11 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
+
+		const float2
+			texelPos = dirUV00.xy * (float)dirWidth,
+			fracTex = frac(texelPos);
+		
+		const float shadow = isInsideFrustum * saturate(lerp(
+			lerp(dirResult00, dirResult10, fracTex.x),
+			lerp(dirResult01, dirResult11, fracTex.x),
+			fracTex.y)
+		);
+
+
+		// Apply lighting
+		totalDiffuseLight += diffuseLightCol * shadow;
+		totalSpecularLight += specularLightCol * shadow;
 	}
 
 	uint pointlightCount, pointWidth, pointHeight;

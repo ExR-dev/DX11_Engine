@@ -44,6 +44,19 @@ struct PointLight
 StructuredBuffer<PointLight> PointLights : register(t6);
 Texture2DArray<float> PointShadowMaps : register(t7);
 
+struct DirLight
+{
+	float4x4 vp_matrix;
+	float3 position;
+	float3 direction;
+	float3 color;
+
+	float padding[3];
+};
+
+StructuredBuffer<DirLight> DirLights : register(t8);
+Texture2DArray<float> DirShadowMaps : register(t9);
+
 
 // Generic color-clamping algorithm, not mine but it looks good
 float3 ACESFilm(const float3 x)

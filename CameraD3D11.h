@@ -139,6 +139,7 @@ public:
 	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewProjectionMatrix() const;
 	[[nodiscard]] const ProjectionInfo &GetCurrProjectionInfo() const;
 
+	[[nodiscard]] bool ScaleToContents(const std::vector<DirectX::XMFLOAT4A> &nearBounds, const std::vector<DirectX::XMFLOAT4A> &innerBounds);
 	[[nodiscard]] bool FitPlanesToPoints(const std::vector<DirectX::XMFLOAT4A> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 

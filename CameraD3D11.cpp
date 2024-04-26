@@ -330,6 +330,87 @@ const ProjectionInfo &CameraD3D11::GetCurrProjectionInfo() const
 }
 
 
+bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, const std::vector<XMFLOAT4A> &innerBounds)
+{
+	if (!_ortho)
+		return false;
+
+	const XMVECTOR
+		forward = TO_CONST_VEC(_transform.GetForward()),
+		right = TO_CONST_VEC(_transform.GetRight()),
+		up = TO_CONST_VEC(_transform.GetUp());
+
+	XMVECTOR mid = { 0.0f, 0.0f, 0.0f, 1.0f };
+	for (const XMFLOAT4A &point : innerBounds)
+		mid = XMVectorAdd(mid, TO_CONST_VEC(point));
+	mid = XMVectorScale(mid, 1.0f / static_cast<float>(innerBounds.size()));
+
+	float nearDist = FLT_MAX, farDist = -FLT_MAX;
+	for (const XMFLOAT4A &point : nearBounds)
+	{
+		const XMVECTOR pointVec = TO_CONST_VEC(point);
+		const XMVECTOR toPoint = pointVec - mid;
+
+		const float forwardDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
+		if (forwardDot < nearDist)
+			nearDist = forwardDot;
+
+		if (forwardDot > farDist)
+			farDist = forwardDot;
+	}
+
+	float horizontalDist = -FLT_MAX, verticalDist = -FLT_MAX;
+	for (const XMFLOAT4A &point : innerBounds)
+	{
+		const XMVECTOR pointVec = TO_CONST_VEC(point);
+		const XMVECTOR toPoint = pointVec - mid;
+
+		const float forwardDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
+		if (forwardDot > farDist)
+			farDist = forwardDot;
+
+		const float rightDot = abs(XMVectorGetX(XMVector3Dot(toPoint, right)));
+		if (rightDot > horizontalDist)
+			horizontalDist = rightDot;
+
+		const float upDot = abs(XMVectorGetX(XMVector3Dot(toPoint, up)));
+		if (upDot > verticalDist)
+			verticalDist = upDot;
+	}
+
+	if (farDist - nearDist < 0.001f)
+	{
+		ErrMsg("Near and far planes are very close, camera can likely be disabled.");
+		return false;
+	}
+
+	XMFLOAT4A newPos;
+	TO_VEC(newPos) = XMVectorAdd(mid, XMVectorScale(forward, nearDist - 1.0f));
+	_transform.SetPosition(newPos);
+
+	const float
+		nearZ = 1.0f,
+		farZ = (farDist - nearDist) + 1.0f,
+		width = 0.5f * horizontalDist,
+		height = 0.5f * verticalDist;
+
+	const XMFLOAT3 corners[8] = {
+		XMFLOAT3(-width, -height, nearZ),
+		XMFLOAT3(width, -height, nearZ),
+		XMFLOAT3(-width,  height, nearZ),
+		XMFLOAT3(width,  height, nearZ),
+		XMFLOAT3(-width, -height, farZ),
+		XMFLOAT3(width, -height, farZ),
+		XMFLOAT3(-width,  height, farZ),
+		XMFLOAT3(width,  height, farZ)
+	};
+
+	BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+
+	_isDirty = true;
+	return true;
+}
+
 bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 {
 	const float

@@ -9,6 +9,7 @@
 #include "Input.h"
 
 
+// Game handles loading content like textures and meshes, as well as the main game loop.
 class Game
 {
 private:

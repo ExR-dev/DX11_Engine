@@ -1,5 +1,3 @@
-// ReSharper disable CppClangTidyCertErr33C
-
 #include "Game.h"
 
 #include "ErrMsg.h"

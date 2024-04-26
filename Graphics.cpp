@@ -193,6 +193,18 @@ bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights)
 	return true;
 }
 
+bool Graphics::SetDirlightCollection(DirLightCollectionD3D11 *dirlights)
+{
+	if (dirlights == nullptr)
+	{
+		ErrMsg("Failed to set directional light collection, collection is nullptr!");
+		return false;
+	}
+
+	_currDirLightCollection = dirlights;
+	return true;
+}
+
 bool Graphics::SetPointlightCollection(PointLightCollectionD3D11 *pointlights)
 {
 	if (pointlights == nullptr)
@@ -434,6 +446,90 @@ bool Graphics::RenderSpotlights()
 	return true;
 }
 
+bool Graphics::RenderDirlights()
+{
+	if (_currDirLightCollection == nullptr)
+	{
+		ErrMsg("Failed to render directional lights, current directional light collection is nullptr!");
+		return false;
+	}
+
+	_context->RSSetViewports(1, &_currDirLightCollection->GetViewport());
+
+	const MeshD3D11 *loadedMesh = nullptr;
+
+	const UINT dirLightCount = _currDirLightCollection->GetNrOfLights();
+	for (UINT dirlight_i = 0; dirlight_i < dirLightCount; dirlight_i++)
+	{
+		// Skip rendering if disabled
+		if (!_currDirLightCollection->GetLightEnabled(dirlight_i))
+			continue;
+
+		ID3D11DepthStencilView *dsView = _currDirLightCollection->GetShadowMapDSV(dirlight_i);
+		_context->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH, 0.0f, 0);
+		_context->OMSetRenderTargets(0, nullptr, dsView);
+
+		// Bind shadow-camera data
+		const CameraD3D11 *dirlightCamera = _currDirLightCollection->GetLightCamera(dirlight_i);
+
+		if (!dirlightCamera->BindShadowCasterBuffers(_context))
+		{
+			ErrMsg(std::format("Failed to bind shadow-camera buffers for directional light #{}!", dirlight_i));
+			return false;
+		}
+
+		UINT entity_i = 0;
+		for (const auto &[resources, instance] : dirlightCamera->GetGeometryQueue())
+		{
+			if (static_cast<Entity *>(instance.subject)->GetType() != EntityType::OBJECT)
+			{
+				ErrMsg(std::format("Skipping depth-rendering for non-object #{}!", entity_i));
+				return false;
+			}
+
+			// Bind shared entity data, skip data irrelevant for shadow mapping
+			if (_currMeshID != resources.meshID)
+			{
+				loadedMesh = _content->GetMesh(resources.meshID);
+				if (!loadedMesh->BindMeshBuffers(_context))
+				{
+					ErrMsg(std::format("Failed to bind mesh buffers for instance #{}!", entity_i));
+					return false;
+				}
+				_currMeshID = resources.meshID;
+			}
+
+			// Bind private entity data
+			if (!static_cast<Object *>(instance.subject)->BindBuffers(_context))
+			{
+				ErrMsg(std::format("Failed to bind private buffers for instance #{}!", entity_i));
+				return false;
+			}
+
+			// Perform draw calls
+			if (loadedMesh == nullptr)
+			{
+				ErrMsg(std::format("Failed to perform draw call for instance #{}, loadedMesh is nullptr!", entity_i));
+				return false;
+			}
+
+			const UINT subMeshCount = loadedMesh->GetNrOfSubMeshes();
+			for (UINT submesh_i = 0; submesh_i < subMeshCount; submesh_i++)
+			{
+				if (!loadedMesh->PerformSubMeshDrawCall(_context, submesh_i))
+				{
+					ErrMsg(std::format("Failed to perform draw call for instance #{}, sub mesh #{}!", entity_i, submesh_i));
+					return false;
+				}
+			}
+
+			entity_i++;
+		}
+	}
+
+	return true;
+}
+
 bool Graphics::RenderPointlights()
 {
 	if (_currPointLightCollection == nullptr)
@@ -547,6 +643,12 @@ bool Graphics::RenderShadowCasters()
 	if (!RenderSpotlights())
 	{
 		ErrMsg("Failed to render spotlights!");
+		return false;
+	}
+
+	if (!RenderDirlights())
+	{
+		ErrMsg("Failed to render directional lights!");
 		return false;
 	}
 
@@ -873,6 +975,13 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		return false;
 	}
 
+	// Bind directional light collection
+	if (!_currDirLightCollection->BindCSBuffers(_context))
+	{
+		ErrMsg("Failed to bind directional light buffers!");
+		return false;
+	}
+
 	// Bind pointlight collection
 	if (!_currPointLightCollection->BindCSBuffers(_context))
 	{
@@ -884,7 +993,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *srv = _currCubemap->GetSRV();
-		_context->CSSetShaderResources(8, 1, &srv);
+		_context->CSSetShaderResources(10, 1, &srv);
 	}
 
 	static ID3D11SamplerState *const ss = _content->GetSampler("SS_Clamp")->GetSamplerState();
@@ -904,7 +1013,7 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	if (!useCubemapShader && _currCubemap != nullptr)
 	{
 		ID3D11ShaderResourceView *nullSRV = nullptr;
-		_context->CSSetShaderResources(8, 1, &nullSRV);
+		_context->CSSetShaderResources(10, 1, &nullSRV);
 	}
 
 	// Unbind pointlight collection

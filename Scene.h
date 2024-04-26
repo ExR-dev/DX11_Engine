@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "CameraD3D11.h"
 #include "SpotLightCollectionD3D11.h"
+#include "DirLightCollectionD3D11.h"
 #include "PointLightCollectionD3D11.h"
 #include "Cubemap.h"
 
@@ -24,6 +25,7 @@ private:
 
 	CameraD3D11 *_camera = nullptr;
 	SpotLightCollectionD3D11 *_spotlights;
+	DirLightCollectionD3D11 *_dirlights;
 	PointLightCollectionD3D11 *_pointlights;
 
 	Cubemap _cubemap;

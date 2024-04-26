@@ -9,6 +9,7 @@
 #include "RenderTargetD3D11.h"
 #include "CameraD3D11.h"
 #include "SpotLightCollectionD3D11.h"
+#include "DirLightCollectionD3D11.h"
 #include "PointLightCollectionD3D11.h"
 
 
@@ -51,6 +52,7 @@ private:
 
 	ConstantBufferD3D11 _globalLightBuffer;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
+	DirLightCollectionD3D11 *_currDirLightCollection = nullptr;
 	PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 
 	UINT
@@ -81,6 +83,7 @@ private:
 	);
 
 	[[nodiscard]] bool RenderSpotlights();
+	[[nodiscard]] bool RenderDirlights();
 	[[nodiscard]] bool RenderPointlights();
 	[[nodiscard]] bool RenderShadowCasters();
 
@@ -105,6 +108,7 @@ public:
 	[[nodiscard]] bool SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera = nullptr);
 	[[nodiscard]] bool SetCubemap(Cubemap *cubemap);
 	[[nodiscard]] bool SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights);
+	[[nodiscard]] bool SetDirlightCollection(DirLightCollectionD3D11 *dirlights);
 	[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
 	[[nodiscard]] bool BeginSceneRender();

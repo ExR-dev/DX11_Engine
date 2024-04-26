@@ -13,6 +13,7 @@ Scene::Scene()
 {
 	_camera = new CameraD3D11();
 	_spotlights = new SpotLightCollectionD3D11();
+	_dirlights = new DirLightCollectionD3D11();
 	_pointlights = new PointLightCollectionD3D11();
 
 	_currCameraPtr = _camera;
@@ -21,6 +22,7 @@ Scene::Scene()
 Scene::~Scene()
 {
 	delete _pointlights;
+	delete _dirlights;
 	delete _spotlights;
 	delete _camera;
 }
@@ -120,6 +122,25 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	if (!_spotlights->Initialize(device, spotlightInfo))
 	{
 		ErrMsg("Failed to initialize spotlight collection!");
+		return false;
+	}
+
+
+	// Create directional lights
+	const DirLightData dirlightInfo = {
+		1024,
+		std::vector<DirLightData::PerLightInfo> {
+			DirLightData::PerLightInfo {
+				{ 15.0f, 0.0f, 0.0f },		// color
+				-XM_PIDIV2,					// rotationX
+				0.0f,						// rotationY
+			},
+		}
+	};
+
+	if (!_dirlights->Initialize(device, dirlightInfo))
+	{
+		ErrMsg("Failed to initialize directional light collection!");
 		return false;
 	}
 
@@ -705,6 +726,18 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
+	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds()))
+	{
+		ErrMsg("Failed to scale directional lights to scene & camera!");
+		return false;
+	}
+
+	if (!_dirlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update directional light buffers!");
+		return false;
+	}
+
 	if (!_pointlights->UpdateBuffers(context))
 	{
 		ErrMsg("Failed to update pointlight buffers!");
@@ -760,6 +793,12 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 		if (!graphics->SetSpotlightCollection(_spotlights))
 		{
 			ErrMsg("Failed to set spotlight collection!");
+			return false;
+		}
+
+		if (!graphics->SetDirlightCollection(_dirlights))
+		{
+			ErrMsg("Failed to set directional light collection!");
 			return false;
 		}
 
@@ -992,6 +1031,50 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 			}
 		}
 	time.TakeSnapshot("FrustumCullSpotlights");
+	
+	const int dirlightCount = static_cast<int>(_dirlights->GetNrOfLights());
+	time.TakeSnapshot("FrustumCullDirlights");
+	#pragma omp parallel for num_threads(2)
+	for (int i = 0; i < dirlightCount; i++)
+	{
+		CameraD3D11 *dirlightCamera = _dirlights->GetLightCamera(i);
+
+		std::vector<Entity *> entitiesToCastShadows;
+		entitiesToCastShadows.reserve(dirlightCamera->GetCullCount());
+
+		bool intersectResult = _graphics->GetUpdateCubemap() && _cubemap.GetUpdate();
+		BoundingOrientedBox lightBounds;
+		if (!dirlightCamera->StoreBounds(lightBounds))
+		{
+			ErrMsg("Failed to store directional light camera oriented box!");
+			continue;
+		}
+
+		if (isCameraOrtho)	intersectResult = intersectResult || view.box.Intersects(lightBounds);
+		else				intersectResult = intersectResult || view.frustum.Intersects(lightBounds);
+
+		if (!intersectResult)
+		{ // Skip rendering if the bounds don't intersect
+			_dirlights->SetLightEnabled(i, false);
+			continue;
+		}
+
+		if (!_sceneHolder.BoxCull(lightBounds, entitiesToCastShadows))
+		{
+			ErrMsg(std::format("Failed to perform box culling for directional light #{}!", i));
+			continue;
+		}
+
+		for (Entity *ent : entitiesToCastShadows)
+		{
+			if (!ent->Render(dirlightCamera))
+			{
+				ErrMsg(std::format("Failed to render entity for directional light #{}!", i));
+				break;
+			}
+		}
+	}
+	time.TakeSnapshot("FrustumCullDirlights");
 
 	const int pointlightCount = static_cast<int>(_pointlights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullPointlights");
