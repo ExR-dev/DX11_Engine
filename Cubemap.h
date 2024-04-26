@@ -29,6 +29,8 @@ private:
 	bool _doUpdate = true;
 
 
+
+
 public:
 	Cubemap();
 	Cubemap(ID3D11Device *device, UINT resolution, float nearZ, float farZ, const DirectX::XMFLOAT4A &initialPosition);
@@ -52,4 +54,5 @@ public:
 	[[nodiscard]] ID3D11DepthStencilView *GetDSV() const;
 	[[nodiscard]] const D3D11_VIEWPORT &GetViewport() const;
 
+	void StoreBounds(DirectX::BoundingBox &bounds) const;
 };

@@ -23,14 +23,14 @@ private:
 
 	SceneHolder _sceneHolder;
 
-	CameraD3D11 *_camera = nullptr;
+	CameraD3D11 *_camera = nullptr, *_secondaryCamera = nullptr;
 	SpotLightCollectionD3D11 *_spotlights;
 	DirLightCollectionD3D11 *_dirlights;
 	PointLightCollectionD3D11 *_pointlights;
 
 	Cubemap _cubemap;
 
-	int _currCamera = -1;
+	int _currCamera = -2;
 	CameraD3D11 *_currCameraPtr = nullptr;
 
 	bool _doMultiThread = true;

@@ -12,6 +12,7 @@ using namespace DirectX;
 Scene::Scene()
 {
 	_camera = new CameraD3D11();
+	_secondaryCamera = new CameraD3D11();
 	_spotlights = new SpotLightCollectionD3D11();
 	_dirlights = new DirLightCollectionD3D11();
 	_pointlights = new PointLightCollectionD3D11();
@@ -24,6 +25,7 @@ Scene::~Scene()
 	delete _pointlights;
 	delete _dirlights;
 	delete _spotlights;
+	delete _secondaryCamera;
 	delete _camera;
 }
 
@@ -37,7 +39,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	_graphics = graphics;
 
 	// Create scene content holder
-	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 50, 0), XMFLOAT3(150, 150, 150));
+	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 15, 0), XMFLOAT3(30, 30, 30));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize scene holder!");
@@ -46,10 +48,19 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create camera
 	if (!_camera->Initialize(device,
-		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 250.0f }, 
+		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
 		{ 0.0f, 2.0f, -2.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize camera!");
+		return false;
+	}
+	
+	// Create secondary camera
+	if (!_secondaryCamera->Initialize(device,
+		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 500.0f }, 
+		{ 0.0f, 2.0f, -2.0f, 0.0f }))
+	{
+		ErrMsg("Failed to initialize secondary camera!");
 		return false;
 	}
 
@@ -93,7 +104,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				35.0f						// projectionFarZ
 			},
 			
-			SpotLightData::PerLightInfo {
+			/*SpotLightData::PerLightInfo {
 				{ 0.0f, 20.0f, 0.0f },		// initialPosition
 				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
@@ -105,7 +116,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				35.0f						// projectionFarZ
 			},
 
-			/*SpotLightData::PerLightInfo {
+			SpotLightData::PerLightInfo {
 				{ 6.0f, 15.0f, 6.0f },		// initialPosition
 				{ 20.0f, 20.0f, 20.0f },	// color
 				0.0f,						// rotationX
@@ -128,12 +139,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create directional lights
 	const DirLightData dirlightInfo = {
-		1024,
+		2048,
 		std::vector<DirLightData::PerLightInfo> {
 			DirLightData::PerLightInfo {
-				{ 15.0f, 0.0f, 0.0f },		// color
-				-XM_PIDIV2,					// rotationX
-				0.0f,						// rotationY
+				{ 1.0f, 1.0f, 1.0f },		// color
+				-0.746f,					// rotationX
+				1.317f,						// rotationY
 			},
 		}
 	};
@@ -157,13 +168,13 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				15.0f							// projectionFarZ
 			},
 
-			PointLightData::PerLightInfo {
+			/*PointLightData::PerLightInfo {
 				{ 0.0f, 15.0f, 0.0f },			// initialPosition
 				{ 7.0f, 7.0f, 7.0f },			// color
 				1.0f,							// falloff
 				0.1f,							// projectionNearZ
 				16.0f							// projectionFarZ
-			},
+			},*/
 		}
 	};
 
@@ -517,8 +528,59 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			);
 		}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		Transform *markerTransform = _sceneHolder.GetEntity(0)->GetTransform();
+		const Transform *sunTransform = &_dirlights->GetLightCamera(0)->GetTransform();
+
+		const ProjectionInfo projInfo = _dirlights->GetLightCamera(0)->GetCurrProjectionInfo();
+
+		XMFLOAT4A markerPos = sunTransform->GetPosition();
+		TO_VEC(markerPos) += TO_CONST_VEC(sunTransform->GetForward()) * (projInfo.nearZ + projInfo.farZ) * 0.5f;
+
+		markerTransform->SetPosition(markerPos);
+		markerTransform->SetAxes(sunTransform->GetRight(), sunTransform->GetUp(), sunTransform->GetForward());
+		markerTransform->SetScale(XMFLOAT4A(projInfo.fovAngleY * projInfo.aspectRatio, projInfo.fovAngleY, (projInfo.farZ - projInfo.nearZ) * 0.5f, 0));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		static int currSelection = -1;
-		UpdateSelectionMarker(currSelection);
+		//UpdateSelectionMarker(currSelection);
 
 		const UINT entityCount = _sceneHolder.GetEntityCount();
 		for (UCHAR i = 0; i < entityCount; i++)
@@ -720,13 +782,22 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		return false;
 	}
 
+	if (!_secondaryCamera->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update secondary camera buffers!");
+		return false;
+	}
+
 	if (!_spotlights->UpdateBuffers(context))
 	{
 		ErrMsg("Failed to update spotlight buffers!");
 		return false;
 	}
 
-	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds()))
+	DirectX::BoundingBox cubemapBounds;
+	_cubemap.StoreBounds(cubemapBounds);
+
+	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds(), _cubemap.GetUpdate() ? &cubemapBounds : nullptr))
 	{
 		ErrMsg("Failed to scale directional lights to scene & camera!");
 		return false;
@@ -785,7 +856,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 	static bool hasSetCamera = false;
 	if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
-		_currCamera = -2;
+		_currCamera = -3;
 
 	if (!hasSetCamera)
 	{
@@ -810,22 +881,33 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 
 		hasSetCamera = true;
 	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || _currCamera == -2)
+	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || _currCamera == -3)
 	{ // Change camera
 		_currCamera++;
 
-		if (_currCamera - 6 >= static_cast<int>(_spotlights->GetNrOfLights()))
-			_currCamera = -1;
+		const int
+			spotlightCount = static_cast<int>(_spotlights->GetNrOfLights()),
+			dirlightCount = static_cast<int>(_dirlights->GetNrOfLights());
+
+		if (_currCamera - 6 - spotlightCount - dirlightCount >= 0)
+			_currCamera = -2;
 
 		if (_currCamera < 0)
 		{
-			_currCamera = -1;
-			_currCameraPtr = _camera;
+			if (_currCamera == -1)
+				_currCameraPtr = _secondaryCamera;
+			else
+			{
+				_currCamera = -2;
+				_currCameraPtr = _camera;
+			}
 		}
 		else if (_currCamera < 6)
 			_currCameraPtr = _cubemap.GetCamera(_currCamera);
-		else
+		else if (_currCamera - 6 < spotlightCount)
 			_currCameraPtr = _spotlights->GetLightCamera(_currCamera - 6);
+		else if (_currCamera - 6 - spotlightCount < dirlightCount)
+			_currCameraPtr = _dirlights->GetLightCamera(_currCamera - 6 - spotlightCount);
 	}
 
 	if (!graphics->SetCameras(_camera, _currCameraPtr))

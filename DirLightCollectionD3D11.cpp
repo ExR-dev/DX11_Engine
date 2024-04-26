@@ -40,7 +40,6 @@ bool DirLightCollectionD3D11::Initialize(ID3D11Device *device, const DirLightDat
 
 		LightBuffer lightBuffer;
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
-		lightBuffer.position = { 0.0f, 0.0f, 0.0f };
 		lightBuffer.direction = { dir.x, dir.y, dir.z };
 		lightBuffer.color = iLightInfo.color;
 
@@ -76,29 +75,49 @@ bool DirLightCollectionD3D11::Initialize(ID3D11Device *device, const DirLightDat
 }
 
 
-bool DirLightCollectionD3D11::ScaleToScene(CameraD3D11 &viewCamera, const BoundingBox &sceneBounds)
+bool DirLightCollectionD3D11::ScaleToScene(CameraD3D11 &viewCamera, const BoundingBox &sceneBounds, const BoundingBox *cubemapBounds)
 {
 	XMFLOAT3 sceneCorners[8];
 	sceneBounds.GetCorners(sceneCorners);
 
 	std::vector<XMFLOAT4A> nearCorners;
 	for (XMFLOAT3 &corner : sceneCorners)
-		nearCorners.push_back({ corner.x, corner.y, corner.z, 0.0f });
-
+		nearCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 
 	XMFLOAT3 cameraCorners[8];
-	BoundingOrientedBox viewOrientedBox;
-	if (!viewCamera.StoreBounds(viewOrientedBox))
+	if (viewCamera.GetOrtho())
 	{
-		ErrMsg("Failed to store camera oriented box!");
-		return false;
+		BoundingOrientedBox viewOrientedBox;
+		if (!viewCamera.StoreBounds(viewOrientedBox))
+		{
+			ErrMsg("Failed to store camera oriented box!");
+			return false;
+		}
+		viewOrientedBox.GetCorners(cameraCorners);
 	}
-	viewOrientedBox.GetCorners(cameraCorners);
+	else
+	{
+		BoundingFrustum viewFrustum;
+		if (!viewCamera.StoreBounds(viewFrustum))
+		{
+			ErrMsg("Failed to store camera frustum!");
+			return false;
+		}
+		viewFrustum.GetCorners(cameraCorners);
+	}
 
 	std::vector<XMFLOAT4A> innerCorners;
 	for (XMFLOAT3 &corner : cameraCorners)
-		innerCorners.push_back({ corner.x, corner.y, corner.z, 0.0f });
+		innerCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 
+	if (cubemapBounds)
+	{
+		XMFLOAT3 cubemapCorners[8];
+		cubemapBounds->GetCorners(cubemapCorners);
+
+		for (XMFLOAT3 &corner : cubemapCorners)
+			innerCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
+	}
 
 	for (ShadowCamera &shadowCamera : _shadowCameras)
 		shadowCamera.isEnabled = shadowCamera.camera->ScaleToContents(nearCorners, innerCorners);
@@ -124,7 +143,6 @@ bool DirLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 		LightBuffer &lightBuffer = _bufferData.at(i);
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
-		memcpy(&lightBuffer.position, &shadowCamera.camera->GetPosition(), sizeof(XMFLOAT3));
 		memcpy(&lightBuffer.direction, &shadowCamera.camera->GetForward(), sizeof(XMFLOAT3));
 	}
 
@@ -162,7 +180,7 @@ bool DirLightCollectionD3D11::BindPSBuffers(ID3D11DeviceContext *context) const
 bool DirLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->CSSetShaderResources(4, 2, nullSRV);
+	context->CSSetShaderResources(8, 2, nullSRV);
 
 	return true;
 }
@@ -170,7 +188,7 @@ bool DirLightCollectionD3D11::UnbindCSBuffers(ID3D11DeviceContext *context) cons
 bool DirLightCollectionD3D11::UnbindPSBuffers(ID3D11DeviceContext *context) const
 {
 	constexpr ID3D11ShaderResourceView *const nullSRV[2] = { nullptr, nullptr };
-	context->PSSetShaderResources(4, 2, nullSRV);
+	context->PSSetShaderResources(8, 2, nullSRV);
 
 	return true;
 }

@@ -55,11 +55,10 @@ Texture2DArray<float> PointShadowMaps : register(t7);
 struct DirLight
 {
 	float4x4 vp_matrix;
-	float3 position;
 	float3 direction;
 	float3 color;
 
-	float padding[3];
+	float padding[2];
 };
 
 StructuredBuffer<DirLight> DirLights : register(t8);
@@ -146,6 +145,47 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularCol * shadow * inverseLightDistSqr;
+	}
+
+	
+	uint dirLightCount;
+	DirLights.GetDimensions(dirLightCount, _);
+
+	// Per-directional light calculations
+	for (uint dirlight_i = 0; dirlight_i < dirLightCount; dirlight_i++)
+	{
+		// Prerequisite variables
+		const DirLight light = DirLights[dirlight_i];
+
+		const float3
+			toLightDir = normalize(-light.direction),
+			halfwayDir = normalize(toLightDir + viewDir);
+		
+		
+		// Calculate Blinn-Phong shading
+		const float3 diffuseCol = light.color.xyz * max(abs(dot(normal, toLightDir)), 0.0f);
+		
+		const float specFactor = pow(saturate(abs(dot(normal, halfwayDir))), specularity);
+		const float3 specularCol = specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
+
+
+		// Calculate shadow projection
+		const float4 fragPosLightClip = mul(float4(input.world_position.xyz, 1.0f), light.vp_matrix);
+		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
+		
+		const bool isInsideFrustum = (
+			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
+			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
+		);
+
+		const float3 dirUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i);
+		const float dirDepth = DirShadowMaps.SampleLevel(Sampler, dirUV, 0).x;
+		const float dirResult = dirDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * dirResult;
+
+		// Apply lighting
+		totalDiffuseLight += diffuseCol * shadow;
+		totalSpecularLight += specularCol * shadow;
 	}
 	
 	

@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-constexpr float UPDATE_INTERVAL = 0.0f;//0.025f;
+constexpr float UPDATE_INTERVAL = 999.0f;//0.0f;//0.025f;
 
 
 Cubemap::Cubemap()
@@ -244,4 +244,13 @@ ID3D11DepthStencilView *Cubemap::GetDSV() const
 const D3D11_VIEWPORT &Cubemap::GetViewport() const
 {
 	return _viewport;
+}
+
+void Cubemap::StoreBounds(DirectX::BoundingBox &bounds) const
+{
+	const ProjectionInfo projInfo = _cameras[0]->GetCurrProjectionInfo();
+	const DirectX::XMFLOAT4A pos = _cameras[0]->GetPosition();
+
+	bounds.Extents = { projInfo.farZ, projInfo.farZ, projInfo.farZ };
+	bounds.Center = { pos.x, pos.y, pos.z };
 }

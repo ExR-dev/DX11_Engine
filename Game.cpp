@@ -330,6 +330,10 @@ bool Game::Render(Time &time, const Input &input)
 		spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", ++i));
 	}
 
+	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullDirlights"));
+	ImGui::Text(std::format("{} Culling Dirlights Total", timeStr).c_str());
+
+
 	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullPointlights"));
 	ImGui::Text(std::format("{} Culling Pointlights Total", timeStr).c_str());
 

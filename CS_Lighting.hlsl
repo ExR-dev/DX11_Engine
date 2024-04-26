@@ -41,11 +41,10 @@ Texture2DArray<float> PointShadowMaps : register(t7);
 struct DirLight
 {
 	float4x4 vp_matrix;
-	float3 position;
 	float3 direction;
 	float3 color;
 
-	float padding[3];
+	float padding[2];
 };
 
 StructuredBuffer<DirLight> DirLights : register(t8);
@@ -100,8 +99,9 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		? EnvironmentCubemap.SampleLevel(Sampler, reflect(viewDir, norm) * float3(-1, 1, 1), 0).xyz
 		: float3(0,0,0);
 
-	float3 totalDiffuseLight = float3(0.02f, 0.03f, 0.04f); // Scene-wide ambient light
+	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
+
 
 	uint spotlightCount, spotWidth, spotHeight, _u;
 	SpotLights.GetDimensions(spotlightCount, _u);
@@ -182,7 +182,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		totalDiffuseLight += diffuseLightCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularLightCol * shadow * inverseLightDistSqr;
 	}
-	
+
+
 	uint dirlightCount, dirWidth, dirHeight;
 	DirLights.GetDimensions(dirlightCount, _u);
 	DirShadowMaps.GetDimensions(0, dirWidth, dirHeight, _u, _u);
@@ -197,9 +198,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Prerequisite variables
 		const DirLight light = DirLights[dirlight_i];
 
-		const float3
-			toLight = light.position - pos,
-			toLightDir = normalize(toLight);
+		const float3 toLightDir = normalize(-light.direction);
 
 
 		float3 diffuseLightCol, specularLightCol;
@@ -249,6 +248,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		totalDiffuseLight += diffuseLightCol * shadow;
 		totalSpecularLight += specularLightCol * shadow;
 	}
+
 
 	uint pointlightCount, pointWidth, pointHeight;
 	PointLights.GetDimensions(pointlightCount, _u);

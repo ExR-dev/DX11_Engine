@@ -1023,6 +1023,13 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		return false;
 	}
 
+	// Unbind directional light collection
+	if (!_currDirLightCollection->UnbindCSBuffers(_context))
+	{
+		ErrMsg("Failed to unbind directional light buffers!");
+		return false;
+	}
+
 	// Unbind spotlight collection
 	if (!_currSpotLightCollection->UnbindCSBuffers(_context))
 	{
@@ -1172,6 +1179,13 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	if (!_currSpotLightCollection->BindPSBuffers(_context))
 	{
 		ErrMsg("Failed to bind spotlight buffers!");
+		return false;
+	}
+
+	// Bind directional light collection
+	if (!_currDirLightCollection->BindPSBuffers(_context))
+	{
+		ErrMsg("Failed to bind directional light buffers!");
 		return false;
 	}
 
@@ -1383,6 +1397,13 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		return false;
 	}
 
+	// Unbind directional light collection
+	if (!_currDirLightCollection->UnbindPSBuffers(_context))
+	{
+		ErrMsg("Failed to unbind directional light buffers!");
+		return false;
+	}
+
 	// Unbind spotlight collection
 	if (!_currSpotLightCollection->UnbindPSBuffers(_context))
 	{
@@ -1454,6 +1475,12 @@ bool Graphics::RenderUI(Time &time)
 		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());
 	}
 
+	for (UINT i = 0; i < _currDirLightCollection->GetNrOfLights(); i++)
+	{
+		const CameraD3D11 *dirlightCamera = _currDirLightCollection->GetLightCamera(i);
+		ImGui::Text(std::format("Dirlight #{} Draws: {}", i, dirlightCamera->GetCullCount()).c_str());
+	}
+
 	for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
 		for (UINT j = 0; j < 6; j++)
 		{
@@ -1500,6 +1527,9 @@ bool Graphics::ResetRenderState()
 
 	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 		_currSpotLightCollection->GetLightCamera(i)->ResetRenderQueue();
+
+	for (UINT i = 0; i < _currDirLightCollection->GetNrOfLights(); i++)
+		_currDirLightCollection->GetLightCamera(i)->ResetRenderQueue();
 
 	for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
 		for (UINT j = 0; j < 6; j++)

@@ -33,15 +33,15 @@ struct SpotLightData
 	std::vector<PerLightInfo> perLightInfo;
 };
 
-struct ShadowCamera
-{
-	CameraD3D11 *camera = nullptr;
-	bool isEnabled = true;
-};
-
 class SpotLightCollectionD3D11
 {
 private:
+	struct ShadowCamera
+	{
+		CameraD3D11 *camera = nullptr;
+		bool isEnabled = true;
+	};
+
 	struct LightBuffer
 	{
 		DirectX::XMFLOAT4X4 vpMatrix = { };

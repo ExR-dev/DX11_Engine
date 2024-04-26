@@ -107,7 +107,7 @@ struct InputLayout
 	InputLayout &operator=(InputLayout &&other) = delete;
 };
 
-
+/// Handles loading, storing and unloading of meshes, shaders, textures, texture maps, samplers and input layouts.
 class Content
 {
 private:

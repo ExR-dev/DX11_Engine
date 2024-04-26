@@ -27,23 +27,22 @@ struct DirLightData
 	std::vector<PerLightInfo> perLightInfo;
 };
 
-struct ShadowCamera
-{
-	CameraD3D11 *camera = nullptr;
-	bool isEnabled = true;
-};
-
 class DirLightCollectionD3D11
 {
 private:
+	struct ShadowCamera
+	{
+		CameraD3D11 *camera = nullptr;
+		bool isEnabled = true;
+	};
+
 	struct LightBuffer
 	{
 		DirectX::XMFLOAT4X4 vpMatrix = { };
-		DirectX::XMFLOAT3 position = { };
 		DirectX::XMFLOAT3 direction = { };
 		DirectX::XMFLOAT3 color = { };
 
-		float padding[3];
+		float padding[2];
 	};
 
 	std::vector<LightBuffer> _bufferData;
@@ -64,7 +63,10 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirLightData &lightInfo);
 
-	[[nodiscard]] bool ScaleToScene(CameraD3D11 &viewCamera, const DirectX::BoundingBox &sceneBounds);
+	// Scale directional lights to the view, keeping the near-plane outside of the scene bounds.
+	// If cubemap bounds are provided as well, the scene will be scaled to fit both.
+	[[nodiscard]] bool ScaleToScene(CameraD3D11 &viewCamera, const DirectX::BoundingBox &sceneBounds, const DirectX::BoundingBox *cubemapBounds);
+
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 	[[nodiscard]] bool BindCSBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindPSBuffers(ID3D11DeviceContext *context) const;

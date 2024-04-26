@@ -13,9 +13,7 @@
 #include "PointLightCollectionD3D11.h"
 
 
-//constexpr UINT G_BUFFER_COUNT = 4;
-
-
+// Handles rendering of the scene and the GUI.
 class Graphics
 {
 private:
@@ -68,10 +66,11 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	DirectX::XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
+	//DirectX::XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
+	DirectX::XMFLOAT4A _ambientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 	bool _renderTransparency = true;
 
-
+	// Renders all queued entities to the specified target.
 	[[nodiscard]] bool RenderToTarget(
 		const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
 		ID3D11RenderTargetView *targetRTV,
@@ -85,6 +84,8 @@ private:
 	[[nodiscard]] bool RenderSpotlights();
 	[[nodiscard]] bool RenderDirlights();
 	[[nodiscard]] bool RenderPointlights();
+
+	// Renders all queued opaque entities to the depth buffers of all shadow-casting lights.
 	[[nodiscard]] bool RenderShadowCasters();
 
 	[[nodiscard]] bool RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
@@ -111,12 +112,16 @@ public:
 	[[nodiscard]] bool SetDirlightCollection(DirLightCollectionD3D11 *dirlights);
 	[[nodiscard]] bool SetPointlightCollection(PointLightCollectionD3D11 *pointlights);
 
+	// Begins scene rendering, enabling entities to be queued for rendering.
 	[[nodiscard]] bool BeginSceneRender();
+
+	// Renders all queued entities to the window.
 	[[nodiscard]] bool EndSceneRender(Time &time);
 
 	[[nodiscard]] bool BeginUIRender() const;
 	[[nodiscard]] bool RenderUI(Time &time);
 	[[nodiscard]] bool EndUIRender() const;
 
+	// Resets variables and clears all render queues.
 	[[nodiscard]] bool EndFrame();
 };

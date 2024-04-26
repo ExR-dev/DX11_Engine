@@ -340,12 +340,12 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		right = TO_CONST_VEC(_transform.GetRight()),
 		up = TO_CONST_VEC(_transform.GetUp());
 
-	XMVECTOR mid = { 0.0f, 0.0f, 0.0f, 1.0f };
+	XMVECTOR mid = { 0.0f, 0.0f, 0.0f, 0.0f };
 	for (const XMFLOAT4A &point : innerBounds)
 		mid = XMVectorAdd(mid, TO_CONST_VEC(point));
 	mid = XMVectorScale(mid, 1.0f / static_cast<float>(innerBounds.size()));
 
-	float nearDist = FLT_MAX, farDist = -FLT_MAX;
+	float nearDist = FLT_MAX;
 	for (const XMFLOAT4A &point : nearBounds)
 	{
 		const XMVECTOR pointVec = TO_CONST_VEC(point);
@@ -354,12 +354,9 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		const float forwardDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
 		if (forwardDot < nearDist)
 			nearDist = forwardDot;
-
-		if (forwardDot > farDist)
-			farDist = forwardDot;
 	}
 
-	float horizontalDist = -FLT_MAX, verticalDist = -FLT_MAX;
+	float farDist = -FLT_MAX, horizontalDist = -FLT_MAX, verticalDist = -FLT_MAX;
 	for (const XMFLOAT4A &point : innerBounds)
 	{
 		const XMVECTOR pointVec = TO_CONST_VEC(point);
@@ -385,7 +382,7 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 	}
 
 	XMFLOAT4A newPos;
-	TO_VEC(newPos) = XMVectorAdd(mid, XMVectorScale(forward, nearDist - 1.0f));
+	TO_VEC(newPos) = XMVectorSubtract(mid, XMVectorScale(forward, nearDist + 1.0f));
 	_transform.SetPosition(newPos);
 
 	const float
@@ -406,6 +403,11 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 	};
 
 	BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+
+	_currProjInfo.nearZ = nearZ;
+	_currProjInfo.farZ = farZ;
+	_currProjInfo.fovAngleY = height;
+	_currProjInfo.aspectRatio = width / height;
 
 	_isDirty = true;
 	return true;

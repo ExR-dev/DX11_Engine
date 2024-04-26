@@ -28,16 +28,16 @@ struct PointLightData
 	std::vector<PerLightInfo> perLightInfo;
 };
 
-struct ShadowCameraCube
-{
-	std::array<CameraD3D11 *, 6> cameraArray;
-	uint8_t isEnabledFlag = 0b111111;
-};
-
 
 class PointLightCollectionD3D11
 {
 private:
+	struct ShadowCameraCube
+	{
+		std::array<CameraD3D11 *, 6> cameraArray;
+		uint8_t isEnabledFlag = 0b111111;
+	};
+
 	struct LightBuffer
 	{
 		DirectX::XMFLOAT4X4 vpMatrix = { };

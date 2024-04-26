@@ -47,11 +47,10 @@ Texture2DArray<float> PointShadowMaps : register(t7);
 struct DirLight
 {
 	float4x4 vp_matrix;
-	float3 position;
 	float3 direction;
 	float3 color;
 
-	float padding[3];
+	float padding[2];
 };
 
 StructuredBuffer<DirLight> DirLights : register(t8);
@@ -94,7 +93,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		norm = normalize(normalGBuf.xyz),
 		viewDir = normalize(cam_position.xyz - pos);
 		
-	float3 totalDiffuseLight = float3(0.02f, 0.03f, 0.04f); // Scene-wide ambient light
+	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 
@@ -147,6 +146,44 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Apply lighting
 		totalDiffuseLight += diffuseLightCol * shadow * inverseLightDistSqr;
 		totalSpecularLight += specularLightCol * shadow * inverseLightDistSqr;
+	}
+
+
+	uint dirlightCount;
+	DirLights.GetDimensions(dirlightCount, _);
+
+	// Per-directional light calculations
+	for (uint dirlight_i = 0; dirlight_i < dirlightCount; dirlight_i++)
+	{
+		// Prerequisite variables
+		const DirLight light = DirLights[dirlight_i];
+
+		const float3 toLightDir = normalize(-light.direction);
+
+
+		float3 diffuseLightCol, specularLightCol;
+		BlinnPhong(toLightDir, viewDir, norm, light.color.xyz, specularity, diffuseLightCol, specularLightCol);
+		specularLightCol *= specularCol;
+
+
+		// Calculate shadow projection
+		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
+		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
+		
+		const bool isInsideFrustum = (
+			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
+			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
+		);
+
+		const float3 dirUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i);
+		const float dirDepth = DirShadowMaps.SampleLevel(Sampler, dirUV, 0).x;
+		const float dirResult = dirDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
+		const float shadow = isInsideFrustum * dirResult;
+
+
+		// Apply lighting
+		totalDiffuseLight += diffuseLightCol * shadow;
+		totalSpecularLight += specularLightCol * shadow;
 	}
 
 
