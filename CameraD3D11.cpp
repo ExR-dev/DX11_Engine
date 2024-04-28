@@ -345,35 +345,59 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		mid = XMVectorAdd(mid, TO_CONST_VEC(point));
 	mid = XMVectorScale(mid, 1.0f / static_cast<float>(innerBounds.size()));
 
-	float nearDist = FLT_MAX;
+	float
+		nearDist = FLT_MAX, farDist = -FLT_MAX,
+		leftDist = FLT_MAX, rightDist = -FLT_MAX,
+		downDist = FLT_MAX, upDist = -FLT_MAX;
+
+	float
+		sceneFarDist = -FLT_MAX,
+		sceneLeftDist = FLT_MAX, sceneRightDist = -FLT_MAX,
+		sceneDownDist = FLT_MAX, sceneUpDist = -FLT_MAX;
+
 	for (const XMFLOAT4A &point : nearBounds)
 	{
 		const XMVECTOR pointVec = TO_CONST_VEC(point);
 		const XMVECTOR toPoint = pointVec - mid;
 
-		const float forwardDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
-		if (forwardDot < nearDist)
-			nearDist = forwardDot;
+		const float
+			xDot = XMVectorGetX(XMVector3Dot(toPoint, right)),
+			yDot = XMVectorGetX(XMVector3Dot(toPoint, up)),
+			zDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
+
+		if (xDot < sceneLeftDist)	sceneLeftDist = xDot;
+		if (xDot > sceneRightDist)	sceneRightDist = xDot;
+
+		if (yDot < sceneDownDist)	sceneDownDist = yDot;
+		if (yDot > sceneUpDist)		sceneUpDist = yDot;
+
+		if (zDot < nearDist)		nearDist = zDot;
+		if (zDot > sceneFarDist)	sceneFarDist = zDot;
 	}
 
-	float farDist = -FLT_MAX, horizontalDist = -FLT_MAX, verticalDist = -FLT_MAX;
 	for (const XMFLOAT4A &point : innerBounds)
 	{
 		const XMVECTOR pointVec = TO_CONST_VEC(point);
 		const XMVECTOR toPoint = pointVec - mid;
 
-		const float forwardDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
-		if (forwardDot > farDist)
-			farDist = forwardDot;
+		const float
+			xDot = XMVectorGetX(XMVector3Dot(toPoint, right)),
+			yDot = XMVectorGetX(XMVector3Dot(toPoint, up)),
+			zDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
 
-		const float rightDot = abs(XMVectorGetX(XMVector3Dot(toPoint, right)));
-		if (rightDot > horizontalDist)
-			horizontalDist = rightDot;
+		if (xDot < leftDist)	leftDist = xDot;
+		if (xDot > rightDist)	rightDist = xDot;
 
-		const float upDot = abs(XMVectorGetX(XMVector3Dot(toPoint, up)));
-		if (upDot > verticalDist)
-			verticalDist = upDot;
+		if (yDot < downDist)	downDist = yDot;
+		if (yDot > upDist)		upDist = yDot;
+
+		if (zDot > farDist)		farDist = zDot;
 	}
+
+	if (sceneLeftDist > leftDist)	leftDist = sceneLeftDist;
+	if (sceneRightDist < rightDist)	rightDist = sceneRightDist;
+	if (sceneDownDist > downDist)	downDist = sceneDownDist;
+	if (sceneUpDist < upDist)		upDist = sceneUpDist;
 
 	if (farDist - nearDist < 0.001f)
 	{
@@ -382,31 +406,34 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 	}
 
 	XMFLOAT4A newPos;
-	TO_VEC(newPos) = XMVectorSubtract(mid, XMVectorScale(forward, nearDist + 1.0f));
+	TO_VEC(newPos) = XMVectorAdd(mid, XMVectorScale(forward, nearDist - 1.0f));
+	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(right, (rightDist + leftDist) * 0.5f));
+	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(up, (upDist + downDist) * 0.5f));
+
 	_transform.SetPosition(newPos);
 
 	const float
 		nearZ = 1.0f,
 		farZ = (farDist - nearDist) + 1.0f,
-		width = 0.5f * horizontalDist,
-		height = 0.5f * verticalDist;
+		width = (rightDist - leftDist) * 0.5f,
+		height = (upDist - downDist) * 0.5f;
 
 	const XMFLOAT3 corners[8] = {
 		XMFLOAT3(-width, -height, nearZ),
-		XMFLOAT3(width, -height, nearZ),
+		XMFLOAT3( width, -height, nearZ),
 		XMFLOAT3(-width,  height, nearZ),
-		XMFLOAT3(width,  height, nearZ),
+		XMFLOAT3( width,  height, nearZ),
 		XMFLOAT3(-width, -height, farZ),
-		XMFLOAT3(width, -height, farZ),
+		XMFLOAT3( width, -height, farZ),
 		XMFLOAT3(-width,  height, farZ),
-		XMFLOAT3(width,  height, farZ)
+		XMFLOAT3( width,  height, farZ)
 	};
 
 	BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
 
 	_currProjInfo.nearZ = nearZ;
 	_currProjInfo.farZ = farZ;
-	_currProjInfo.fovAngleY = height;
+	_currProjInfo.fovAngleY = height * 2.0f;
 	_currProjInfo.aspectRatio = width / height;
 
 	_isDirty = true;

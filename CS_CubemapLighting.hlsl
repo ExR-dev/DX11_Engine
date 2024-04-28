@@ -93,7 +93,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		norm = normalize(normalGBuf.xyz),
 		viewDir = normalize(cam_position.xyz - pos);
 		
-	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f); // Scene-wide ambient light
+	float3 totalDiffuseLight = float3(0.01f, 0.0175f, 0.02f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 
@@ -169,16 +169,11 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Calculate shadow projection
 		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
-		
-		const bool isInsideFrustum = (
-			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
-			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
-		);
 
 		const float3 dirUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i);
 		const float dirDepth = DirShadowMaps.SampleLevel(Sampler, dirUV, 0).x;
 		const float dirResult = dirDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
-		const float shadow = isInsideFrustum * dirResult;
+		const float shadow = dirResult;
 
 
 		// Apply lighting

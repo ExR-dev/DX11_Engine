@@ -20,34 +20,13 @@ Game::~Game()
 		_device->Release();
 }
 
-bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND window)
+
+bool Game::LoadContent(Time &time,
+	const std::vector<std::string> &meshNames,
+	const std::vector<TextureData> &textureNames,
+	const std::vector<TextureMapData> &textureMapNames,
+	const std::vector<ShaderData> &shaderNames)
 {
-	if (!_graphics.Setup(width, height, window, _device, _immediateContext, &_content))
-	{
-		ErrMsg("Failed to setup d3d11!");
-		return false;
-	}
-
-	// TODO: Add support for reading .mtl files.
-
-	const std::vector<std::string> meshNames = {
-		"Error",
-		"Fallback",
-		"Cube",
-		"Room",
-		"SimpleSubmesh",
-		//"ControlChair",
-		//"ControlDesk",
-		//"CharacterSculptLow0",
-		"CharacterSculptLow1",
-		"Plane",
-		"Sphere",
-		//"IsoSphereEdged",
-		"IsoSphereSmooth",
-		//"Torus",
-		"WireframeCube",
-	};
-
 	time.TakeSnapshot("LoadMeshes");
 	for (const std::string &meshName : meshNames)
 		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
@@ -58,7 +37,90 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 	time.TakeSnapshot("LoadMeshes");
 
 
-	struct TextureData { std::string name; std::string file; };
+	time.TakeSnapshot("LoadTextures");
+	for (const TextureData &textureName : textureNames)
+		if (_content.AddTexture(_device, std::format("Tex_{}", textureName.name),
+			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
+			return false;
+		}
+	time.TakeSnapshot("LoadTextures");
+
+
+	time.TakeSnapshot("LoadTextureMaps");
+	for (const TextureMapData &textureMap : textureMapNames)
+		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name),
+			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
+			return false;
+		}
+	time.TakeSnapshot("LoadTextureMaps");
+
+
+	time.TakeSnapshot("LoadShaders");
+	for (const ShaderData &shader : shaderNames)
+		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
+		{
+			ErrMsg(std::format("Failed to add {} shader!", shader.name));
+			return false;
+		}
+	time.TakeSnapshot("LoadShaders");
+
+
+	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add fallback sampler!");
+		return false;
+	}
+
+	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add clamp sampler!");
+		return false;
+	}
+
+
+	const std::vector<Semantic> fallbackInputLayout{
+		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "TANGENT",	DXGI_FORMAT_R32G32B32_FLOAT },
+		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
+	};
+
+	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, _content.GetShaderID("VS_Geometry")) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add IL_Fallback!");
+		return false;
+	}
+
+	return true;
+}
+
+
+bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND window)
+{
+	if (!_graphics.Setup(width, height, window, _device, _immediateContext, &_content))
+	{
+		ErrMsg("Failed to setup d3d11!");
+		return false;
+	}
+
+	const std::vector<std::string> meshNames = {
+		"Error",
+		"Fallback",
+		"Cube",
+		"Room",
+		"SimpleSubmesh",
+		"CharacterSculptLow1",
+		"Plane",
+		"Sphere",
+		"IsoSphereSmooth",
+		"Torus",
+		"WireframeCube",
+	};
+
 	const std::vector<TextureData> textureNames = {
 		// Opaque
 		{ "Error",							"Error"							},
@@ -85,18 +147,6 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		{ "Particle",						"Particle"						},
 	};
 
-	time.TakeSnapshot("LoadTextures");
-	for (const TextureData &textureName : textureNames)
-		if (_content.AddTexture(_device, std::format("Tex_{}", textureName.name), 
-			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
-		{
-			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
-			return false;
-		}
-	time.TakeSnapshot("LoadTextures");
-
-
-	struct TextureMapData { TextureType type; std::string name; std::string file; };
 	const std::vector<TextureMapData> textureMapNames = {
 		{ TextureType::NORMAL,		"Default_Normal",				"Default_Normal"				},
 		{ TextureType::NORMAL,		"texture3_Normal",				"texture3_Normal"				},
@@ -126,18 +176,6 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		{ TextureType::HEIGHT,		"Cobble_Height",				"Cobble_Height"					},
 	};
 
-	time.TakeSnapshot("LoadTextureMaps");
-	for (const TextureMapData &textureMap : textureMapNames)
-		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name), 
-			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
-		{
-			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
-			return false;
-		}
-	time.TakeSnapshot("LoadTextureMaps");
-
-
-	struct ShaderData { ShaderType type; std::string name; std::string file; };
 	const std::vector<ShaderData> shaderNames = {
 		{ ShaderType::VERTEX_SHADER,		"VS_Geometry",			"VS_Geometry"			},
 		{ ShaderType::VERTEX_SHADER,		"VS_Depth",				"VS_Depth"				},
@@ -154,39 +192,10 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 		{ ShaderType::COMPUTE_SHADER,		"CS_Particle",			"CS_Particle"			},
 	};
 
-	time.TakeSnapshot("LoadShaders");
-	for (const ShaderData &shader : shaderNames)
-		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
-		{
-			ErrMsg(std::format("Failed to add {} shader!", shader.name));
-			return false;
-		}
-	time.TakeSnapshot("LoadShaders");
 
-
-	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
+	if (!LoadContent(time, meshNames, textureNames, textureMapNames, shaderNames))
 	{
-		ErrMsg("Failed to add fallback sampler!");
-		return false;
-	}
-
-	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add clamp sampler!");
-		return false;
-	}
-
-
-	const std::vector<Semantic> fallbackInputLayout {
-		{ "POSITION",	DXGI_FORMAT_R32G32B32_FLOAT },
-		{ "NORMAL",		DXGI_FORMAT_R32G32B32_FLOAT },
-		{ "TANGENT",	DXGI_FORMAT_R32G32B32_FLOAT },
-		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
-	};
-
-	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, _content.GetShaderID("VS_Geometry")) == CONTENT_LOAD_ERROR)
-	{
-		ErrMsg("Failed to add IL_Fallback!");
+		ErrMsg("Failed to load game content!");
 		return false;
 	}
 
@@ -212,22 +221,22 @@ bool Game::SetScene(Time &time, Scene *scene)
 
 bool Game::Update(Time &time, const Input &input) const
 {
+	time.TakeSnapshot("SceneUpdateTime");
 	/// v==========================================v ///
 	/// v        Update game logic here...         v ///
 	/// v==========================================v ///
 
-	time.TakeSnapshot("SceneUpdateTime");
 	if (_scene != nullptr)
 		if (!_scene->Update(_immediateContext, time, input))
 		{
 			ErrMsg("Failed to update scene!");
 			return false;
 		}
-	time.TakeSnapshot("SceneUpdateTime");
 
 	/// ^==========================================^ ///
 	/// ^        Update game logic here...         ^ ///
 	/// ^==========================================^ ///
+	time.TakeSnapshot("SceneUpdateTime");
 
 	return true;
 }
@@ -241,22 +250,22 @@ bool Game::Render(Time &time, const Input &input)
 		return false;
 	}
 
+	time.TakeSnapshot("SceneRenderTime");
 	/// v==========================================v ///
 	/// v        Render scene here...              v ///
 	/// v==========================================v ///
 
-	time.TakeSnapshot("SceneRenderTime");
 	if (_scene != nullptr)
-		if (!_scene->Render(&_graphics, time, input))
+		if (!_scene->Render(time, input))
 		{
 			ErrMsg("Failed to render scene!");
 			return false;
 		}
-	time.TakeSnapshot("SceneRenderTime");
 
 	/// ^==========================================^ ///
 	/// ^        Render scene here...              ^ ///
 	/// ^==========================================^ ///
+	time.TakeSnapshot("SceneRenderTime");
 
 	if (!_graphics.EndSceneRender(time))
 	{

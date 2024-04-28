@@ -99,7 +99,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		? EnvironmentCubemap.SampleLevel(Sampler, reflect(viewDir, norm) * float3(-1, 1, 1), 0).xyz
 		: float3(0,0,0);
 
-	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f); // Scene-wide ambient light
+	float3 totalDiffuseLight = float3(0.01f, 0.0175f, 0.02f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 
@@ -209,11 +209,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		// Calculate shadow projection
 		const float4 fragPosLightClip = mul(float4(pos + norm * NORMAL_OFFSET, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
-		
-		const bool isInsideFrustum = (
-			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
-			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
-		);
 
 		const float3
 			dirUV00 = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i),
@@ -237,7 +232,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			texelPos = dirUV00.xy * (float)dirWidth,
 			fracTex = frac(texelPos);
 		
-		const float shadow = isInsideFrustum * saturate(lerp(
+		const float shadow = saturate(lerp(
 			lerp(dirResult00, dirResult10, fracTex.x),
 			lerp(dirResult01, dirResult11, fracTex.x),
 			fracTex.y)

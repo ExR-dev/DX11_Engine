@@ -9,7 +9,7 @@
 #include "Input.h"
 
 
-// Game handles loading content like textures and meshes, as well as the main game loop.
+// Game handles loading content like textures and meshes, as well as managing the update and render steps of the main game loop.
 class Game
 {
 private:
@@ -20,6 +20,16 @@ private:
 	Content		_content;
 	Scene		*_scene;
 
+	struct TextureData		{					std::string name;	std::string file; };
+	struct TextureMapData	{ TextureType type;	std::string name;	std::string file; };
+	struct ShaderData		{ ShaderType type;	std::string name;	std::string file; };
+
+	[[nodiscard]] bool LoadContent(Time &time,
+		const std::vector<std::string> &meshNames,
+		const std::vector<TextureData> &textureNames, 
+		const std::vector<TextureMapData> &textureMapNames, 
+		const std::vector<ShaderData> &shaderNames
+	);
 
 public:
 	Game();

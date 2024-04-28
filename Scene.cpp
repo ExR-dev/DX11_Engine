@@ -39,7 +39,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	_graphics = graphics;
 
 	// Create scene content holder
-	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 15, 0), XMFLOAT3(30, 30, 30));
+	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 15, 0), XMFLOAT3(16, 16, 16));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize scene holder!");
@@ -48,8 +48,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create camera
 	if (!_camera->Initialize(device,
-		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f }, 
-		{ 0.0f, 2.0f, -2.0f, 0.0f }))
+		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f), 
+		XMFLOAT4A(0.0f, 2.0f, -2.0f, 0.0f)))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
@@ -57,8 +57,8 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	
 	// Create secondary camera
 	if (!_secondaryCamera->Initialize(device,
-		{ 70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 500.0f }, 
-		{ 0.0f, 2.0f, -2.0f, 0.0f }))
+		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 500.0f),
+		XMFLOAT4A(0.0f, 2.0f, -2.0f, 0.0f)))
 	{
 		ErrMsg("Failed to initialize secondary camera!");
 		return false;
@@ -139,12 +139,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create directional lights
 	const DirLightData dirlightInfo = {
-		2048,
+		4096,
 		std::vector<DirLightData::PerLightInfo> {
 			DirLightData::PerLightInfo {
-				{ 1.0f, 1.0f, 1.0f },		// color
+				{ 0.49f, 0.47f, 0.39f },	// color
 				-0.746f,					// rotationX
-				1.317f,						// rotationY
+				0.867f,						// rotationY
 			},
 		}
 	};
@@ -390,6 +390,81 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 }
 
 
+bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input &input)
+{
+	if (!_camera->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update camera buffers!");
+		return false;
+	}
+
+	if (!_secondaryCamera->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update secondary camera buffers!");
+		return false;
+	}
+
+	if (!_spotlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update spotlight buffers!");
+		return false;
+	}
+
+	BoundingBox cubemapBounds;
+	if (_cubemap.GetUpdate())
+		_cubemap.StoreBounds(cubemapBounds);
+
+	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds(), _cubemap.GetUpdate() ? &cubemapBounds : nullptr))
+	{
+		ErrMsg("Failed to scale directional lights to scene & camera!");
+		return false;
+	}
+
+	if (!_dirlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update directional light buffers!");
+		return false;
+	}
+
+	if (!_pointlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update pointlight buffers!");
+		return false;
+	}
+
+	if (_graphics->GetUpdateCubemap())
+		if (!_cubemap.Update(context, time))
+		{
+			ErrMsg("Failed to update cubemap!");
+			return false;
+		}
+
+	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
+	if (!_content->GetShader(particleShaderID)->BindShader(context))
+	{
+		ErrMsg(std::format("Failed to bind particle compute shader!"));
+		return false;
+	}
+
+	const UINT entityCount = _sceneHolder.GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		if (!_sceneHolder.GetEntity(i)->Update(context, time, input))
+		{
+			ErrMsg(std::format("Failed to update entity #{}!", i));
+			return false;
+		}
+	}
+
+	if (!_sceneHolder.Update())
+	{
+		ErrMsg("Failed to update scene holder!");
+		return false;
+	}
+
+	return true;
+}
+
 void Scene::UpdateSelectionMarker(const int i) const
 {
 	Entity
@@ -528,59 +603,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			);
 		}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		Transform *markerTransform = _sceneHolder.GetEntity(0)->GetTransform();
-		const Transform *sunTransform = &_dirlights->GetLightCamera(0)->GetTransform();
-
-		const ProjectionInfo projInfo = _dirlights->GetLightCamera(0)->GetCurrProjectionInfo();
-
-		XMFLOAT4A markerPos = sunTransform->GetPosition();
-		TO_VEC(markerPos) += TO_CONST_VEC(sunTransform->GetForward()) * (projInfo.nearZ + projInfo.farZ) * 0.5f;
-
-		markerTransform->SetPosition(markerPos);
-		markerTransform->SetAxes(sunTransform->GetRight(), sunTransform->GetUp(), sunTransform->GetForward());
-		markerTransform->SetScale(XMFLOAT4A(projInfo.fovAngleY * projInfo.aspectRatio, projInfo.fovAngleY, (projInfo.farZ - projInfo.nearZ) * 0.5f, 0));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		static int currSelection = -1;
-		//UpdateSelectionMarker(currSelection);
+		UpdateSelectionMarker(currSelection);
 
 		const UINT entityCount = _sceneHolder.GetEntityCount();
 		for (UCHAR i = 0; i < entityCount; i++)
@@ -773,75 +797,69 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 			}
 		}
-	}
 
 
-	if (!_camera->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update camera buffers!");
-		return false;
-	}
 
-	if (!_secondaryCamera->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update secondary camera buffers!");
-		return false;
-	}
+		static bool hasSetCamera = false;
+		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
+			_currCamera = -3;
 
-	if (!_spotlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update spotlight buffers!");
-		return false;
-	}
-
-	DirectX::BoundingBox cubemapBounds;
-	_cubemap.StoreBounds(cubemapBounds);
-
-	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds(), _cubemap.GetUpdate() ? &cubemapBounds : nullptr))
-	{
-		ErrMsg("Failed to scale directional lights to scene & camera!");
-		return false;
-	}
-
-	if (!_dirlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update directional light buffers!");
-		return false;
-	}
-
-	if (!_pointlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update pointlight buffers!");
-		return false;
-	}
-
-	if (_graphics->GetUpdateCubemap())
-		if (!_cubemap.Update(context, time))
+		if (!hasSetCamera)
 		{
-			ErrMsg("Failed to update cubemap!");
-			return false;
+			_currCameraPtr = _camera;
+			if (!_graphics->SetSpotlightCollection(_spotlights))
+			{
+				ErrMsg("Failed to set spotlight collection!");
+				return false;
+			}
+
+			if (!_graphics->SetDirlightCollection(_dirlights))
+			{
+				ErrMsg("Failed to set directional light collection!");
+				return false;
+			}
+
+			if (!_graphics->SetPointlightCollection(_pointlights))
+			{
+				ErrMsg("Failed to set pointlight collection!");
+				return false;
+			}
+
+			hasSetCamera = true;
 		}
+		else if (input.GetKey(KeyCode::C) == KeyState::Pressed || _currCamera == -3)
+		{ // Change camera
+			_currCamera++;
 
-	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
-	if (!_content->GetShader(particleShaderID)->BindShader(context))
-	{
-		ErrMsg(std::format("Failed to bind particle compute shader!"));
-		return false;
-	}
+			const int
+				spotlightCount = static_cast<int>(_spotlights->GetNrOfLights()),
+				dirlightCount = static_cast<int>(_dirlights->GetNrOfLights());
 
-	const UINT entityCount = _sceneHolder.GetEntityCount();
-	for (UINT i = 0; i < entityCount; i++)
-	{
-		if (!_sceneHolder.GetEntity(i)->Update(context, time, input))
-		{
-			ErrMsg(std::format("Failed to update entity #{}!", i));
-			return false;
+			if (_currCamera - 6 - spotlightCount - dirlightCount >= 0)
+				_currCamera = -2;
+
+			if (_currCamera < 0)
+			{
+				if (_currCamera == -1)
+					_currCameraPtr = _secondaryCamera;
+				else
+				{
+					_currCamera = -2;
+					_currCameraPtr = _camera;
+				}
+			}
+			else if (_currCamera < 6)
+				_currCameraPtr = _cubemap.GetCamera(_currCamera);
+			else if (_currCamera - 6 < spotlightCount)
+				_currCameraPtr = _spotlights->GetLightCamera(_currCamera - 6);
+			else if (_currCamera - 6 - spotlightCount < dirlightCount)
+				_currCameraPtr = _dirlights->GetLightCamera(_currCamera - 6 - spotlightCount);
 		}
 	}
 
-	if (!_sceneHolder.Update())
+	if (!UpdateEntities(context, time, input))
 	{
-		ErrMsg("Failed to update scene holder!");
+		ErrMsg("Failed to update scene entities!");
 		return false;
 	}
 
@@ -849,68 +867,12 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 }
 
 
-bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
+bool Scene::Render(Time &time, const Input &input)
 {
 	if (!_initialized)
 		return false;
 
-	static bool hasSetCamera = false;
-	if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
-		_currCamera = -3;
-
-	if (!hasSetCamera)
-	{
-		_currCameraPtr = _camera;
-		if (!graphics->SetSpotlightCollection(_spotlights))
-		{
-			ErrMsg("Failed to set spotlight collection!");
-			return false;
-		}
-
-		if (!graphics->SetDirlightCollection(_dirlights))
-		{
-			ErrMsg("Failed to set directional light collection!");
-			return false;
-		}
-
-		if (!graphics->SetPointlightCollection(_pointlights))
-		{
-			ErrMsg("Failed to set pointlight collection!");
-			return false;
-		}
-
-		hasSetCamera = true;
-	}
-	else if (input.GetKey(KeyCode::C) == KeyState::Pressed || _currCamera == -3)
-	{ // Change camera
-		_currCamera++;
-
-		const int
-			spotlightCount = static_cast<int>(_spotlights->GetNrOfLights()),
-			dirlightCount = static_cast<int>(_dirlights->GetNrOfLights());
-
-		if (_currCamera - 6 - spotlightCount - dirlightCount >= 0)
-			_currCamera = -2;
-
-		if (_currCamera < 0)
-		{
-			if (_currCamera == -1)
-				_currCameraPtr = _secondaryCamera;
-			else
-			{
-				_currCamera = -2;
-				_currCameraPtr = _camera;
-			}
-		}
-		else if (_currCamera < 6)
-			_currCameraPtr = _cubemap.GetCamera(_currCamera);
-		else if (_currCamera - 6 < spotlightCount)
-			_currCameraPtr = _spotlights->GetLightCamera(_currCamera - 6);
-		else if (_currCamera - 6 - spotlightCount < dirlightCount)
-			_currCameraPtr = _dirlights->GetLightCamera(_currCamera - 6 - spotlightCount);
-	}
-
-	if (!graphics->SetCameras(_camera, _currCameraPtr))
+	if (!_graphics->SetCameras(_camera, _currCameraPtr))
 	{
 		ErrMsg("Failed to set camera!");
 		return false;
@@ -1321,7 +1283,7 @@ bool Scene::Render(Graphics *graphics, Time &time, const Input &input)
 	}
 	time.TakeSnapshot("FrustumCullCubemap");
 
-	if (!graphics->SetCubemap(&_cubemap))
+	if (!_graphics->SetCubemap(&_cubemap))
 	{
 		ErrMsg("Failed to set cubemap!");
 		return false;

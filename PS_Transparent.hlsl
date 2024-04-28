@@ -95,8 +95,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		: 0.0f;
 
 	const float3 viewDir = normalize(cam_position.xyz - input.world_position.xyz);
-
-	float3 totalDiffuseLight = float3(0.0f, 0.0f, 0.0f);
+	
+	float3 totalDiffuseLight = float3(0.01f, 0.0175f, 0.02f); // Scene-wide ambient light
 	float3 totalSpecularLight = float3(0.0f, 0.0f, 0.0f);
 
 
@@ -121,10 +121,10 @@ float4 main(PixelShaderInput input) : SV_TARGET
 			offsetAngle = saturate(1.0f - (acos(lightDirOffset) / maxOffsetAngle));
 		
 
-		// Calculate Blinn-Phong shading
-		const float3 diffuseCol = light.color.xyz * max(abs(dot(normal, toLightDir)), 0.0f);
+		// Calculate Blinn-Phong shading		
+		const float3 diffuseCol = light.color.xyz * max((dot(normal, toLightDir) + 1.5f) / 2.5f, 0.0f);
 		
-		const float specFactor = pow(saturate(abs(dot(normal, halfwayDir))), specularity);
+		const float specFactor = pow(max(dot(normal, halfwayDir), 0.0f), specularity);
 		const float3 specularCol = specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
 
 
@@ -163,9 +163,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		
 		
 		// Calculate Blinn-Phong shading
-		const float3 diffuseCol = light.color.xyz * max(abs(dot(normal, toLightDir)), 0.0f);
+		const float3 diffuseCol = light.color.xyz * max((dot(normal, toLightDir) + 1.5f) / 2.5f, 0.0f);
 		
-		const float specFactor = pow(saturate(abs(dot(normal, halfwayDir))), specularity);
+		const float specFactor = pow(max(dot(normal, halfwayDir), 0.0f), specularity);
 		const float3 specularCol = specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
 
 
@@ -173,15 +173,11 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		const float4 fragPosLightClip = mul(float4(input.world_position.xyz, 1.0f), light.vp_matrix);
 		const float3 fragPosLightNDC = fragPosLightClip.xyz / fragPosLightClip.w;
 		
-		const bool isInsideFrustum = (
-			fragPosLightNDC.x > -1.0f && fragPosLightNDC.x < 1.0f &&
-			fragPosLightNDC.y > -1.0f && fragPosLightNDC.y < 1.0f
-		);
-
 		const float3 dirUV = float3((fragPosLightNDC.x * 0.5f) + 0.5f, (fragPosLightNDC.y * -0.5f) + 0.5f, dirlight_i);
 		const float dirDepth = DirShadowMaps.SampleLevel(Sampler, dirUV, 0).x;
 		const float dirResult = dirDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
-		const float shadow = isInsideFrustum * dirResult;
+		const float shadow = dirResult;
+
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow;
@@ -211,9 +207,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		
 
 		// Calculate Blinn-Phong shading
-		const float3 diffuseCol = light.color.xyz * max(abs(dot(normal, toLightDir)), 0.0f);
+		const float3 diffuseCol = light.color.xyz * max((dot(normal, toLightDir) + 1.5f) / 2.5f, 0.0f);
 		
-		const float specFactor = pow(saturate(abs(dot(normal, halfwayDir))), specularity);
+		const float specFactor = pow(max(dot(normal, halfwayDir), 0.0f), specularity);
 		const float3 specularCol = specularity * smoothstep(0.0f, 1.0f, specFactor) * float3(1.0f, 1.0f, 1.0f);
 
 
@@ -230,6 +226,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		const float pointDepth = PointShadowMaps.SampleLevel(Sampler, pointUV, 0).x;
 		const float pointResult = pointDepth - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f;
 		const float shadow = isInsideFrustum * saturate(pointResult);
+
 
 		// Apply lighting
 		totalDiffuseLight += diffuseCol * shadow * inverseLightDistSqr;

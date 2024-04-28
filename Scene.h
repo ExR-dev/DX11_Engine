@@ -12,7 +12,7 @@
 #include "PointLightCollectionD3D11.h"
 #include "Cubemap.h"
 
-
+// Contains and manages entities, cameras and lights. Also handles queueing entities for rendering.
 class Scene
 {
 private:
@@ -36,6 +36,8 @@ private:
 	bool _doMultiThread = true;
 
 
+	[[nodiscard]] bool UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input &input);
+
 	void UpdateSelectionMarker(int i) const;
 
 	void DebugGenerateVolumeTreeStructure();
@@ -52,6 +54,6 @@ public:
 
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, Time &time, const Input &input);
 
-	[[nodiscard]] bool Render(Graphics *graphics, Time &time, const Input &input);
+	[[nodiscard]] bool Render(Time &time, const Input &input);
 	[[nodiscard]] bool RenderUI();
 };

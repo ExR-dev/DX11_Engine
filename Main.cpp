@@ -3,12 +3,12 @@
 // Caps Lock hides the mouse.
 // Pressing Middle Mouse Button selects an entity in front of the camera.
 // Pressing 1-9 selects one of the first 9 entities.
-// After selecting an entity, WASD will instead move that entity along the world-aligned axes.
+// After selecting an entity, WASD will instead move that entity along the world-axes.
 // To move the entity relative to the view, press M
 // To rotate or scale an entity, press R and T respectively, then use WASD.
 // Holding Shift speeds up all WASD-based inputs.
 // Holding Ctrl slows down all WASD-based inputs.
-// Pressing P randomly spawns 25 entities across the map, likely outside of the starting room.
+// Pressing P randomly spawns 25 entities across the map, possibly outside of the starting room.
 // Pressing O spawns one entity in front of the camera, with a model and texture that can be selected beforehand
 // I think this is done by holding M/T while pressing +/-. I don't remember exactly and am too lazy to check.
 // Pressing G enables light rotation.

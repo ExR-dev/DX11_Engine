@@ -66,7 +66,6 @@ private:
 		_currSamplerID		= CONTENT_LOAD_ERROR,
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
-	//DirectX::XMFLOAT4A _ambientColor = { 0.07f, 0.075f, 0.08f, 0.0f };
 	DirectX::XMFLOAT4A _ambientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 	bool _renderTransparency = true;
 

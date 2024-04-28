@@ -110,7 +110,7 @@ bool DirLightCollectionD3D11::ScaleToScene(CameraD3D11 &viewCamera, const Boundi
 	for (XMFLOAT3 &corner : cameraCorners)
 		innerCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 
-	if (cubemapBounds)
+	if (cubemapBounds != nullptr)
 	{
 		XMFLOAT3 cubemapCorners[8];
 		cubemapBounds->GetCorners(cubemapCorners);
