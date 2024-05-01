@@ -103,30 +103,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				0.1f,						// projectionNearZ
 				35.0f						// projectionFarZ
 			},
-			
-			/*SpotLightData::PerLightInfo {
-				{ 0.0f, 20.0f, 0.0f },		// initialPosition
-				{ 20.0f, 20.0f, 20.0f },	// color
-				0.0f,						// rotationX
-				XM_PIDIV2,					// rotationY
-				XM_PI * 0.65f,				// angle
-				1.0f,						// falloff
-				false,						// orthographic
-				0.1f,						// projectionNearZ
-				35.0f						// projectionFarZ
-			},
-
-			SpotLightData::PerLightInfo {
-				{ 6.0f, 15.0f, 6.0f },		// initialPosition
-				{ 20.0f, 20.0f, 20.0f },	// color
-				0.0f,						// rotationX
-				XM_PIDIV2,					// rotationY
-				15.0f,						// angle
-				1.0f,						// falloff
-				true,						// orthographic
-				0.1f,						// projectionNearZ
-				35.0f						// projectionFarZ
-			},*/
 		}
 	};
 
@@ -142,7 +118,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		4096,
 		std::vector<DirLightData::PerLightInfo> {
 			DirLightData::PerLightInfo {
-				{ 0.49f, 0.47f, 0.39f },	// color
+				{ 0.25f, 0.23f, 0.19f },	// color
 				-0.746f,					// rotationX
 				0.867f,						// rotationY
 			},
@@ -167,14 +143,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				0.1f,							// projectionNearZ
 				15.0f							// projectionFarZ
 			},
-
-			/*PointLightData::PerLightInfo {
-				{ 0.0f, 15.0f, 0.0f },			// initialPosition
-				{ 7.0f, 7.0f, 7.0f },			// color
-				1.0f,							// falloff
-				0.1f,							// projectionNearZ
-				16.0f							// projectionFarZ
-			},*/
 		}
 	};
 
