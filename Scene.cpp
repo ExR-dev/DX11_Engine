@@ -48,7 +48,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create camera
 	if (!_camera->Initialize(device,
-		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 50.0f), 
+		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 100.0f), 
 		XMFLOAT4A(0.0f, 2.0f, -2.0f, 0.0f)))
 	{
 		ErrMsg("Failed to initialize camera!");

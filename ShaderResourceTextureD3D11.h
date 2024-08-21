@@ -28,8 +28,10 @@ public:
 	ShaderResourceTextureD3D11(ShaderResourceTextureD3D11 &&other) = delete;
 	ShaderResourceTextureD3D11 &operator=(ShaderResourceTextureD3D11 &&other) = delete;
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT width, UINT height, const void *textureData);
-	[[nodiscard]] bool Initialize(ID3D11Device *device, const D3D11_TEXTURE2D_DESC &textureDesc, const D3D11_SUBRESOURCE_DATA *srData);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, ID3D11DeviceContext* context, 
+		UINT width, UINT height, const void *textureData, bool autoMipmaps);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, ID3D11DeviceContext* context, 
+		const D3D11_TEXTURE2D_DESC &textureDesc, const D3D11_SUBRESOURCE_DATA *srData, bool autoMipmaps);
 
 	[[nodiscard]] ID3D11Texture2D *GetTexture() const;
 	[[nodiscard]] ID3D11ShaderResourceView *GetSRV() const;

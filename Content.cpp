@@ -132,7 +132,7 @@ UINT Content::AddShader(ID3D11Device *device, const std::string &name, const Sha
 }
 
 
-UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const char *path)
+UINT Content::AddTexture(ID3D11Device *device, ID3D11DeviceContext *context, const std::string &name, const char *path)
 {
 	const UINT id = static_cast<UINT>(_textures.size());
 	for (UINT i = 0; i < id; i++)
@@ -151,7 +151,7 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 	}
 
 	Texture *addedTexture = new Texture(name, (std::string)path, id);
-	if (!addedTexture->data.Initialize(device, width, height, texData.data()))
+	if (!addedTexture->data.Initialize(device, context, width, height, texData.data(), true)) // HELLO
 	{
 		ErrMsg("Failed to initialize added texture!");
 		delete addedTexture;
@@ -163,8 +163,12 @@ UINT Content::AddTexture(ID3D11Device *device, const std::string &name, const ch
 }
 
 
-UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const TextureType mapType, const char *path)
+UINT Content::AddTextureMap(ID3D11Device *device, ID3D11DeviceContext* context, const std::string &name, const TextureType mapType, const char *path)
 {
+	bool autoMipmaps = true;
+	if (context == nullptr)
+		autoMipmaps = false;
+
 	const UINT id = static_cast<UINT>(_textureMaps.size());
 	for (UINT i = 0; i < id; i++)
 	{
@@ -185,7 +189,7 @@ UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const
 	textureDesc.Width = width;
 	textureDesc.Height = height;
 	textureDesc.ArraySize = 1;
-	textureDesc.MipLevels = 1;
+	textureDesc.MipLevels = (autoMipmaps) ? 0u : 1u;
 	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	textureDesc.CPUAccessFlags = 0;
@@ -224,8 +228,15 @@ UINT Content::AddTextureMap(ID3D11Device *device, const std::string &name, const
 
 	srData.pSysMem = texMapData.data();
 
+	if (autoMipmaps)
+	{
+		textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		textureDesc.Usage = D3D11_USAGE_DEFAULT;
+		textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	}
+
 	TextureMap *addedTextureMap = new TextureMap(name, (std::string)path, id);
-	if (!addedTextureMap->data.Initialize(device, textureDesc, &srData))
+	if (!addedTextureMap->data.Initialize(device, context, textureDesc, &srData, autoMipmaps)) // HELLO
 	{
 		ErrMsg("Failed to initialize added texture map!");
 		delete addedTextureMap;

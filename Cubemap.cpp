@@ -95,7 +95,7 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
-	if (!_texture.Initialize(device, textureDesc, nullptr))
+	if (!_texture.Initialize(device, nullptr, textureDesc, nullptr, false))
 	{
 		ErrMsg("Failed to initialize cubemap texture!");
 		return false;

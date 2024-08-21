@@ -39,7 +39,7 @@ bool Game::LoadContent(Time &time,
 
 	time.TakeSnapshot("LoadTextures");
 	for (const TextureData &textureName : textureNames)
-		if (_content.AddTexture(_device, std::format("Tex_{}", textureName.name),
+		if (_content.AddTexture(_device, _immediateContext, std::format("Tex_{}", textureName.name),
 			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
@@ -50,7 +50,7 @@ bool Game::LoadContent(Time &time,
 
 	time.TakeSnapshot("LoadTextureMaps");
 	for (const TextureMapData &textureMap : textureMapNames)
-		if (_content.AddTextureMap(_device, std::format("TexMap_{}", textureMap.name),
+		if (_content.AddTextureMap(_device, _immediateContext, std::format("TexMap_{}", textureMap.name),
 			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));

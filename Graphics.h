@@ -46,7 +46,7 @@ private:
 		*_currViewCamera = nullptr;
 
 	Cubemap *_currCubemap = nullptr;
-	bool _updateCubemap = true;
+	bool _updateCubemap = false;
 
 	ConstantBufferD3D11 _globalLightBuffer;
 	SpotLightCollectionD3D11 *_currSpotLightCollection = nullptr;
@@ -67,7 +67,7 @@ private:
 		_currInputLayoutID	= CONTENT_LOAD_ERROR;
 
 	DirectX::XMFLOAT4A _ambientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-	bool _renderTransparency = true;
+	bool _renderTransparency = false;
 
 	// Renders all queued entities to the specified target.
 	[[nodiscard]] bool RenderToTarget(

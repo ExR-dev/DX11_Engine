@@ -135,9 +135,9 @@ public:
 	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const void *dataPtr, size_t dataSize);
 	UINT AddShader(ID3D11Device *device, const std::string &name, ShaderType shaderType, const char *path);
 
-	UINT AddTexture(ID3D11Device *device, const std::string &name, const char *path);
+	UINT AddTexture(ID3D11Device *device, ID3D11DeviceContext* context, const std::string &name, const char *path);
 
-	UINT AddTextureMap(ID3D11Device *device, const std::string &name, TextureType mapType, const char *path);
+	UINT AddTextureMap(ID3D11Device *device, ID3D11DeviceContext* context, const std::string &name, TextureType mapType, const char *path);
 
 	UINT AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode,
 		const std::optional<std::array<float, 4>> &borderColors = std::nullopt);
