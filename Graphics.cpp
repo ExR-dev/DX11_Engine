@@ -276,7 +276,7 @@ bool Graphics::EndSceneRender(Time &time)
 						_currCubemap->GetGBuffers(), 
 						_currCubemap->GetRTV(i), 
 						_currCubemap->GetUAV(i), 
-						_currCubemap->GetDSV(), 
+						_currCubemap->GetDSV(),
 						&_currCubemap->GetViewport(), 
 						false, 
 						true))

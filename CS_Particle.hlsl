@@ -1,5 +1,5 @@
 
-const float PI = 3.14159265359f;
+static const float PI = 3.14159265359f;
 
 cbuffer EmitterData : register(b0)
 {
