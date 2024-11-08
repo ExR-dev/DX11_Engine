@@ -12,15 +12,16 @@
 class Octree
 {
 private:
-	static constexpr UINT MAX_ITEMS_IN_NODE = 16;
-	static constexpr UINT MAX_DEPTH = 5;
+	static constexpr UINT MAX_ITEMS_IN_NODE = 24;
+	static constexpr UINT MAX_DEPTH = 4;
+	static constexpr UINT CHILD_COUNT = 8;
 
 
 	struct Node
 	{
 		std::vector<Entity *> data;
 		DirectX::BoundingBox bounds;
-		std::unique_ptr<Node> children[8];
+		std::unique_ptr<Node> children[CHILD_COUNT];
 		bool isLeaf = true;
 
 
@@ -56,7 +57,7 @@ private:
 					DirectX::BoundingBox itemBounds;
 					data[i]->StoreBounds(itemBounds);
 
-					for (int j = 0; j < 8; j++)
+					for (int j = 0; j < CHILD_COUNT; j++)
 						children[j]->Insert(data[i], itemBounds, depth + 1);
 				}
 
@@ -81,7 +82,7 @@ private:
 				Split(depth);
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] != nullptr)
 					children[i]->Insert(item, itemBounds, depth + 1);
@@ -102,7 +103,7 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] != nullptr)
 					children[i]->Remove(item, itemBounds, depth + 1, skipIntersection);
@@ -110,7 +111,7 @@ private:
 
 			std::vector<Entity *> containingItems;
 			containingItems.reserve(MAX_ITEMS_IN_NODE);
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 				if (children[i] != nullptr)
 				{
 					if (!children[i]->isLeaf)
@@ -134,7 +135,7 @@ private:
 					}
 				}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				children[i].release();
 				children[i] = nullptr;
@@ -163,7 +164,7 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] == nullptr)
 					continue;
@@ -198,7 +199,7 @@ private:
 						return;
 					}
 
-					for (int i = 0; i < 8; i++)
+					for (int i = 0; i < CHILD_COUNT; i++)
 					{
 						if (children[i] == nullptr)
 							continue;
@@ -235,7 +236,7 @@ private:
 						return;
 					}
 
-					for (int i = 0; i < 8; i++)
+					for (int i = 0; i < CHILD_COUNT; i++)
 					{
 						if (children[i] == nullptr)
 							continue;
@@ -282,7 +283,7 @@ private:
 				{ 4, FLT_MAX }, { 5, FLT_MAX }, { 6, FLT_MAX }, { 7, FLT_MAX }
 			};
 
-			int childHitCount = 8;
+			int childHitCount = CHILD_COUNT;
 			for (int i = 0; i < childHitCount; i++)
 			{
 				const Node *child = children[childHits[i].index].get();
@@ -329,7 +330,7 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 				children[i]->DebugGetStructure(boxCollection);
 		}
 	};
@@ -344,7 +345,6 @@ public:
 	Octree &operator=(const Octree &other) = delete;
 	Octree(Octree &&other) = delete;
 	Octree &operator=(Octree &&other) = delete;
-
 
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds)
 	{

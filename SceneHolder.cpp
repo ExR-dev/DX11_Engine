@@ -261,6 +261,9 @@ bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<E
 	std::vector<Entity *> containingInterfaces;
 	containingInterfaces.reserve(_entities.capacity());
 
+#ifdef QUADTREE_CULLING
+#elif defined OCTREE_CULLING
+#endif
 	if (!_volumeTree.BoxCull(box, containingInterfaces))
 	{
 		ErrMsg("Failed to box cull volume tree!");
@@ -276,11 +279,17 @@ bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<E
 
 bool SceneHolder::Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const
 {
+#ifdef QUADTREE_CULLING
+#elif defined OCTREE_CULLING
+#endif
 	return _volumeTree.RaycastTree(origin, direction, result.distance, result.entity);
 }
 
 
 void SceneHolder::DebugGetTreeStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
 {
+#ifdef QUADTREE_CULLING
+#elif defined OCTREE_CULLING
+#endif
 	_volumeTree.DebugGetStructure(boxCollection);
 }

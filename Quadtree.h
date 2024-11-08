@@ -1,24 +1,27 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include <DirectXCollision.h>
 
 #include "Entity.h"
+#include "Raycast.h"
 
 
 class Quadtree
 {
 private:
 	static constexpr UINT MAX_ITEMS_IN_NODE = 24;
-	static constexpr UINT MAX_DEPTH = 5;
+	static constexpr UINT MAX_DEPTH = 4;
+	static constexpr UINT CHILD_COUNT = 4;
 
 
 	struct Node
 	{
 		std::vector<Entity *> data;
 		DirectX::BoundingBox bounds;
-		std::unique_ptr<Node> children[4];
+		std::unique_ptr<Node> children[CHILD_COUNT];
 		bool isLeaf = true;
 
 
@@ -46,7 +49,7 @@ private:
 					DirectX::BoundingBox itemBounds;
 					data[i]->StoreBounds(itemBounds);
 
-					for (int j = 0; j < 4; j++)
+					for (int j = 0; j < CHILD_COUNT; j++)
 						children[j]->Insert(data[i], itemBounds, depth + 1);
 				}
 
@@ -71,7 +74,7 @@ private:
 				Split(depth);
 			}
 
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] != nullptr)
 					children[i]->Insert(item, itemBounds, depth + 1);
@@ -92,7 +95,7 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] != nullptr)
 					children[i]->Remove(item, itemBounds, depth + 1, skipIntersection);
@@ -100,7 +103,7 @@ private:
 
 			std::vector<Entity *> containingItems;
 			containingItems.reserve(MAX_ITEMS_IN_NODE);
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 				if (children[i] != nullptr)
 				{
 					if (!children[i]->isLeaf)
@@ -124,7 +127,7 @@ private:
 					}
 				}
 
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				children[i].release();
 				children[i] = nullptr;
@@ -137,11 +140,8 @@ private:
 		}
 
 
-		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, const UINT depth = 0) const
+		void AddToVector(std::vector<Entity *> &containingItems, const UINT depth) const
 		{
-			if (!frustum.Intersects(bounds))
-				return;
-
 			if (isLeaf)
 			{
 				for (Entity *item : data)
@@ -156,13 +156,173 @@ private:
 				return;
 			}
 
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < CHILD_COUNT; i++)
 			{
 				if (children[i] == nullptr)
 					continue;
 
-				children[i]->FrustumCull(frustum, containingItems, depth + 1);
+				children[i]->AddToVector(containingItems, depth + 1);
 			}
+		}
+
+		void FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems, const UINT depth = 0) const
+		{
+			switch (frustum.Contains(bounds))
+			{
+			case DirectX::DISJOINT:
+				return;
+
+			case DirectX::CONTAINS:
+				AddToVector(containingItems, depth + 1);
+				break;
+
+			case DirectX::INTERSECTS:
+				if (isLeaf)
+				{
+					for (Entity *item : data)
+					{
+						if (item == nullptr)
+							continue;
+
+						if (std::ranges::find(containingItems, item) == containingItems.end())
+							containingItems.push_back(item);
+					}
+
+					return;
+				}
+
+				for (int i = 0; i < CHILD_COUNT; i++)
+				{
+					if (children[i] == nullptr)
+						continue;
+
+					children[i]->FrustumCull(frustum, containingItems, depth + 1);
+				}
+				break;
+			}
+		}
+
+		void BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems, const UINT depth = 0) const
+		{
+			switch (box.Contains(bounds))
+			{
+			case DirectX::DISJOINT:
+				return;
+
+			case DirectX::CONTAINS:
+				AddToVector(containingItems, depth + 1);
+				break;
+
+			case DirectX::INTERSECTS:
+				if (isLeaf)
+				{
+					for (Entity *item : data)
+					{
+						if (item == nullptr)
+							continue;
+
+						if (std::ranges::find(containingItems, item) == containingItems.end())
+							containingItems.push_back(item);
+					}
+
+					return;
+				}
+
+				for (int i = 0; i < CHILD_COUNT; i++)
+				{
+					if (children[i] == nullptr)
+						continue;
+
+					children[i]->BoxCull(box, containingItems, depth + 1);
+				}
+				break;
+			}
+		}
+
+
+		bool RaycastNode(const DirectX::XMFLOAT3 &orig, const DirectX::XMFLOAT3 &dir, float &length, Entity *&entity) const
+		{
+			if (isLeaf)
+			{ // Check all items in leaf for intersection & return result.
+				for (Entity *item : data)
+				{
+					if (item == nullptr)
+						continue;
+
+					DirectX::BoundingBox itemBounds;
+					item->StoreBounds(itemBounds);
+
+					float newLength = 0.0f;
+					if (Raycast(orig, dir, itemBounds, newLength))
+					{
+						if (newLength < 0.0f)
+							continue;
+
+						if (newLength >= length)
+							continue;
+
+						length = newLength;
+						entity = item;
+					}
+				}
+
+				return (entity != nullptr);
+			}
+
+			struct ChildHit { int index; float length; };
+			std::vector<ChildHit> childHits = {
+				{ 0, FLT_MAX }, { 1, FLT_MAX }, { 2, FLT_MAX }, { 3, FLT_MAX }
+			};
+
+			int childHitCount = CHILD_COUNT;
+			for (int i = 0; i < childHitCount; i++)
+			{
+				const Node *child = children[childHits[i].index].get();
+				if (Raycast(orig, dir, child->bounds, childHits[i].length))
+					continue;
+
+				// Remove child node from hits.
+				childHits.erase(childHits.begin() + i);
+				childHitCount--;
+				i--;
+			}
+
+			// Insertion sort by length.
+			for (int i = 1; i < childHitCount; i++)
+			{
+				int j = i;
+				while (childHits[j].length < childHits[j - 1].length)
+				{
+					std::swap(childHits[j], childHits[j - 1]);
+					if (--j <= 0)
+						break;
+				}
+			}
+
+			// Check children in order of closest to furthest. Return first intersection found.
+			for (int i = 0; i < childHitCount; i++)
+			{
+				length = FLT_MAX;
+				entity = nullptr;
+
+				if (children[childHits[i].index]->RaycastNode(orig, dir, length, entity))
+					return true;
+			}
+
+			return false;
+		}
+
+
+		void DebugGetStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
+		{
+			if (isLeaf)
+			{
+				boxCollection.push_back(bounds);
+				return;
+			}
+
+			for (int i = 0; i < CHILD_COUNT; i++)
+				children[i]->DebugGetStructure(boxCollection);
 		}
 	};
 
@@ -191,6 +351,7 @@ public:
 			_root->Insert(data, bounds);
 	}
 
+
 	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingBox &bounds) const
 	{
 		if (_root == nullptr)
@@ -209,6 +370,7 @@ public:
 		return true;
 	}
 
+
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 	{
 		if (_root == nullptr)
@@ -218,11 +380,46 @@ public:
 		return true;
 	}
 
+	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const
+	{
+		if (_root == nullptr)
+			return false;
+
+		_root->BoxCull(box, containingItems);
+		return true;
+	}
+
+
+	bool RaycastTree(const DirectX::XMFLOAT3A &orig, const DirectX::XMFLOAT3A &dir, float &length, Entity *&entity) const
+	{
+		if (_root == nullptr)
+			return false;
+
+		float _ = FLT_MAX; // In case Intersects() uses the initial dist value as a maximum. Docs don't specify.
+		if (!Raycast(orig, dir, _root->bounds, _))
+			return false;
+
+		length = FLT_MAX;
+		entity = nullptr;
+
+		return _root->RaycastNode(orig, dir, length, entity);
+	}
+
+
 	[[nodiscard]] DirectX::BoundingBox *GetBounds() const
 	{
 		if (_root == nullptr)
 			return nullptr;
 
 		return &_root->bounds;
+	}
+
+
+	void DebugGetStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
+	{
+		if (_root == nullptr)
+			return;
+
+		_root->DebugGetStructure(boxCollection);
 	}
 };

@@ -3,8 +3,18 @@
 #include "Entity.h"
 #include "Object.h"
 #include "Emitter.h"
-//#include "Quadtree.h"
+
+//#define QUADTREE_CULLING
+//#define OCTREE_CULLING
+#define NOTREE_CULLING
+
+#ifdef QUADTREE_CULLING
+#include "Quadtree.h"
+#elif defined OCTREE_CULLING
 #include "Octree.h"
+#elif defined NOTREE_CULLING
+#include "Notree.h"
+#endif
 
 
 struct RaycastOut
@@ -68,8 +78,13 @@ private:
 	DirectX::BoundingBox _bounds;
 	std::vector<SceneEntity *> _entities; 
 
+#ifdef QUADTREE_CULLING
+	Quadtree _volumeTree;
+#elif defined OCTREE_CULLING
 	Octree _volumeTree;
-	//Quadtree _volumeTree;
+#elif defined NOTREE_CULLING
+	Notree _volumeTree;
+#endif
 
 	std::vector<UINT> _treeInsertionQueue;
 

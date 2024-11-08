@@ -358,100 +358,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 }
 
 
-bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input &input)
-{
-	if (!_camera->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update camera buffers!");
-		return false;
-	}
-
-	if (!_secondaryCamera->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update secondary camera buffers!");
-		return false;
-	}
-
-	if (!_spotlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update spotlight buffers!");
-		return false;
-	}
-
-	BoundingBox cubemapBounds;
-	if (_cubemap.GetUpdate())
-		_cubemap.StoreBounds(cubemapBounds);
-
-	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds(), _cubemap.GetUpdate() ? &cubemapBounds : nullptr))
-	{
-		ErrMsg("Failed to scale directional lights to scene & camera!");
-		return false;
-	}
-
-	if (!_dirlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update directional light buffers!");
-		return false;
-	}
-
-	if (!_pointlights->UpdateBuffers(context))
-	{
-		ErrMsg("Failed to update pointlight buffers!");
-		return false;
-	}
-
-	if (_graphics->GetUpdateCubemap())
-		if (!_cubemap.Update(context, time))
-		{
-			ErrMsg("Failed to update cubemap!");
-			return false;
-		}
-
-	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
-	if (!_content->GetShader(particleShaderID)->BindShader(context))
-	{
-		ErrMsg(std::format("Failed to bind particle compute shader!"));
-		return false;
-	}
-
-	const UINT entityCount = _sceneHolder.GetEntityCount();
-	for (UINT i = 0; i < entityCount; i++)
-	{
-		if (!_sceneHolder.GetEntity(i)->Update(context, time, input))
-		{
-			ErrMsg(std::format("Failed to update entity #{}!", i));
-			return false;
-		}
-	}
-
-	if (!_sceneHolder.Update())
-	{
-		ErrMsg("Failed to update scene holder!");
-		return false;
-	}
-
-	return true;
-}
-
-void Scene::UpdateSelectionMarker(const int i) const
-{
-	Entity
-		*selection = i < 0 ? nullptr : _sceneHolder.GetEntity(i),
-		*marker = _sceneHolder.GetEntity(0);
-
-	BoundingBox box = { {0, 0, 0}, {0, 0, 0} };
-	if (selection != nullptr)
-		selection->StoreBounds(box);
-
-	const XMFLOAT4A
-		center = { box.Center.x, box.Center.y, box.Center.z, 0 },
-		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
-
-	marker->GetTransform()->SetPosition(center);
-	marker->GetTransform()->SetScale(extents);
-}
-
-
 bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
 	if (!_initialized)
@@ -832,6 +738,99 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 	}
 
 	return true;
+}
+
+bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input &input)
+{
+	if (!_camera->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update camera buffers!");
+		return false;
+	}
+
+	if (!_secondaryCamera->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update secondary camera buffers!");
+		return false;
+	}
+
+	if (!_spotlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update spotlight buffers!");
+		return false;
+	}
+
+	BoundingBox cubemapBounds;
+	if (_cubemap.GetUpdate())
+		_cubemap.StoreBounds(cubemapBounds);
+
+	if (!_dirlights->ScaleToScene(*_camera, _sceneHolder.GetBounds(), _cubemap.GetUpdate() ? &cubemapBounds : nullptr))
+	{
+		ErrMsg("Failed to scale directional lights to scene & camera!");
+		return false;
+	}
+
+	if (!_dirlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update directional light buffers!");
+		return false;
+	}
+
+	if (!_pointlights->UpdateBuffers(context))
+	{
+		ErrMsg("Failed to update pointlight buffers!");
+		return false;
+	}
+
+	if (_graphics->GetUpdateCubemap())
+		if (!_cubemap.Update(context, time))
+		{
+			ErrMsg("Failed to update cubemap!");
+			return false;
+		}
+
+	static UINT particleShaderID = _content->GetShaderID("CS_Particle");
+	if (!_content->GetShader(particleShaderID)->BindShader(context))
+	{
+		ErrMsg(std::format("Failed to bind particle compute shader!"));
+		return false;
+	}
+
+	const UINT entityCount = _sceneHolder.GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		if (!_sceneHolder.GetEntity(i)->Update(context, time, input))
+		{
+			ErrMsg(std::format("Failed to update entity #{}!", i));
+			return false;
+		}
+	}
+
+	if (!_sceneHolder.Update())
+	{
+		ErrMsg("Failed to update scene holder!");
+		return false;
+	}
+
+	return true;
+}
+
+void Scene::UpdateSelectionMarker(const int i) const
+{
+	Entity
+		*selection = i < 0 ? nullptr : _sceneHolder.GetEntity(i),
+		*marker = _sceneHolder.GetEntity(0);
+
+	BoundingBox box = { {0, 0, 0}, {0, 0, 0} };
+	if (selection != nullptr)
+		selection->StoreBounds(box);
+
+	const XMFLOAT4A
+		center = { box.Center.x, box.Center.y, box.Center.z, 0 },
+		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
+
+	marker->GetTransform()->SetPosition(center);
+	marker->GetTransform()->SetScale(extents);
 }
 
 
