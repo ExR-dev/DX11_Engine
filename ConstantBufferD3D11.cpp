@@ -92,7 +92,7 @@ size_t ConstantBufferD3D11::GetSize() const
 
 ID3D11Buffer *ConstantBufferD3D11::GetBuffer() const
 {
-	return _buffer;
+	return _buffer/*.Get()*/;
 }
 
 
@@ -105,13 +105,13 @@ bool ConstantBufferD3D11::UpdateBuffer(ID3D11DeviceContext *context, const void 
 	}
 
 	D3D11_MAPPED_SUBRESOURCE resource;
-	if (FAILED(context->Map(_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource)))
+	if (FAILED(context->Map(_buffer/*.Get()*/, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource)))
 	{
 		ErrMsg("Failed to update constant buffer!");
 		return false;
 	}
 
 	memcpy(resource.pData, data, _bufferSize);
-	context->Unmap(_buffer, 0);
+	context->Unmap(_buffer/*.Get()*/, 0);
 	return true;
 }

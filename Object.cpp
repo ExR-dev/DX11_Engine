@@ -8,13 +8,13 @@ Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, b
 
 }
 
-bool Object::Initialize(ID3D11Device *device, 
+bool Object::Initialize(ID3D11Device *device, const std::string &name,
 	const UINT meshID, const UINT texID, 
 	const UINT normalID, const UINT specularID,
 	const UINT reflectiveID, const UINT ambientID, 
 	const UINT heightID, const bool isTransparent)
 {
-	if (!Entity::Initialize(device))
+	if (!Entity::Initialize(device, name))
 	{
 		ErrMsg("Failed to initialize object!");
 		return false;

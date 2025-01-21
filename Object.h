@@ -24,7 +24,7 @@ private:
 public:
 	explicit Object(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, 
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name,
 		UINT meshID, UINT texID, 
 		UINT normalID, UINT specularID, 
 		UINT reflectiveID, UINT ambientID, 

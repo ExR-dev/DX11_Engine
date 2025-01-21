@@ -67,6 +67,15 @@ Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityT
 
 bool SceneHolder::RemoveEntity(Entity *entity)
 {
+	for (auto &child : *entity->GetChildren())
+	{
+		if (!RemoveEntity(child))
+		{
+			ErrMsg("Failed to remove child entity!");
+			return false;
+		}
+	}
+
 	DirectX::BoundingBox entityBounds;
 	entity->StoreBounds(entityBounds);
 
@@ -160,12 +169,34 @@ Entity *SceneHolder::GetEntityByID(const UINT id) const
 		switch (_entities[i]->_type)
 		{
 			case EntityType::OBJECT:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID() == id)
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID() != id)
+					break;
+				return reinterpret_cast<Entity *>(_entities[i]->_item.object);
+
+			case EntityType::EMITTER:
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID() != id)
+					break;
+				return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
+		}
+	}
+
+	return nullptr;
+}
+
+Entity *SceneHolder::GetEntityByName(const std::string &name) const
+{
+	const UINT entityCount = GetEntityCount();
+	for (UINT i = 0; i < entityCount; i++)
+	{
+		switch (_entities[i]->_type)
+		{
+			case EntityType::OBJECT:
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetName() == name)
 					return reinterpret_cast<Entity *>(_entities[i]->_item.object);
 				break;
 
 			case EntityType::EMITTER:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID() == id)
+				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetName() == name)
 					return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
 				break;
 		}

@@ -143,6 +143,14 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				0.1f,							// projectionNearZ
 				15.0f							// projectionFarZ
 			},
+
+			PointLightData::PerLightInfo {
+				{ -5.0f, 2.0f, -5.5f },			// initialPosition
+				{ 10.0f, 10.5f, 12.0f },		// color
+				3.0f,							// falloff
+				0.1f,							// projectionNearZ
+				15.0f							// projectionFarZ
+			},
 		}
 	};
 
@@ -174,7 +182,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 		constexpr BoundingBox dotBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0));
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Selection Marker", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize pointer dot object!");
 			return false;
@@ -195,7 +203,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return false;
@@ -216,7 +224,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Character", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
@@ -239,7 +247,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Reflective Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize reflective sphere object!");
 			return false;
@@ -260,7 +268,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Submesh", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize submesh object!");
 			return false;
@@ -281,7 +289,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = content->GetTextureMapID("TexMap_Cobble_Height");
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "PBR Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize PBR object!");
 			return false;
@@ -303,7 +311,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "ERROR", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
@@ -326,7 +334,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
+		if (!obj->Initialize(_device, "Transparent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
 			return false;
@@ -334,6 +342,63 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 1.5f, 4.0f, 0 });
 	}
+
+	// Create parent
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
+			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Ambient"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Parent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize parent object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -7.5f, 0.0f, -7.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, 0.5f * XM_PI, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+	}
+
+	std::string nextParent = "Parent";
+	std::string nextChild = "Child 1";
+	for (int i = 0; i < 50; i++)
+	{
+		// Create child i
+		{
+			const UINT
+				meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
+				textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
+				normalID = CONTENT_LOAD_ERROR,
+				specularID = CONTENT_LOAD_ERROR,
+				reflectiveID = CONTENT_LOAD_ERROR,
+				ambientID = content->GetTextureID("Tex_Ambient"),
+				heightID = CONTENT_LOAD_ERROR;
+
+			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+			if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+			{
+				ErrMsg(std::format("Failed to initialize {} object!", nextChild));
+				return false;
+			}
+
+			reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.0f, 0.0f, 2.5f, 0 });
+			reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -0.25f, 0.0f, 0 });
+			reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.9f, 0.9f, 0.9f, 0 });
+
+			reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent));
+
+			nextParent = nextChild;
+			nextChild = std::format("Child {}", i + 2);
+		}
+	}
+
 
 	// Create emitter
 	{
@@ -344,7 +409,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		emitterData.particleRate = 1;
 		emitterData.lifetime = 5.0f;
 
-		if (!emitter->Initialize(_device, emitterData, content->GetTextureID("Tex_Particle")))
+		if (!emitter->Initialize(_device, "Dust", emitterData, content->GetTextureID("Tex_Particle")))
 		{
 			ErrMsg("Failed to initialize emitter!");
 			return false;
@@ -425,7 +490,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					textureID = rand() % _content->GetTextureCount();
 
 				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, 
+				if (!obj->Initialize(_device, std::format("Random Entity #{}", i),
 					meshID, textureID, 
 					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
 					CONTENT_LOAD_ERROR, ambientID,
@@ -454,7 +519,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one custom entity in front of the camera
 			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, 
+			if (!obj->Initialize(_device, "Random Entity",
 				selectedMeshID, selectedTextureID, 
 				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
 				CONTENT_LOAD_ERROR, ambientID,
@@ -573,7 +638,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 			else
 			{ // Move selected entity or point light
-				static bool relativeToCamera = false;
+				static bool relativeToCamera = true;
 				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
 					relativeToCamera = !relativeToCamera;
 
@@ -651,8 +716,8 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					}
 					else
 					{
-						Entity* ent = _sceneHolder.GetEntity(currSelection);
-						Transform* entityTransform = ent->GetTransform();
+						Entity *ent = _sceneHolder.GetEntity(currSelection);
+						Transform *entityTransform = ent->GetTransform();
 
 						if (isRotating)
 							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
@@ -669,6 +734,16 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					}
 				}
 
+
+				if (!movePointLights && input.GetKey(KeyCode::Delete) == KeyState::Pressed)
+				{
+					if (!_sceneHolder.RemoveEntity(currSelection))
+					{
+						ErrMsg("Failed to remove entity!");
+						return false;
+					}
+					currSelection = -1;
+				}
 			}
 		}
 
@@ -1362,7 +1437,7 @@ void Scene::DebugGenerateVolumeTreeStructure()
 			heightID = CONTENT_LOAD_ERROR;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize room object!");
 			return;

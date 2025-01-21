@@ -1,11 +1,13 @@
 #pragma once
 
 #include <d3d11_4.h>
+//#include <wrl/client.h>
 
 
 class ConstantBufferD3D11
 {
 private:
+	//Microsoft::WRL::ComPtr<ID3D11Buffer> _buffer = nullptr;
 	ID3D11Buffer *_buffer = nullptr;
 	size_t _bufferSize = 0;
 

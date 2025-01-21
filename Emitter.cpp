@@ -9,11 +9,11 @@ Emitter::Emitter(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id,
 }
 
 
-bool Emitter::Initialize(ID3D11Device *device, const EmitterData &settings, const UINT textureID)
+bool Emitter::Initialize(ID3D11Device *device, const std::string &name, const EmitterData &settings, const UINT textureID)
 {
 	_texID = textureID;
 
-	if (!Entity::Initialize(device))
+	if (!Entity::Initialize(device, name))
 	{
 		ErrMsg("Failed to initialize emitter!");
 		return false;

@@ -9,14 +9,55 @@ Entity::Entity(const UINT id, const DirectX::BoundingBox &bounds)
 	_bounds = bounds;
 }
 
+Entity::~Entity()
+{
+	//_transform.~Transform();
+}
 
-bool Entity::Initialize(ID3D11Device *device)
+
+void Entity::AddChild(Entity *child)
+{
+	if (!child)
+		return;
+
+	if (!_children.empty())
+	{
+		auto it = std::find(_children.begin(), _children.end(), child);
+
+		if (it != _children.end())
+			return;
+	}
+
+	_children.push_back(child);
+	child->_transform.SetParent(&_transform);
+}
+
+void Entity::RemoveChild(Entity *child)
+{
+	if (!child)
+		return;
+
+	if (_children.empty())
+		return;
+
+	auto it = std::find(_children.begin(), _children.end(), child);
+
+	if (it != _children.end())
+		_children.erase(it);
+
+	child->_transform.SetParent(nullptr);
+}
+
+
+bool Entity::Initialize(ID3D11Device *device, const std::string &name)
 {
 	if (_isInitialized)
 	{
 		ErrMsg("Entity is already initialized!");
 		return false;
 	}
+
+	SetName(name);
 
 	if (!_transform.Initialize(device))
 	{
@@ -33,10 +74,59 @@ bool Entity::IsInitialized() const
 	return _isInitialized;
 }
 
+void Entity::SetDirty()
+{
+	for (auto &child : _children)
+		child->SetDirty();
+
+	_recalculateBounds = true;
+	_transform.SetDirty();
+}
+
+
+
+void Entity::SetParent(Entity *parent)
+{
+	if (_parent == parent)
+		return;
+
+	if (_parent)
+		_parent->RemoveChild(this);
+
+	_parent = parent;
+
+	if (parent)
+		parent->AddChild(this);
+	else
+		_transform.SetParent(nullptr);
+
+	SetDirty();
+}
+
+Entity *Entity::GetParent()
+{
+	return _parent;
+}
+
+const std::vector<Entity *> *Entity::GetChildren()
+{
+	return &_children;
+}
+
 
 UINT Entity::GetID() const
 {
 	return _entityID;
+}
+
+void Entity::SetName(const std::string &name)
+{
+	_name.assign(name);
+}
+
+const std::string Entity::GetName() const
+{
+	return _name;
 }
 
 Transform *Entity::GetTransform()
@@ -65,7 +155,11 @@ bool Entity::InternalUpdate(ID3D11DeviceContext *context)
 		return false;
 	}
 
-	_recalculateBounds |= _transform.GetDirty();
+	if (_transform.GetDirty())
+	{
+		SetDirty();
+	}
+
 	if (!_transform.UpdateConstantBuffer(context))
 	{
 		ErrMsg("Failed to set world matrix buffer!");

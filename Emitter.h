@@ -15,7 +15,7 @@ struct Particle
 {
 	DirectX::XMFLOAT4A position	= { 0, 0, 0, 1 };
 	DirectX::XMFLOAT4A velocity	= { 0, 0, 0, 0 };
-	DirectX::XMFLOAT4A color		= { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4A color	= { 0, 0, 0, 1 };
 	DirectX::XMFLOAT4A startPos	= { 0, 0, 0, 1 };
 	DirectX::XMFLOAT4A endPos	= { 0, 0, 0, 1 };
 	//float size		= 1;
@@ -37,7 +37,7 @@ private:
 public:
 	explicit Emitter(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, const EmitterData &settings, UINT textureID);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name, const EmitterData &settings, UINT textureID);
 
 	[[nodiscard]] EntityType GetType() const override;
 

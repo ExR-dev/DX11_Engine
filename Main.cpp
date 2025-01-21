@@ -35,8 +35,8 @@ int APIENTRY wWinMain(
 {
 	OutputDebugString(L"\n=======| Start |===========================================================================\n");
 
-	constexpr UINT width = 1920;
-	constexpr UINT height = 1080;
+	constexpr UINT width = 2560; // 1920
+	constexpr UINT height = 1440; // 1080
 	HWND window;
 
 	if (!SetupWindow(hInstance, width, height, nCmdShow, window))

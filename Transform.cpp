@@ -51,10 +51,54 @@ void Transform::OrthogonalizeBases()
 }
 
 
+void Transform::AddChild(Transform *child)
+{
+	if (!child)
+		return;
+
+	if (!_children.empty())
+	{
+		auto it = std::find(_children.begin(), _children.end(), child);
+
+		if (it != _children.end())
+			return;
+	}
+
+	_children.push_back(child);
+}
+
+void Transform::RemoveChild(Transform *child)
+{
+    if (!child)
+        return;
+
+    if (_children.empty())
+        return;
+
+    auto it = std::find(_children.begin(), _children.end(), child);
+
+    if (it != _children.end())
+        _children.erase(it);
+}
+
+
 Transform::Transform(ID3D11Device *device, const XMMATRIX &worldMatrix)
 {
 	if (!Initialize(device, worldMatrix))
 		ErrMsg("Failed to initialize transform from constructor!");
+}
+
+Transform::~Transform()
+{
+	for (auto &child : _children)
+	{
+		if (child != nullptr)
+			child->SetParent(nullptr);
+	}
+	_children.clear();
+
+	if (_parent)
+		_parent->RemoveChild(this);
 }
 
 
@@ -87,7 +131,7 @@ bool Transform::Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix)
 		return false;
 	}
 
-	_isDirty = true;
+	SetDirty();
 	return true;
 }
 
@@ -104,11 +148,33 @@ bool Transform::Initialize(ID3D11Device *device)
 }
 
 
+void Transform::SetParent(Transform *parent)
+{
+	if (_parent == parent)
+		return;
+
+	if (_parent)
+		_parent->RemoveChild(this);
+
+	_parent = parent;
+
+	if (parent)
+		parent->AddChild(this);
+
+	SetDirty();
+}
+
+Transform *Transform::GetParent() const
+{
+	return _parent;
+}
+
+
 void Transform::Move(const XMFLOAT4A &movement)
 {
 	TO_VEC(_pos) += TO_CONST_VEC(movement);
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::Rotate(const XMFLOAT4A &rotation)
@@ -127,7 +193,7 @@ void Transform::Rotate(const XMFLOAT4A &rotation)
 	NormalizeBases();
 	OrthogonalizeBases();
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::ScaleAbsolute(const XMFLOAT4A &scale)
@@ -136,7 +202,7 @@ void Transform::ScaleAbsolute(const XMFLOAT4A &scale)
 	_scale.y += scale.y;
 	_scale.z += scale.z;
 
-	_isDirty = true;
+	SetDirty();
 }
 
 
@@ -147,7 +213,7 @@ void Transform::MoveLocal(const XMFLOAT4A &movement)
 		(TO_VEC(_up) * movement.y) +
 		(TO_VEC(_forward) * movement.z);
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::RotateLocal(const XMFLOAT4A &rotation)
@@ -168,7 +234,7 @@ void Transform::RotateLocal(const XMFLOAT4A &rotation)
 	NormalizeBases();
 	OrthogonalizeBases();
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::ScaleRelative(const XMFLOAT4A &scale)
@@ -177,7 +243,7 @@ void Transform::ScaleRelative(const XMFLOAT4A &scale)
 	_scale.y *= scale.y;
 	_scale.z *= scale.z;
 
-	_isDirty = true;
+	SetDirty();
 }
 
 
@@ -204,7 +270,7 @@ void Transform::RotateByQuaternion(const XMVECTOR &quaternion)
 	NormalizeBases();
 	OrthogonalizeBases();
 
-	_isDirty = true;
+	SetDirty();
 }
 
 
@@ -212,14 +278,14 @@ void Transform::SetPosition(const XMFLOAT4A &position)
 {
 	_pos = position;
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::SetScale(const XMFLOAT4A &scale)
 {
 	_scale = scale;
 
-	_isDirty = true;
+	SetDirty();
 }
 
 void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward)
@@ -238,7 +304,7 @@ void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLO
 	NormalizeBases();
 	OrthogonalizeBases();
 
-	_isDirty = true;
+	SetDirty();
 }
 
 
@@ -247,6 +313,14 @@ const XMFLOAT4A &Transform::GetScale() const	{ return _scale;	}
 const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
 const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
 const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
+
+void Transform::SetDirty()
+{
+	_isDirty = true;
+
+	for (auto child : _children)
+		child->SetDirty();
+}
 
 bool Transform::GetDirty() const
 {
@@ -277,12 +351,19 @@ ID3D11Buffer *Transform::GetConstantBuffer() const
 	return _worldMatrixBuffer.GetBuffer();
 }
 
-XMMATRIX Transform::GetWorldMatrix() const
+XMMATRIX Transform::GetLocalMatrix() const
 {
 	return XMMatrixSet(
 		_right.x * _scale.x,	_right.y * _scale.x,	_right.z * _scale.x,	0,
 		_up.x * _scale.y,		_up.y * _scale.y,		_up.z * _scale.y,		0,
-		_forward.x * _scale.z,	_forward.y * _scale.z,	_forward.z * _scale.z,  0,
-		_pos.x,					_pos.y,					_pos.z,		1
+		_forward.x * _scale.z,	_forward.y * _scale.z,	_forward.z * _scale.z,	0,
+		_pos.x,					_pos.y,					_pos.z,					1
 	);
+}
+XMMATRIX Transform::GetWorldMatrix() const
+{
+	if (!_parent)
+		return GetLocalMatrix();
+
+	return XMMatrixMultiply(GetLocalMatrix(), _parent->GetWorldMatrix());
 }

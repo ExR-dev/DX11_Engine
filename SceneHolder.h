@@ -4,9 +4,9 @@
 #include "Object.h"
 #include "Emitter.h"
 
-//#define QUADTREE_CULLING
+#define QUADTREE_CULLING
 //#define OCTREE_CULLING
-#define NOTREE_CULLING
+//#define NOTREE_CULLING
 
 #ifdef QUADTREE_CULLING
 #include "Quadtree.h"
@@ -71,6 +71,20 @@ private:
 		SceneEntity &operator=(const SceneEntity &other) = delete;
 		SceneEntity(SceneEntity &&other) = delete;
 		SceneEntity &operator=(SceneEntity &&other) = delete;
+
+		Entity *GetEntity() const
+		{
+			switch (_type)
+			{
+			case EntityType::OBJECT:
+				return reinterpret_cast<Entity *>(_item.object);
+
+			case EntityType::EMITTER:
+				return reinterpret_cast<Entity *>(_item.emitter);
+			}
+
+			return nullptr;
+		}
 	};
 
 	UINT _entityCounter = 0;
@@ -114,6 +128,7 @@ public:
 	[[nodiscard]] const DirectX::BoundingBox &GetBounds() const;
 	[[nodiscard]] Entity *GetEntity(UINT i) const;
 	[[nodiscard]] Entity *GetEntityByID(UINT id) const;
+	[[nodiscard]] Entity *GetEntityByName(const std::string &name) const;
 	[[nodiscard]] UINT GetEntityID(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityIndex(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityCount() const;

@@ -17,6 +17,7 @@ class Entity
 {
 private:
 	UINT _entityID;
+	std::string _name = "";
 
 
 protected:
@@ -27,23 +28,38 @@ protected:
 	DirectX::BoundingBox _transformedBounds;
 	bool _recalculateBounds = true;
 
+	Entity *_parent = nullptr;
+	std::vector<Entity *> _children;
+
+	void AddChild(Entity *child);
+	void RemoveChild(Entity *child);
+
 
 	Entity(UINT id, const DirectX::BoundingBox &bounds);
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name);
 
 	[[nodiscard]] bool InternalUpdate(ID3D11DeviceContext *context);
 	[[nodiscard]] bool InternalBindBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool InternalRender(CameraD3D11 *camera);
 
 public:
-	virtual ~Entity() = default;
+	virtual ~Entity();
 	Entity(const Entity &other) = delete;
 	Entity &operator=(const Entity &other) = delete;
 	Entity(Entity &&other) = delete;
 	Entity &operator=(Entity &&other) = delete;
 
 	[[nodiscard]] bool IsInitialized() const;
+
+	void SetDirty();
+
+	void SetParent(Entity *parent);
+	[[nodiscard]] Entity *GetParent();
+	[[nodiscard]] const std::vector<Entity *> *GetChildren();
+
+	void SetName(const std::string &name);
+	[[nodiscard]] const std::string GetName() const;
 
 	[[nodiscard]] UINT GetID() const;
 	[[nodiscard]] Transform *GetTransform();

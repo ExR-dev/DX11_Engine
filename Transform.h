@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <memory>
 #include <DirectXMath.h>
 
 #include "ConstantBufferD3D11.h"
@@ -18,21 +20,30 @@ private:
 	ConstantBufferD3D11 _worldMatrixBuffer;
 	bool _isDirty = true;
 
+	Transform *_parent = nullptr;
+	std::vector<Transform*> _children;
 
 	void NormalizeBases();
 	void OrthogonalizeBases();
 
+	void AddChild(Transform *child);
+	void RemoveChild(Transform *child);
+
 public:
 	Transform() = default;
 	explicit Transform(ID3D11Device *device, const DirectX::XMMATRIX &worldMatrix = DirectX::XMMatrixIdentity());
-	~Transform() = default;
+	~Transform();
 	Transform(const Transform &other) = delete;
 	Transform &operator=(const Transform &other) = delete;
 	Transform(Transform &&other) = delete;
 	Transform &operator=(Transform &&other) = delete;
 
+
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirectX::XMMATRIX& worldMatrix);
+
+	void SetParent(Transform *parent);
+	[[nodiscard]] Transform *GetParent() const;
 
 	void Move(const DirectX::XMFLOAT4A &movement);
 	void Rotate(const DirectX::XMFLOAT4A &rotation);
@@ -54,9 +65,11 @@ public:
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
 
+	void SetDirty();
 	[[nodiscard]] bool GetDirty() const;
 
 	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
+	[[nodiscard]] DirectX::XMMATRIX GetLocalMatrix() const;
 	[[nodiscard]] DirectX::XMMATRIX GetWorldMatrix() const;
 };
