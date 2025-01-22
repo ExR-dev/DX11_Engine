@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d11.h>
+#include <GeometricPrimitive.h>
 
 #include "SceneHolder.h"
 #include "Entity.h"
@@ -23,10 +24,10 @@ private:
 
 	SceneHolder _sceneHolder;
 
-	CameraD3D11 *_camera = nullptr, *_secondaryCamera = nullptr;
-	SpotLightCollectionD3D11 *_spotlights;
-	DirLightCollectionD3D11 *_dirlights;
-	PointLightCollectionD3D11 *_pointlights;
+	std::unique_ptr<CameraD3D11> _camera = nullptr, _secondaryCamera = nullptr;
+	std::unique_ptr<SpotLightCollectionD3D11> _spotlights;
+	std::unique_ptr<DirLightCollectionD3D11> _dirlights;
+	std::unique_ptr<PointLightCollectionD3D11> _pointlights;
 
 	Cubemap _cubemap;
 

@@ -11,22 +11,22 @@ using namespace DirectX;
 
 Scene::Scene()
 {
-	_camera = new CameraD3D11();
-	_secondaryCamera = new CameraD3D11();
-	_spotlights = new SpotLightCollectionD3D11();
-	_dirlights = new DirLightCollectionD3D11();
-	_pointlights = new PointLightCollectionD3D11();
+	_camera = std::unique_ptr<CameraD3D11>(new CameraD3D11());
+	_secondaryCamera = std::unique_ptr<CameraD3D11>(new CameraD3D11());
+	_spotlights = std::unique_ptr<SpotLightCollectionD3D11>(new SpotLightCollectionD3D11());
+	_dirlights = std::unique_ptr<DirLightCollectionD3D11>(new DirLightCollectionD3D11());
+	_pointlights = std::unique_ptr<PointLightCollectionD3D11>(new PointLightCollectionD3D11());
 
-	_currCameraPtr = _camera;
+	_currCameraPtr = _camera.get();
 }
 
 Scene::~Scene()
 {
-	delete _pointlights;
-	delete _dirlights;
-	delete _spotlights;
-	delete _secondaryCamera;
-	delete _camera;
+	/*_pointlights.release();
+	_dirlights.release();
+	_spotlights.release();
+	_secondaryCamera.release();
+	_camera.release();*/
 }
 
 bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphics)
@@ -495,7 +495,7 @@ bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const 
 	static bool isGrounded = false;
 
 
-	CameraD3D11* basisCamera = _useMainCamera ? _camera : _currCameraPtr;
+	CameraD3D11* basisCamera = _useMainCamera ? _camera.get() : _currCameraPtr;
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
@@ -564,7 +564,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 		else if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
 			_useMainCamera = true;
 
-		CameraD3D11* basisCamera = _useMainCamera ? _camera : _currCameraPtr;
+		CameraD3D11* basisCamera = _useMainCamera ? _camera.get() : _currCameraPtr;
 
 		static UINT
 			selectedMeshID = 0,
@@ -874,20 +874,20 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 
 		if (!hasSetCamera)
 		{
-			_currCameraPtr = _camera;
-			if (!_graphics->SetSpotlightCollection(_spotlights))
+			_currCameraPtr = _camera.get();
+			if (!_graphics->SetSpotlightCollection(_spotlights.get()))
 			{
 				ErrMsg("Failed to set spotlight collection!");
 				return false;
 			}
 
-			if (!_graphics->SetDirlightCollection(_dirlights))
+			if (!_graphics->SetDirlightCollection(_dirlights.get()))
 			{
 				ErrMsg("Failed to set directional light collection!");
 				return false;
 			}
 
-			if (!_graphics->SetPointlightCollection(_pointlights))
+			if (!_graphics->SetPointlightCollection(_pointlights.get()))
 			{
 				ErrMsg("Failed to set pointlight collection!");
 				return false;
@@ -909,11 +909,11 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 			if (_currCamera < 0)
 			{
 				if (_currCamera == -1)
-					_currCameraPtr = _secondaryCamera;
+					_currCameraPtr = _secondaryCamera.get();
 				else
 				{
 					_currCamera = -2;
-					_currCameraPtr = _camera;
+					_currCameraPtr = _camera.get();
 				}
 			}
 			else if (_currCamera < 6)
@@ -1027,7 +1027,7 @@ bool Scene::Render(Time &time, const Input &input)
 	if (!_initialized)
 		return false;
 
-	if (!_graphics->SetCameras(_camera, _currCameraPtr))
+	if (!_graphics->SetCameras(_camera.get(), _currCameraPtr))
 	{
 		ErrMsg("Failed to set camera!");
 		return false;
@@ -1074,7 +1074,7 @@ bool Scene::Render(Time &time, const Input &input)
 
 	for (Entity *ent : entitiesToRender)
 	{
-		if (!ent->Render(_camera))
+		if (!ent->Render(_camera.get()))
 		{
 			ErrMsg("Failed to render entity!");
 			return false;
@@ -1494,7 +1494,7 @@ bool Scene::RenderUI()
 	snprintf(camZCoord, sizeof(camZCoord), "%.2f", camPos.z);
 	ImGui::Text(std::format("Main Cam pos: ({}, {}, {})", camXCoord, camYCoord, camZCoord).c_str());
 
-	if (_currCameraPtr != _camera && _currCameraPtr != nullptr)
+	if (_currCameraPtr != _camera.get() && _currCameraPtr != nullptr)
 	{
 		camPos = _currCameraPtr->GetPosition();
 		snprintf(camXCoord, sizeof(camXCoord), "%.2f", camPos.x);

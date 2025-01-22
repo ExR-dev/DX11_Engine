@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <DirectXMath.h>
+#include <SimpleMath.h>
 
 #include "ConstantBufferD3D11.h"
 
