@@ -120,6 +120,7 @@ public:
 	[[nodiscard]] bool Update();
 
 	[[nodiscard]] Entity *AddEntity(const DirectX::BoundingBox &bounds, EntityType type);
+	// Entity must be manually deleted after calling!
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
 	[[nodiscard]] bool RemoveEntity(UINT id);
 
@@ -129,7 +130,6 @@ public:
 	[[nodiscard]] Entity *GetEntity(UINT i) const;
 	[[nodiscard]] Entity *GetEntityByID(UINT id) const;
 	[[nodiscard]] Entity *GetEntityByName(const std::string &name) const;
-	[[nodiscard]] UINT GetEntityID(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityIndex(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityCount() const;
 	void GetEntities(std::vector<Entity *> entities) const;

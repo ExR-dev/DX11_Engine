@@ -10,6 +10,7 @@ Texture2D AmbientGBuffer	: register(t2); // w is specular b
 Texture2D DiffuseGBuffer	: register(t3); // w is reflectivity
 
 sampler Sampler : register(s0);
+sampler ShadowSampler : register(s1);
 
 
 struct SpotLight
@@ -155,10 +156,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			spotUV11 = spotUV00 + float3(spotDX, spotDY, 0.0f);
 
 		const float
-			spotDepth00 = SpotShadowMaps.SampleLevel(Sampler, spotUV00, 0).x,
-			spotDepth01 = SpotShadowMaps.SampleLevel(Sampler, spotUV01, 0).x,
-			spotDepth10 = SpotShadowMaps.SampleLevel(Sampler, spotUV10, 0).x,
-			spotDepth11 = SpotShadowMaps.SampleLevel(Sampler, spotUV11, 0).x;
+			spotDepth00 = SpotShadowMaps.SampleLevel(ShadowSampler, spotUV00, 0).x,
+			spotDepth01 = SpotShadowMaps.SampleLevel(ShadowSampler, spotUV01, 0).x,
+			spotDepth10 = SpotShadowMaps.SampleLevel(ShadowSampler, spotUV10, 0).x,
+			spotDepth11 = SpotShadowMaps.SampleLevel(ShadowSampler, spotUV11, 0).x;
 
 		const float
 			spotResult00 = spotDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
@@ -176,6 +177,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 				lerp(spotResult01, spotResult11, fracTex.x),
 				fracTex.y)
 		);
+        //const float shadow = isInsideFrustum * saturate(offsetAngle * spotResult00);
 
 
 		// Apply lighting
@@ -217,10 +219,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			dirUV11 = dirUV00 + float3(dirDX, dirDY, 0.0f);
 
 		const float
-			dirDepth00 = DirShadowMaps.SampleLevel(Sampler, dirUV00, 0).x,
-			dirDepth01 = DirShadowMaps.SampleLevel(Sampler, dirUV01, 0).x,
-			dirDepth10 = DirShadowMaps.SampleLevel(Sampler, dirUV10, 0).x,
-			dirDepth11 = DirShadowMaps.SampleLevel(Sampler, dirUV11, 0).x;
+			dirDepth00 = DirShadowMaps.SampleLevel(ShadowSampler, dirUV00, 0).x,
+			dirDepth01 = DirShadowMaps.SampleLevel(ShadowSampler, dirUV01, 0).x,
+			dirDepth10 = DirShadowMaps.SampleLevel(ShadowSampler, dirUV10, 0).x,
+			dirDepth11 = DirShadowMaps.SampleLevel(ShadowSampler, dirUV11, 0).x;
 
 		const float
 			dirResult00 = dirDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
@@ -237,6 +239,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			lerp(dirResult01, dirResult11, fracTex.x),
 			fracTex.y)
 		);
+        //const float shadow = saturate(dirResult00);
 
 
 		// Apply lighting
@@ -291,10 +294,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			pointUV11 = pointUV00 + float3(pointDX, pointDY, 0.0f);
 
 		const float
-			pointDepth00 = PointShadowMaps.SampleLevel(Sampler, pointUV00, 0).x,
-			pointDepth01 = PointShadowMaps.SampleLevel(Sampler, pointUV01, 0).x,
-			pointDepth10 = PointShadowMaps.SampleLevel(Sampler, pointUV10, 0).x,
-			pointDepth11 = PointShadowMaps.SampleLevel(Sampler, pointUV11, 0).x;
+			pointDepth00 = PointShadowMaps.SampleLevel(ShadowSampler, pointUV00, 0).x,
+			pointDepth01 = PointShadowMaps.SampleLevel(ShadowSampler, pointUV01, 0).x,
+			pointDepth10 = PointShadowMaps.SampleLevel(ShadowSampler, pointUV10, 0).x,
+			pointDepth11 = PointShadowMaps.SampleLevel(ShadowSampler, pointUV11, 0).x;
 
 		const float
 			pointResult00 = pointDepth00 - EPSILON < fragPosLightNDC.z ? 1.0f : 0.0f,
@@ -311,6 +314,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 			lerp(pointResult01, pointResult11, fracTex.x),
 			fracTex.y)
 		);
+        //const float shadow = isInsideFrustum * saturate(pointResult00);
 
 
 		// Apply lighting

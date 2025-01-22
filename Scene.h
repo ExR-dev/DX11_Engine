@@ -31,16 +31,26 @@ private:
 	Cubemap _cubemap;
 
 	int _currCamera = -2;
+	int _currSelection = -1;
 	CameraD3D11 *_currCameraPtr = nullptr;
 
 	bool _doMultiThread = true;
 
+	bool _useMainCamera = true;
+	bool _playerPhysics = false;
+	bool _rotateLights = false;
 
-	[[nodiscard]] bool UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input &input);
 
-	void UpdateSelectionMarker(int i) const;
+	[[nodiscard]] bool UpdatePlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
+	[[nodiscard]] bool UpdateEntities(ID3D11DeviceContext* context, Time& time, const Input& input);
+
+	[[nodiscard]] bool UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
+	[[nodiscard]] bool UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
+
+	void UpdateSelectionMarker() const;
 
 	void DebugGenerateVolumeTreeStructure();
+	void DebugGenerateEntityBounds();
 
 public:
 	Scene();

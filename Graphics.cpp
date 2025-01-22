@@ -999,6 +999,9 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 	static ID3D11SamplerState *const ss = _content->GetSampler("SS_Clamp")->GetSamplerState();
 	_context->CSSetSamplers(0, 1, &ss);
 
+	static ID3D11SamplerState *const ssShadow = _content->GetSampler("SS_Shadow")->GetSamplerState();
+	_context->CSSetSamplers(1, 1, &ssShadow);
+
 	// Bind camera lighting data
 	if (!_currMainCamera->BindLightingBuffers(_context))
 	{

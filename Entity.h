@@ -31,8 +31,8 @@ protected:
 	Entity *_parent = nullptr;
 	std::vector<Entity *> _children;
 
-	void AddChild(Entity *child);
-	void RemoveChild(Entity *child);
+	void AddChild(Entity *child, bool keepWorldTransform = false);
+	void RemoveChild(Entity *child, bool keepWorldTransform = false);
 
 
 	Entity(UINT id, const DirectX::BoundingBox &bounds);
@@ -54,7 +54,7 @@ public:
 
 	void SetDirty();
 
-	void SetParent(Entity *parent);
+	void SetParent(Entity *parent, bool keepWorldTransform = false);
 	[[nodiscard]] Entity *GetParent();
 	[[nodiscard]] const std::vector<Entity *> *GetChildren();
 

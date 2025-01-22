@@ -15,11 +15,10 @@ SamplerD3D11::~SamplerD3D11()
 		_sampler->Release();
 }
 
-bool SamplerD3D11::Initialize(ID3D11Device *device, const D3D11_TEXTURE_ADDRESS_MODE adressMode, const std::optional<std::array<float, 4>>&borderColors)
+bool SamplerD3D11::Initialize(ID3D11Device *device, const D3D11_TEXTURE_ADDRESS_MODE adressMode, const std::optional<std::array<float, 4>>&borderColors, bool anisotropicFiltering)
 {
 	D3D11_SAMPLER_DESC samplerDesc = { };
-	//samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	samplerDesc.Filter = anisotropicFiltering ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.AddressU = adressMode;
 	samplerDesc.AddressV = adressMode;
 	samplerDesc.AddressW = adressMode;

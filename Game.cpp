@@ -6,9 +6,9 @@
 
 Game::Game()
 {
-	_device				= nullptr;
-	_immediateContext	= nullptr;
-	_scene				= nullptr;
+	_device = nullptr;
+	_immediateContext = nullptr;
+	_scene = nullptr;
 }
 
 Game::~Game()
@@ -21,15 +21,15 @@ Game::~Game()
 }
 
 
-bool Game::LoadContent(Time &time,
-	const std::vector<std::string> &meshNames,
-	const std::vector<TextureData> &textureNames,
-	const std::vector<TextureMapData> &textureMapNames,
-	const std::vector<ShaderData> &shaderNames)
+bool Game::LoadContent(Time& time,
+	const std::vector<std::string>& meshNames,
+	const std::vector<TextureData>& textureNames,
+	const std::vector<TextureMapData>& textureMapNames,
+	const std::vector<ShaderData>& shaderNames)
 {
 	time.TakeSnapshot("LoadMeshes");
-	for (const std::string &meshName : meshNames)
-		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
+	for (const std::string& meshName : meshNames)
+		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\Meshes\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add Mesh_{}!", meshName));
 			return false;
@@ -38,9 +38,9 @@ bool Game::LoadContent(Time &time,
 
 
 	time.TakeSnapshot("LoadTextures");
-	for (const TextureData &textureName : textureNames)
+	for (const TextureData& textureName : textureNames)
 		if (_content.AddTexture(_device, _immediateContext, std::format("Tex_{}", textureName.name),
-			std::format("Content\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
+			std::format("Content\\Textures\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
 			return false;
@@ -49,9 +49,9 @@ bool Game::LoadContent(Time &time,
 
 
 	time.TakeSnapshot("LoadTextureMaps");
-	for (const TextureMapData &textureMap : textureMapNames)
+	for (const TextureMapData& textureMap : textureMapNames)
 		if (_content.AddTextureMap(_device, _immediateContext, std::format("TexMap_{}", textureMap.name),
-			textureMap.type, std::format("Content\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
+			textureMap.type, std::format("Content\\Textures\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
 			return false;
@@ -60,8 +60,8 @@ bool Game::LoadContent(Time &time,
 
 
 	time.TakeSnapshot("LoadShaders");
-	for (const ShaderData &shader : shaderNames)
-		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
+	for (const ShaderData& shader : shaderNames)
+		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\Shaders\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
 		{
 			ErrMsg(std::format("Failed to add {} shader!", shader.name));
 			return false;
@@ -78,6 +78,12 @@ bool Game::LoadContent(Time &time,
 	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_LOAD_ERROR)
 	{
 		ErrMsg("Failed to add clamp sampler!");
+		return false;
+	}
+
+	if (_content.AddSampler(_device, "SS_Shadow", D3D11_TEXTURE_ADDRESS_CLAMP, std::nullopt, false) == CONTENT_LOAD_ERROR)
+	{
+		ErrMsg("Failed to add shadow sampler!");
 		return false;
 	}
 
@@ -99,7 +105,7 @@ bool Game::LoadContent(Time &time,
 }
 
 
-bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND window)
+bool Game::Setup(Time& time, const UINT width, const UINT height, const HWND window)
 {
 	if (!_graphics.Setup(width, height, window, _device, _immediateContext, &_content))
 	{
@@ -202,7 +208,7 @@ bool Game::Setup(Time &time, const UINT width, const UINT height, const HWND win
 	return true;
 }
 
-bool Game::SetScene(Time &time, Scene *scene)
+bool Game::SetScene(Time& time, Scene* scene)
 {
 	if (scene == nullptr)
 		return false;
@@ -219,7 +225,7 @@ bool Game::SetScene(Time &time, Scene *scene)
 }
 
 
-bool Game::Update(Time &time, const Input &input) const
+bool Game::Update(Time& time, const Input& input) const
 {
 	time.TakeSnapshot("SceneUpdateTime");
 	/// v==========================================v ///
@@ -242,7 +248,7 @@ bool Game::Update(Time &time, const Input &input) const
 }
 
 
-bool Game::Render(Time &time, const Input &input)
+bool Game::Render(Time& time, const Input& input)
 {
 	if (!_graphics.BeginSceneRender())
 	{
@@ -273,8 +279,8 @@ bool Game::Render(Time &time, const Input &input)
 		return false;
 	}
 
-	
-//#ifdef _DEBUG
+
+	//#ifdef _DEBUG
 	if (!_graphics.BeginUIRender())
 	{
 		ErrMsg("Failed to begin UI rendering!");
@@ -365,7 +371,7 @@ bool Game::Render(Time &time, const Input &input)
 		ErrMsg("Failed to end UI rendering!");
 		return false;
 	}
-//#endif // _DEBUG
+	//#endif // _DEBUG
 
 
 	if (!_graphics.EndFrame())

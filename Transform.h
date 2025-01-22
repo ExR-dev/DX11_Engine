@@ -42,7 +42,7 @@ public:
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirectX::XMMATRIX& worldMatrix);
 
-	void SetParent(Transform *parent);
+	void SetParent(Transform *parent, bool keepWorldTransform = false);
 	[[nodiscard]] Transform *GetParent() const;
 
 	void Move(const DirectX::XMFLOAT4A &movement);

@@ -148,20 +148,35 @@ bool Transform::Initialize(ID3D11Device *device)
 }
 
 
-void Transform::SetParent(Transform *parent)
+void Transform::SetParent(Transform *parent, bool keepWorldTransform)
 {
-	if (_parent == parent)
-		return;
+    if (_parent == parent)
+        return;
 
-	if (_parent)
-		_parent->RemoveChild(this);
+    XMMATRIX worldMatrix = GetWorldMatrix();
 
-	_parent = parent;
+    if (_parent)
+        _parent->RemoveChild(this);
 
-	if (parent)
-		parent->AddChild(this);
+    _parent = parent;
 
-	SetDirty();
+    if (parent)
+        parent->AddChild(this);
+
+    if (keepWorldTransform)
+    {
+        XMMATRIX inverseParentWorldMatrix = XMMatrixIdentity();
+        if (_parent)
+            inverseParentWorldMatrix = XMMatrixInverse(nullptr, _parent->GetWorldMatrix());
+
+        XMMATRIX localMatrix = XMMatrixMultiply(worldMatrix, inverseParentWorldMatrix);
+        TO_VEC(_right) = localMatrix.r[0];
+        TO_VEC(_up) = localMatrix.r[1];
+        TO_VEC(_forward) = localMatrix.r[2];
+        TO_VEC(_pos) = localMatrix.r[3];
+    }
+
+    SetDirty();
 }
 
 Transform *Transform::GetParent() const

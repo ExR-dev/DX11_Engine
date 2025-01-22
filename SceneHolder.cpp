@@ -67,13 +67,15 @@ Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityT
 
 bool SceneHolder::RemoveEntity(Entity *entity)
 {
-	for (auto &child : *entity->GetChildren())
+	for (auto& child : *entity->GetChildren())
 	{
 		if (!RemoveEntity(child))
 		{
 			ErrMsg("Failed to remove child entity!");
+			delete child;
 			return false;
 		}
+		delete child;
 	}
 
 	DirectX::BoundingBox entityBounds;
@@ -203,28 +205,6 @@ Entity *SceneHolder::GetEntityByName(const std::string &name) const
 	}
 
 	return nullptr;
-}
-
-UINT SceneHolder::GetEntityID(const Entity *entity) const
-{
-	const UINT entityCount = GetEntityCount();
-	for (UINT i = 0; i < entityCount; i++)
-	{
-		switch (_entities[i]->_type)
-		{
-			case EntityType::OBJECT:
-				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.object))
-					return reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID();
-				break;
-
-			case EntityType::EMITTER:
-				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.emitter))
-					return reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID();
-				break;
-		}
-	}
-
-	return 0xffffffff;
 }
 
 UINT SceneHolder::GetEntityIndex(const Entity *entity) const

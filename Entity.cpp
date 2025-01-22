@@ -11,11 +11,19 @@ Entity::Entity(const UINT id, const DirectX::BoundingBox &bounds)
 
 Entity::~Entity()
 {
-	//_transform.~Transform();
+	for (auto& child : _children)
+	{
+		if (child != nullptr)
+			child->SetParent(nullptr);
+	}
+	_children.clear();
+
+	if (_parent)
+		_parent->RemoveChild(this);
 }
 
 
-void Entity::AddChild(Entity *child)
+void Entity::AddChild(Entity *child, bool keepWorldTransform)
 {
 	if (!child)
 		return;
@@ -29,10 +37,10 @@ void Entity::AddChild(Entity *child)
 	}
 
 	_children.push_back(child);
-	child->_transform.SetParent(&_transform);
+	child->_transform.SetParent(&_transform, keepWorldTransform);
 }
 
-void Entity::RemoveChild(Entity *child)
+void Entity::RemoveChild(Entity *child, bool keepWorldTransform)
 {
 	if (!child)
 		return;
@@ -45,7 +53,7 @@ void Entity::RemoveChild(Entity *child)
 	if (it != _children.end())
 		_children.erase(it);
 
-	child->_transform.SetParent(nullptr);
+	child->_transform.SetParent(nullptr, keepWorldTransform);
 }
 
 
@@ -85,20 +93,27 @@ void Entity::SetDirty()
 
 
 
-void Entity::SetParent(Entity *parent)
+void Entity::SetParent(Entity *parent, bool keepWorldTransform)
 {
+	keepWorldTransform = false; // TODO: Fix bug that causes crash after deleting child entities with keepWorldTransform = true
+
 	if (_parent == parent)
 		return;
 
 	if (_parent)
-		_parent->RemoveChild(this);
+		_parent->RemoveChild(this, keepWorldTransform);
 
 	_parent = parent;
 
-	if (parent)
+	/*if (parent)
 		parent->AddChild(this);
+	
+	_transform.SetParent(parent ? parent->GetTransform() : nullptr, keepWorldTransform);*/
+
+	if (parent)
+		parent->AddChild(this, keepWorldTransform);
 	else
-		_transform.SetParent(nullptr);
+		_transform.SetParent(nullptr, keepWorldTransform);
 
 	SetDirty();
 }

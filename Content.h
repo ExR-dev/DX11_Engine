@@ -140,7 +140,7 @@ public:
 	UINT AddTextureMap(ID3D11Device *device, ID3D11DeviceContext* context, const std::string &name, TextureType mapType, const char *path);
 
 	UINT AddSampler(ID3D11Device *device, const std::string &name, D3D11_TEXTURE_ADDRESS_MODE adressMode,
-		const std::optional<std::array<float, 4>> &borderColors = std::nullopt);
+		const std::optional<std::array<float, 4>> &borderColors = std::nullopt, bool anisotropicFiltering = true);
 
 	UINT AddInputLayout(ID3D11Device *device, const std::string &name, const std::vector<Semantic> &semantics, 
 		const void *vsByteData, size_t vsByteSize);

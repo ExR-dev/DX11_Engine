@@ -66,7 +66,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
-		1024,
+		512,
 		std::vector<SpotLightData::PerLightInfo> {
 			SpotLightData::PerLightInfo {
 				{ 4.0f, 2.5f, 0.0f },		// initialPosition
@@ -115,10 +115,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create directional lights
 	const DirLightData dirlightInfo = {
-		4096,
+		2048,
 		std::vector<DirLightData::PerLightInfo> {
 			DirLightData::PerLightInfo {
-				{ 0.25f, 0.23f, 0.19f },	// color
+				{ 0.0375f, 0.03f, 0.036f },	// color
 				-0.746f,					// rotationX
 				0.867f,						// rotationY
 			},
@@ -134,7 +134,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create pointlights
 	const PointLightData pointlightInfo = {
-		512,
+		256,
 		std::vector<PointLightData::PerLightInfo> {
 			PointLightData::PerLightInfo {
 				{ 7.0f, 5.0f, -9.0f },			// initialPosition
@@ -146,10 +146,10 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 			PointLightData::PerLightInfo {
 				{ -5.0f, 2.0f, -5.5f },			// initialPosition
-				{ 10.0f, 10.5f, 12.0f },		// color
-				3.0f,							// falloff
+				{ 39.0f, 44.0f, 52.5f },		// color
+				5.0f,							// falloff
 				0.1f,							// projectionNearZ
-				15.0f							// projectionFarZ
+				20.0f							// projectionFarZ
 			},
 		}
 	};
@@ -368,7 +368,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	std::string nextParent = "Parent";
 	std::string nextChild = "Child 1";
-	for (int i = 0; i < 50; i++)
+	for (int i = 0; i < 25; i++)
 	{
 		// Create child i
 		{
@@ -392,7 +392,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -0.25f, 0.0f, 0 });
 			reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.9f, 0.9f, 0.9f, 0 });
 
-			reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent));
+			reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent), true);
 
 			nextParent = nextChild;
 			nextChild = std::format("Child {}", i + 2);
@@ -423,13 +423,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 }
 
 
-bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
+bool Scene::Update(ID3D11DeviceContext* context, Time& time, const Input& input)
 {
 	if (!_initialized)
 		return false;
 
-	static bool rotateLights = false;
-	if (rotateLights)
+	if (_rotateLights)
 	{
 		_spotlights->GetLightCamera(0)->LookY(time.deltaTime * 0.5f);
 		_spotlights->GetLightCamera(0)->MoveUp(time.deltaTime * 2.0f);
@@ -441,19 +440,131 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		_spotlights->GetLightCamera(2)->MoveRight(time.deltaTime * -2.0f);
 	}
 
+	if (!UpdatePlayer(context, time, input))
+	{
+		ErrMsg("Failed to update player!");
+		return false;
+	}
+
+	if (!UpdateEntities(context, time, input))
+	{
+		ErrMsg("Failed to update scene entities!");
+		return false;
+	}
+
+	return true;
+}
+
+bool Scene::UpdatePlayer(ID3D11DeviceContext* context, Time& time, const Input& input)
+{
+	if (input.IsInFocus()) // Handle user input while window is in focus
+	{
+		if (input.GetKey(KeyCode::K) == KeyState::Pressed)
+			_playerPhysics = !_playerPhysics;
+	}
+
+	if (_playerPhysics)
+	{
+		if (!UpdatePhysicsPlayer(context, time, input))
+		{
+			ErrMsg("Failed to update physics player!");
+			return false;
+		}
+	}
+	else
+	{
+		if (!UpdateDebugPlayer(context, time, input))
+		{
+			ErrMsg("Failed to update debug player!");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const Input& input)
+{
+	static float playerHeight = 3.3f;
+	static float playerVelocity = 0.0f;
+	static float playerGravity = -19.82f;
+
+	static float playerSpeed = 4.0f;
+	static float playerJump = 10.0f;
+
+	static bool isGrounded = false;
+
+
+	CameraD3D11* basisCamera = _useMainCamera ? _camera : _currCameraPtr;
+
+	if (input.IsInFocus()) // Handle user input while window is in focus
+	{
+		DirectX::XMFLOAT4A playerForward = basisCamera->GetForward();
+		playerForward.y = 0.0f;
+		*reinterpret_cast<XMVECTOR*>(&(playerForward)) = XMVector3Normalize(*reinterpret_cast<XMVECTOR*>(&(playerForward)));
+
+		// Move camera
+		if (input.GetKey(KeyCode::D) == KeyState::Held)
+			basisCamera->MoveRight(time.deltaTime * playerSpeed);
+		else if (input.GetKey(KeyCode::A) == KeyState::Held)
+			basisCamera->MoveRight(-time.deltaTime * playerSpeed);
+
+		if (input.GetKey(KeyCode::W) == KeyState::Held)
+			basisCamera->Move(time.deltaTime * playerSpeed, playerForward);
+		else if (input.GetKey(KeyCode::S) == KeyState::Held)
+			basisCamera->Move(-time.deltaTime * playerSpeed, playerForward);
+
+		if (isGrounded && input.GetKey(KeyCode::Space) == KeyState::Pressed)
+		{
+			playerVelocity = playerJump; // Jump
+			isGrounded = false;
+		}
+
+		const MouseState mState = input.GetMouse();
+		if (mState.dx != 0) basisCamera->LookX(static_cast<float>(mState.dx) / 360.0f);
+		if (mState.dy != 0) basisCamera->LookY(static_cast<float>(mState.dy) / 360.0f);
+	}
+
+	float playerY = basisCamera->GetTransform().GetPosition().y;
+	if (playerY > playerHeight)
+	{
+		playerVelocity += playerGravity * time.deltaTime;
+		isGrounded = false;
+	}
+	else
+	{
+		isGrounded = true;
+
+		if (playerVelocity < 0.0f)
+			playerVelocity = 0.0f;
+
+		if (playerY < playerHeight)
+		{
+			basisCamera->Move(playerHeight - playerY, { 0.0f, 1.0f, 0.0f, 0.0f });
+		}
+	}
+
+	if (playerVelocity != 0.0f)
+	{
+		_currCameraPtr->Move(playerVelocity * time.deltaTime, { 0.0f, 1.0f, 0.0f, 0.0f });
+	}
+
+	return true;
+}
+
+bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const Input& input)
+{
 	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
 		if (input.GetKey(KeyCode::G) == KeyState::Pressed)
-			rotateLights = !rotateLights;
+			_rotateLights = !_rotateLights;
 
-		static bool useMainCamera = true;
 		if (input.GetKey(KeyCode::Z) == KeyState::Pressed)
-			useMainCamera = !useMainCamera;
+			_useMainCamera = !_useMainCamera;
 		else if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
-			useMainCamera = true;
+			_useMainCamera = true;
 
-		CameraD3D11 *basisCamera = _currCameraPtr;
-		if (useMainCamera) basisCamera = _camera;
+		CameraD3D11* basisCamera = _useMainCamera ? _camera : _currCameraPtr;
 
 		static UINT
 			selectedMeshID = 0,
@@ -489,61 +600,65 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					meshID = rand() % _content->GetMeshCount(),
 					textureID = rand() % _content->GetTextureCount();
 
-				Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, std::format("Random Entity #{}", i),
-					meshID, textureID, 
-					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
+				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+				if (!obj->Initialize(_device, "Random Entity",
+					meshID, textureID,
+					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
 					CONTENT_LOAD_ERROR, ambientID,
-					CONTENT_LOAD_ERROR, 
+					CONTENT_LOAD_ERROR,
 					(textureID >= transparentStart)))
 				{
-					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
+					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
 					return false;
 				}
 
-				reinterpret_cast<Entity *>(obj)->GetTransform()->Move({
+				reinterpret_cast<Entity*>(obj)->GetTransform()->Move({
 					sceneCenter.x + sceneExtents.x * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
 					sceneCenter.y + sceneExtents.y * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
 					sceneCenter.z + sceneExtents.z * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
 					0
 				});
 
-				reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({
+				reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					0
 				});
+
+				if (_currSelection >= 0)
+				{
+					reinterpret_cast<Entity*>(obj)->SetParent(_sceneHolder.GetEntity(_currSelection));
+				}
 			}
 		}
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one custom entity in front of the camera
-			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, "Random Entity",
-				selectedMeshID, selectedTextureID, 
-				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, 
+			Object* obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
+			if (!obj->Initialize(_device, "Custom Entity",
+				selectedMeshID, selectedTextureID,
+				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
 				CONTENT_LOAD_ERROR, ambientID,
 				CONTENT_LOAD_ERROR,
 				(selectedTextureID >= transparentStart)))
 			{
-				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity *>(obj)->GetID()));
+				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
 				return false;
 			}
 
 			XMFLOAT4A camForward = basisCamera->GetForward();
-			*reinterpret_cast<XMVECTOR *>(&camForward) *= 3.0f;
-			*reinterpret_cast<XMVECTOR *>(&camForward) += *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetPosition());
+			*reinterpret_cast<XMVECTOR*>(&camForward) *= 3.0f;
+			*reinterpret_cast<XMVECTOR*>(&camForward) += *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetPosition());
 
-			reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(camForward);
-			reinterpret_cast<Entity *>(obj)->GetTransform()->SetAxes(
+			reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition(camForward);
+			reinterpret_cast<Entity*>(obj)->GetTransform()->SetAxes(
 				basisCamera->GetRight(),
 				basisCamera->GetUp(),
 				basisCamera->GetForward()
 			);
 		}
 
-		static int currSelection = -1;
-		UpdateSelectionMarker(currSelection);
+		UpdateSelectionMarker();
 
 		const UINT entityCount = _sceneHolder.GetEntityCount();
 		for (UCHAR i = 0; i < entityCount; i++)
@@ -553,16 +668,16 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 			if (input.GetKey(static_cast<KeyCode>(static_cast<UCHAR>(KeyCode::D1) + i)) == KeyState::Pressed)
 			{
-				currSelection = (currSelection == i) ? -1 : i;
+				_currSelection = (_currSelection == i) ? -1 : i;
 				break;
 			}
 		}
 
 		if (input.GetKey(KeyCode::M3) == KeyState::Pressed)
 		{
-			if (currSelection != -1)
+			if (_currSelection != -1)
 			{
-				currSelection = -1;
+				_currSelection = -1;
 			}
 			else
 			{
@@ -577,15 +692,15 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 					out))
 				{
 					const UINT entityI = _sceneHolder.GetEntityIndex(out.entity);
-					currSelection = (entityI == 0xffffffff) ? -1 : static_cast<int>(entityI);
+					_currSelection = (entityI == 0xffffffff) ? -1 : static_cast<int>(entityI);
 				}
 				else
-					currSelection = -1;
+					_currSelection = -1;
 			}
 		}
 
 		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
-			currSelection = -1;
+			_currSelection = -1;
 
 		static bool movePointLights = false;
 
@@ -594,20 +709,20 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 		else if (input.GetKey(KeyCode::F) == KeyState::Pressed)
 		{
 			movePointLights = !movePointLights;
-			currSelection = movePointLights ? 0 : -1;
+			_currSelection = movePointLights ? 0 : -1;
 		}
 
 		if (input.IsCursorLocked())
 		{
 			if (input.GetKey(KeyCode::Add) == KeyState::Pressed)
-				currSelection++;
+				_currSelection++;
 			if (input.GetKey(KeyCode::Subtract) == KeyState::Pressed)
-				currSelection--;
+				_currSelection--;
 
-			if (currSelection < -1)
-				currSelection = -1;
-			else if (currSelection >= static_cast<int>(_sceneHolder.GetEntityCount()))
-				currSelection = static_cast<int>(_sceneHolder.GetEntityCount()) - 1;
+			if (_currSelection < -1)
+				_currSelection = -1;
+			else if (_currSelection >= static_cast<int>(_sceneHolder.GetEntityCount()))
+				_currSelection = static_cast<int>(_sceneHolder.GetEntityCount()) - 1;
 
 			float currSpeed = 3.5f;
 			if (input.GetKey(KeyCode::LeftShift) == KeyState::Held)
@@ -615,7 +730,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
 				currSpeed = 0.5f;
 
-			if (currSelection == -1 && !movePointLights)
+			if (_currSelection == -1 && !movePointLights)
 			{ // Move camera
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
 					basisCamera->MoveRight(time.deltaTime * currSpeed);
@@ -638,7 +753,7 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			}
 			else
 			{ // Move selected entity or point light
-				static bool relativeToCamera = true;
+				static bool relativeToCamera = false;
 				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
 					relativeToCamera = !relativeToCamera;
 
@@ -646,9 +761,9 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 
 				if (relativeToCamera)
 				{
-					right = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetRight());
-					up = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetUp());
-					forward = *reinterpret_cast<const XMVECTOR *>(&basisCamera->GetForward());
+					right = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetRight());
+					up = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetUp());
+					forward = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetForward());
 				}
 				else
 				{
@@ -711,13 +826,13 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 				{
 					if (movePointLights)
 					{
-						currSelection = std::clamp(currSelection, 0, static_cast<int>(_pointlights->GetNrOfLights()) - 1);
-						_pointlights->Move(currSelection, *reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+						_currSelection = std::clamp(_currSelection, 0, static_cast<int>(_pointlights->GetNrOfLights()) - 1);
+						_pointlights->Move(_currSelection, *reinterpret_cast<XMFLOAT4A*>(&transformationVector));
 					}
 					else
 					{
-						Entity *ent = _sceneHolder.GetEntity(currSelection);
-						Transform *entityTransform = ent->GetTransform();
+						Entity* ent = _sceneHolder.GetEntity(_currSelection);
+						Transform* entityTransform = ent->GetTransform();
 
 						if (isRotating)
 							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
@@ -733,20 +848,24 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 						}
 					}
 				}
+			}
 
-
-				if (!movePointLights && input.GetKey(KeyCode::Delete) == KeyState::Pressed)
+			if (_currSelection >= 0)
+			{
+				if (input.GetKey(KeyCode::Delete) == KeyState::Pressed)
 				{
-					if (!_sceneHolder.RemoveEntity(currSelection))
+					const Entity* ent = _sceneHolder.GetEntity(_currSelection);
+					if (!_sceneHolder.RemoveEntity(_currSelection))
 					{
 						ErrMsg("Failed to remove entity!");
+						delete ent;
 						return false;
 					}
-					currSelection = -1;
+					delete ent;
+					_currSelection = -1;
 				}
 			}
 		}
-
 
 
 		static bool hasSetCamera = false;
@@ -804,12 +923,6 @@ bool Scene::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 			else if (_currCamera - 6 - spotlightCount < dirlightCount)
 				_currCameraPtr = _dirlights->GetLightCamera(_currCamera - 6 - spotlightCount);
 		}
-	}
-
-	if (!UpdateEntities(context, time, input))
-	{
-		ErrMsg("Failed to update scene entities!");
-		return false;
 	}
 
 	return true;
@@ -890,10 +1003,10 @@ bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input
 	return true;
 }
 
-void Scene::UpdateSelectionMarker(const int i) const
+void Scene::UpdateSelectionMarker() const
 {
 	Entity
-		*selection = i < 0 ? nullptr : _sceneHolder.GetEntity(i),
+		*selection = _currSelection < 0 ? nullptr : _sceneHolder.GetEntity(_currSelection),
 		*marker = _sceneHolder.GetEntity(0);
 
 	BoundingBox box = { {0, 0, 0}, {0, 0, 0} };
@@ -1338,6 +1451,9 @@ bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
+	if (ImGui::Button("Generate entity bounds"))
+		DebugGenerateEntityBounds();
+
 	if (ImGui::Button("Generate volume tree structure"))
 		DebugGenerateVolumeTreeStructure();
 
@@ -1439,7 +1555,64 @@ void Scene::DebugGenerateVolumeTreeStructure()
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
-			ErrMsg("Failed to initialize room object!");
+			ErrMsg("Failed to initialize Tree Wireframe object!");
+			return;
+		}
+
+		const XMFLOAT4A
+			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
+			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
+	}
+}
+
+void Scene::DebugGenerateEntityBounds()
+{
+	static int lastEntityCount = -1;
+	static int lastBoxCount = 0;
+
+	if (lastEntityCount >= 0)
+		for (int i = 0; i < lastBoxCount; i++)
+		{
+			const Entity *ent = _sceneHolder.GetEntity(lastEntityCount);
+			if (!_sceneHolder.RemoveEntity(lastEntityCount))
+			{
+				ErrMsg("Failed to remove entity!");
+				delete ent;
+				return;
+			}
+			delete ent;
+		}
+	lastEntityCount = _sceneHolder.GetEntityCount();
+
+	std::vector<BoundingBox> entityBounds;
+	for (int i = 0; i < lastEntityCount; i++)
+	{
+		Entity *ent = _sceneHolder.GetEntity(i);
+
+		BoundingBox box;
+		ent->StoreBounds(box);
+		entityBounds.push_back(box);
+	}
+	lastBoxCount = static_cast<int>(entityBounds.size());
+
+	for (const BoundingBox &box : entityBounds)
+	{
+		static UINT
+			meshID = _content->GetMeshID("Mesh_WireframeCube"),
+			textureID = _content->GetTextureID("Tex_Red"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = _content->GetTextureID("Tex_Red"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Entity Bounds Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize Entity Bounds Wireframe object!");
 			return;
 		}
 

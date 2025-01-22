@@ -21,7 +21,7 @@ public:
 	SamplerD3D11 &operator=(SamplerD3D11 &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, D3D11_TEXTURE_ADDRESS_MODE adressMode,
-		const std::optional<std::array<float, 4>>&borderColors = std::nullopt);
+		const std::optional<std::array<float, 4>>&borderColors = std::nullopt, bool anisotropicFiltering = true);
 
 	[[nodiscard]] ID3D11SamplerState *GetSamplerState() const;
 };
