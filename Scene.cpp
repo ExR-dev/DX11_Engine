@@ -742,7 +742,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 
 		UpdateSelectionMarker();
 
-		const UINT entityCount = _sceneHolder.GetEntityCount();
+		/*const UINT entityCount = _sceneHolder.GetEntityCount();
 		for (UCHAR i = 0; i < entityCount; i++)
 		{
 			if (i > 10)
@@ -753,7 +753,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				_currSelection = (_currSelection == i) ? -1 : i;
 				break;
 			}
-		}
+		}*/
 
 		if (input.GetKey(KeyCode::M3) == KeyState::Pressed)
 		{
@@ -1671,6 +1671,117 @@ bool Scene::RenderSelectionUI()
 	}
 
 	ImGui::Text(std::format("Entity: {}", ent->GetName()).c_str());
+
+	float inputWidth = 128.0f;
+	float inputFloat;
+	bool isChanged = false;
+	XMFLOAT4A entPos = ent->GetTransform()->GetPosition();
+	 
+	ImGui::Text("Position: ");
+
+	inputFloat = entPos.x;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("PX", &inputFloat/*, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue*/))
+	{
+		entPos.x = inputFloat;
+		isChanged = true;
+	}
+
+	inputFloat = entPos.y;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("PY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entPos.y = inputFloat;
+		isChanged = true;
+	}
+
+	inputFloat = entPos.z;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("PZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entPos.z = inputFloat;
+		isChanged = true;
+	}
+
+	if (isChanged)
+		ent->GetTransform()->SetPosition(entPos);
+
+
+	float degreeConversion = 180.0f / XM_PI;
+	isChanged = false;
+	XMFLOAT4A entRot = ent->GetTransform()->GetEulerRotation();
+
+	ImGui::Text("Rotation: ");
+
+	inputFloat = entRot.x * degreeConversion;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("RX", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entRot.x = inputFloat / degreeConversion;
+		isChanged = true;
+	}
+
+	inputFloat = entRot.y * degreeConversion;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("RY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entRot.y = inputFloat / degreeConversion;
+		isChanged = true;
+	}
+
+	inputFloat = entRot.z * degreeConversion;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("RZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entRot.z = inputFloat / degreeConversion;
+		isChanged = true;
+	}
+
+	if (isChanged)
+		ent->GetTransform()->SetEulerRotation(entRot);
+
+
+	isChanged = false;
+	XMFLOAT4A entScale = ent->GetTransform()->GetScale();
+
+	ImGui::Text("Scale: ");
+
+	inputFloat = entScale.x;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("SX", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entScale.x = inputFloat;
+		isChanged = true;
+	}
+
+	inputFloat = entScale.y;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("SY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entScale.y = inputFloat;
+		isChanged = true;
+	}
+
+	inputFloat = entScale.z;
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputWidth);
+	if (ImGui::InputFloat("SZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+		entScale.z = inputFloat;
+		isChanged = true;
+	}
+
+	if (isChanged)
+		ent->GetTransform()->SetScale(entScale);
+
 
 	Entity *parent = ent->GetParent();
 	if (parent)

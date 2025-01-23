@@ -322,12 +322,56 @@ void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLO
 	SetDirty();
 }
 
+void Transform::SetEulerRotation(const XMFLOAT4A &euler)
+{
+	_right = { 1, 0, 0, 0 };
+	_up = { 0, 1, 0, 0 };
+	_forward = { 0, 0, 1, 0 };
+
+	Transform::Rotate(euler);
+}
+
 
 const XMFLOAT4A &Transform::GetPosition() const	{ return _pos;		}
 const XMFLOAT4A &Transform::GetScale() const	{ return _scale;	}
 const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
 const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
 const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
+
+DirectX::XMFLOAT4A Transform::GetEulerRotation() const
+{
+	XMFLOAT4X4 matrixView;
+	XMStoreFloat4x4(&matrixView, GetLocalMatrix());
+
+	float roll, pitch, yaw;
+
+	if (matrixView._11 == 1.0f)
+	{
+		yaw = atan2f(matrixView._13, matrixView._34);
+		pitch = 0;
+		roll = 0;
+
+	}
+	else if (matrixView._11 == -1.0f)
+	{
+		yaw = atan2f(matrixView._13, matrixView._34);
+		pitch = 0;
+		roll = 0;
+	}
+	else
+	{
+		yaw = atan2(-matrixView._31, matrixView._11);
+		pitch = asin(matrixView._21);
+		roll = atan2(-matrixView._23, matrixView._22);
+	}
+
+	/*const float
+		roll = atan2f(_forward.y, _forward.z),
+		pitch = atan2f(-_forward.x, sqrtf(_forward.y * _forward.y + _forward.z * _forward.z)),
+		yaw = atan2f(_up.x, _right.x);*/
+
+	return { pitch, yaw, roll, 0.0f };
+}
 
 void Transform::SetDirty()
 {

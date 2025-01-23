@@ -59,12 +59,14 @@ public:
 	void SetPosition(const DirectX::XMFLOAT4A &position);
 	void SetScale(const DirectX::XMFLOAT4A &scale);
 	void SetAxes(const DirectX::XMFLOAT4A &right, const DirectX::XMFLOAT4A &up, const DirectX::XMFLOAT4A &forward);
+	void SetEulerRotation(const DirectX::XMFLOAT4A &euler);
 
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetScale() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
+	[[nodiscard]] DirectX::XMFLOAT4A GetEulerRotation() const;
 
 	void SetDirty();
 	[[nodiscard]] bool GetDirty() const;
