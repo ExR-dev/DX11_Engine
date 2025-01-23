@@ -37,7 +37,7 @@ private:
 			Emitter *emitter;
 		} _item;
 
-		explicit SceneEntity(const UINT id, const DirectX::BoundingBox &bounds, EntityType type)
+		explicit SceneEntity(const UINT id, const DirectX::BoundingOrientedBox &bounds, EntityType type)
 		{
 			_type = type;
 
@@ -119,7 +119,7 @@ public:
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds);
 	[[nodiscard]] bool Update();
 
-	[[nodiscard]] Entity *AddEntity(const DirectX::BoundingBox &bounds, EntityType type);
+	[[nodiscard]] Entity *AddEntity(const DirectX::BoundingOrientedBox &bounds, EntityType type);
 	// Entity must be manually deleted after calling!
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
 	[[nodiscard]] bool RemoveEntity(UINT id);

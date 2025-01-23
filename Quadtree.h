@@ -46,7 +46,7 @@ private:
 			for (int i = 0; i < data.size(); i++)
 				if (data[i] != nullptr)
 				{
-					DirectX::BoundingBox itemBounds;
+					DirectX::BoundingOrientedBox itemBounds;
 					data[i]->StoreBounds(itemBounds);
 
 					for (int j = 0; j < CHILD_COUNT; j++)
@@ -58,7 +58,7 @@ private:
 		}
 
 
-		bool Insert(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0)
+		bool Insert(Entity *item, const DirectX::BoundingOrientedBox &itemBounds, const UINT depth = 0)
 		{
 			if (!bounds.Intersects(itemBounds))
 				return false;
@@ -83,7 +83,7 @@ private:
 			return true;
 		}
 
-		void Remove(Entity *item, const DirectX::BoundingBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
+		void Remove(Entity *item, const DirectX::BoundingOrientedBox &itemBounds, const UINT depth = 0, const bool skipIntersection = false)
 		{
 			if (!skipIntersection)
 				if (!bounds.Intersects(itemBounds))
@@ -249,7 +249,7 @@ private:
 					if (item == nullptr)
 						continue;
 
-					DirectX::BoundingBox itemBounds;
+					DirectX::BoundingOrientedBox itemBounds;
 					item->StoreBounds(itemBounds);
 
 					float newLength = 0.0f;
@@ -345,14 +345,14 @@ public:
 		return true;
 	}
 
-	void Insert(Entity *data, const DirectX::BoundingBox &bounds) const
+	void Insert(Entity *data, const DirectX::BoundingOrientedBox &bounds) const
 	{
 		if (_root != nullptr)
 			_root->Insert(data, bounds);
 	}
 
 
-	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingBox &bounds) const
+	[[nodiscard]] bool Remove(Entity *data, const DirectX::BoundingOrientedBox &bounds) const
 	{
 		if (_root == nullptr)
 			return false;
@@ -366,7 +366,10 @@ public:
 		if (_root == nullptr)
 			return false;
 
-		_root->Remove(data, _root->bounds, 0, true);
+		DirectX::BoundingOrientedBox rootBounds;
+		DirectX::BoundingOrientedBox().CreateFromBoundingBox(rootBounds, _root->bounds);
+
+		_root->Remove(data, rootBounds, 0, true);
 		return true;
 	}
 

@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-Object::Object(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, bounds)
+Object::Object(const UINT id, const DirectX::BoundingOrientedBox &bounds) : Entity(id, bounds)
 {
 
 }
@@ -72,7 +72,7 @@ bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input
 
 	if (updatePosBuffer)
 	{
-		DirectX::BoundingBox worldSpaceBounds;
+		DirectX::BoundingOrientedBox worldSpaceBounds;
 		StoreBounds(worldSpaceBounds);
 		const DirectX::XMFLOAT4A center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0.0f };
 

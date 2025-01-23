@@ -24,8 +24,8 @@ protected:
 	bool _isInitialized = false;
 	Transform _transform;
 
-	DirectX::BoundingBox _bounds;
-	DirectX::BoundingBox _transformedBounds;
+	DirectX::BoundingOrientedBox _bounds;
+	DirectX::BoundingOrientedBox _transformedBounds;
 	bool _recalculateBounds = true;
 
 	Entity *_parent = nullptr;
@@ -35,7 +35,7 @@ protected:
 	void RemoveChild(Entity *child, bool keepWorldTransform = false);
 
 
-	Entity(UINT id, const DirectX::BoundingBox &bounds);
+	Entity(UINT id, const DirectX::BoundingOrientedBox &bounds);
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name);
 
@@ -65,7 +65,7 @@ public:
 	[[nodiscard]] Transform *GetTransform();
 	[[nodiscard]] virtual EntityType GetType() const = 0;
 
-	void StoreBounds(DirectX::BoundingBox &entityBounds);
+	void StoreBounds(DirectX::BoundingOrientedBox &entityBounds);
 
 	[[nodiscard]] virtual bool Update(ID3D11DeviceContext *context, Time &time, const Input &input) = 0;
 	[[nodiscard]] virtual bool BindBuffers(ID3D11DeviceContext *context) const = 0;

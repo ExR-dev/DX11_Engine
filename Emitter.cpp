@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-Emitter::Emitter(const UINT id, const DirectX::BoundingBox &bounds) : Entity(id, bounds)
+Emitter::Emitter(const UINT id, const DirectX::BoundingOrientedBox &bounds) : Entity(id, bounds)
 {
 
 }

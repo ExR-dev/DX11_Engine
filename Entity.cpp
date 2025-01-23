@@ -3,7 +3,7 @@
 #include "ErrMsg.h"
 
 
-Entity::Entity(const UINT id, const DirectX::BoundingBox &bounds)
+Entity::Entity(const UINT id, const DirectX::BoundingOrientedBox &bounds)
 {
 	_entityID = id;
 	_bounds = bounds;
@@ -150,7 +150,7 @@ Transform *Entity::GetTransform()
 }
 
 
-void Entity::StoreBounds(DirectX::BoundingBox &entityBounds)
+void Entity::StoreBounds(DirectX::BoundingOrientedBox &entityBounds)
 {
 	if (_recalculateBounds)
 	{

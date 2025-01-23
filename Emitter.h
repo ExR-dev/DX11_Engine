@@ -35,7 +35,7 @@ private:
 
 
 public:
-	explicit Emitter(UINT id, const DirectX::BoundingBox &bounds);
+	explicit Emitter(UINT id, const DirectX::BoundingOrientedBox &bounds);
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name, const EmitterData &settings, UINT textureID);
 

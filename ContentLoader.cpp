@@ -522,11 +522,14 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		else if (vData.pz > max.z)	max.z = vData.pz;
 	}
 
+	DirectX::BoundingBox box;
 	DirectX::BoundingBox().CreateFromPoints(
-		meshData.boundingBox,
+		box,
 		*reinterpret_cast<DirectX::XMVECTOR *>(&min),
 		*reinterpret_cast<DirectX::XMVECTOR *>(&max)
 	);
+
+	DirectX::BoundingOrientedBox().CreateFromBoundingBox(meshData.boundingBox, box); // TODO: Possibly worth switching to CreateFromPoints() & passing in all vertices
 }
 
 

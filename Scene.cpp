@@ -180,7 +180,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		constexpr BoundingBox dotBounds = BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0));
+		constexpr BoundingOrientedBox dotBounds = BoundingOrientedBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1));
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Selection Marker", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
@@ -202,7 +202,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Room", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize room object!");
@@ -223,7 +223,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Character", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize model object!");
@@ -246,7 +246,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Reflective Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize reflective sphere object!");
@@ -267,7 +267,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Submesh", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize submesh object!");
@@ -288,7 +288,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = content->GetTextureMapID("TexMap_Cobble_Height");
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "PBR Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize PBR object!");
@@ -310,7 +310,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "ERROR", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize error object!");
@@ -333,7 +333,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = CONTENT_LOAD_ERROR,
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Transparent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
@@ -354,7 +354,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			ambientID = content->GetTextureID("Tex_Ambient"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Parent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize parent object!");
@@ -381,7 +381,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 				ambientID = content->GetTextureID("Tex_Ambient"),
 				heightID = CONTENT_LOAD_ERROR;
 
-			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 			if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 			{
 				ErrMsg(std::format("Failed to initialize {} object!", nextChild));
@@ -402,7 +402,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create emitter
 	{
-		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingBox({0,0,0}, {15,15,15}), EntityType::EMITTER));
+		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingOrientedBox({ 0,0,0 }, { 15,15,15 }, { 0,0,0,1 }), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
 		emitterData.particleCount = 1024;	
@@ -600,7 +600,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 					meshID = rand() % _content->GetMeshCount(),
 					textureID = rand() % _content->GetTextureCount();
 
-				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 				if (!obj->Initialize(_device, "Random Entity",
 					meshID, textureID,
 					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
@@ -634,7 +634,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 		}
 		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
 		{ // Create one custom entity in front of the camera
-			Object* obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingBox(), EntityType::OBJECT));
+			Object* obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 			if (!obj->Initialize(_device, "Custom Entity",
 				selectedMeshID, selectedTextureID,
 				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
@@ -1009,8 +1009,8 @@ void Scene::UpdateSelectionMarker() const
 		*selection = _currSelection < 0 ? nullptr : _sceneHolder.GetEntity(_currSelection),
 		*marker = _sceneHolder.GetEntity(0);
 
-	BoundingBox box = { {0, 0, 0}, {0, 0, 0} };
-	if (selection != nullptr)
+	BoundingOrientedBox box = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 1} };
+	if (selection)
 		selection->StoreBounds(box);
 
 	const XMFLOAT4A
@@ -1018,6 +1018,16 @@ void Scene::UpdateSelectionMarker() const
 		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
 
 	marker->GetTransform()->SetPosition(center);
+
+	if (selection)
+	{
+		marker->GetTransform()->SetAxes(
+			selection->GetTransform()->GetRight(),
+			selection->GetTransform()->GetUp(),
+			selection->GetTransform()->GetForward()
+		);
+	}
+
 	marker->GetTransform()->SetScale(extents);
 }
 
@@ -1552,7 +1562,7 @@ void Scene::DebugGenerateVolumeTreeStructure()
 			ambientID = _content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize Tree Wireframe object!");
@@ -1587,18 +1597,18 @@ void Scene::DebugGenerateEntityBounds()
 		}
 	lastEntityCount = _sceneHolder.GetEntityCount();
 
-	std::vector<BoundingBox> entityBounds;
+	std::vector<BoundingOrientedBox> entityBounds;
 	for (int i = 0; i < lastEntityCount; i++)
 	{
 		Entity *ent = _sceneHolder.GetEntity(i);
 
-		BoundingBox box;
+		BoundingOrientedBox box;
 		ent->StoreBounds(box);
 		entityBounds.push_back(box);
 	}
 	lastBoxCount = static_cast<int>(entityBounds.size());
 
-	for (const BoundingBox &box : entityBounds)
+	for (const BoundingOrientedBox &box : entityBounds)
 	{
 		static UINT
 			meshID = _content->GetMeshID("Mesh_WireframeCube"),
@@ -1609,7 +1619,7 @@ void Scene::DebugGenerateEntityBounds()
 			ambientID = _content->GetTextureID("Tex_Red"),
 			heightID = CONTENT_LOAD_ERROR;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingBox(), EntityType::OBJECT));
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Entity Bounds Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
 			ErrMsg("Failed to initialize Entity Bounds Wireframe object!");
@@ -1620,7 +1630,18 @@ void Scene::DebugGenerateEntityBounds()
 			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
 			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
 
+		XMVECTOR boxOrientation = DirectX::XMLoadFloat4(&box.Orientation);
+
+		XMFLOAT4A boxRightFloat;
+		XMFLOAT4A boxUpFloat;
+		XMFLOAT4A boxForwardFloat;
+
+		DirectX::XMStoreFloat4A(&boxRightFloat, XMVector3Rotate({ 1, 0, 0 }, boxOrientation));
+		DirectX::XMStoreFloat4A(&boxUpFloat, XMVector3Rotate({ 0, 1, 0 }, boxOrientation));
+		DirectX::XMStoreFloat4A(&boxForwardFloat, XMVector3Rotate({ 0, 0, 1 }, boxOrientation));
+
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetAxes(boxRightFloat, boxUpFloat, boxForwardFloat);
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
 	}
 }

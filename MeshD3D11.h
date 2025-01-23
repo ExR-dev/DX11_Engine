@@ -41,7 +41,7 @@ struct MeshData
 
 	std::vector<SubMeshInfo> subMeshInfo;
 	std::string mtlFile;
-	DirectX::BoundingBox boundingBox;
+	DirectX::BoundingOrientedBox boundingBox;
 };
 
 class MeshD3D11
@@ -51,7 +51,7 @@ private:
 	VertexBufferD3D11 _vertexBuffer;
 	IndexBufferD3D11 _indexBuffer;
 	std::string _mtlFile;
-	DirectX::BoundingBox _boundingBox;
+	DirectX::BoundingOrientedBox _boundingBox;
 
 
 public:
@@ -67,7 +67,7 @@ public:
 	[[nodiscard]] bool BindMeshBuffers(ID3D11DeviceContext *context, UINT stride = 0, UINT offset = 0) const;
 	[[nodiscard]] bool PerformSubMeshDrawCall(ID3D11DeviceContext *context, UINT subMeshIndex) const;
 
-	[[nodiscard]] const DirectX::BoundingBox &GetBoundingBox() const;
+	[[nodiscard]] const DirectX::BoundingOrientedBox &GetBoundingOrientedBox() const;
 	[[nodiscard]] const std::string &GetMaterialFile() const;
 
 	[[nodiscard]] UINT GetNrOfSubMeshes() const;

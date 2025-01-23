@@ -73,7 +73,7 @@ bool MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext *context, const UINT 
 	return true;
 }
 
-const DirectX::BoundingBox &MeshD3D11::GetBoundingBox() const
+const DirectX::BoundingOrientedBox &MeshD3D11::GetBoundingOrientedBox() const
 {
 	return _boundingBox;
 }

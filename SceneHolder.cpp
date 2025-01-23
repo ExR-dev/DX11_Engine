@@ -33,7 +33,7 @@ bool SceneHolder::Update()
 			return false;
 		}
 		
-		DirectX::BoundingBox entityBounds;
+		DirectX::BoundingOrientedBox entityBounds;
 		entity->StoreBounds(entityBounds);
 
 		_volumeTree.Insert(entity, entityBounds);
@@ -45,7 +45,7 @@ bool SceneHolder::Update()
 
 
 // Entity is Not initialized automatically. Initialize manually through the returned pointer.
-Entity *SceneHolder::AddEntity(const DirectX::BoundingBox &bounds, const EntityType type)
+Entity *SceneHolder::AddEntity(const DirectX::BoundingOrientedBox &bounds, const EntityType type)
 {
 	SceneEntity *newEntity = new SceneEntity(_entityCounter, bounds, type);
 	_entities.push_back(newEntity);
@@ -78,7 +78,7 @@ bool SceneHolder::RemoveEntity(Entity *entity)
 		delete child;
 	}
 
-	DirectX::BoundingBox entityBounds;
+	DirectX::BoundingOrientedBox entityBounds;
 	entity->StoreBounds(entityBounds);
 
 	if (!_volumeTree.Remove(entity, entityBounds))
@@ -124,7 +124,7 @@ bool SceneHolder::RemoveEntity(const UINT id)
 
 bool SceneHolder::UpdateEntityPosition(Entity *entity)
 {
-	DirectX::BoundingBox entityBounds;
+	DirectX::BoundingOrientedBox entityBounds;
 	entity->StoreBounds(entityBounds);
 
 	if (!_volumeTree.Remove(entity))
