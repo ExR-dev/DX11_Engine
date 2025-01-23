@@ -132,7 +132,7 @@ public:
 	[[nodiscard]] Entity *GetEntityByName(const std::string &name) const;
 	[[nodiscard]] UINT GetEntityIndex(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityCount() const;
-	void GetEntities(std::vector<Entity *> entities) const;
+	void GetEntities(std::vector<Entity *> &entities) const;
 
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const;
 	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const;

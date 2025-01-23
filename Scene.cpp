@@ -29,6 +29,7 @@ Scene::~Scene()
 	_camera.release();*/
 }
 
+
 bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphics)
 {
 	if (_initialized)
@@ -368,35 +369,33 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	std::string nextParent = "Parent";
 	std::string nextChild = "Child 1";
-	for (int i = 0; i < 25; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		// Create child i
+		const UINT
+			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
+			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
+			normalID = CONTENT_LOAD_ERROR,
+			specularID = CONTENT_LOAD_ERROR,
+			reflectiveID = CONTENT_LOAD_ERROR,
+			ambientID = content->GetTextureID("Tex_Ambient"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
-			const UINT
-				meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
-				textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-				normalID = CONTENT_LOAD_ERROR,
-				specularID = CONTENT_LOAD_ERROR,
-				reflectiveID = CONTENT_LOAD_ERROR,
-				ambientID = content->GetTextureID("Tex_Ambient"),
-				heightID = CONTENT_LOAD_ERROR;
-
-			Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
-			{
-				ErrMsg(std::format("Failed to initialize {} object!", nextChild));
-				return false;
-			}
-
-			reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.0f, 0.0f, 2.5f, 0 });
-			reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -0.25f, 0.0f, 0 });
-			reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.9f, 0.9f, 0.9f, 0 });
-
-			reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent), true);
-
-			nextParent = nextChild;
-			nextChild = std::format("Child {}", i + 2);
+			ErrMsg(std::format("Failed to initialize {} object!", nextChild));
+			return false;
 		}
+
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.0f, 0.0f, 2.5f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -0.25f, 0.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.9f, 0.9f, 0.9f, 0 });
+
+		reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent), true);
+
+		nextParent = nextChild;
+		nextChild = std::format("Child {}", i + 2);
 	}
 
 
@@ -656,6 +655,11 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				basisCamera->GetUp(),
 				basisCamera->GetForward()
 			);
+
+			if (_currSelection >= 0)
+			{
+				reinterpret_cast<Entity*>(obj)->SetParent(_sceneHolder.GetEntity(_currSelection));
+			}
 		}
 
 		UpdateSelectionMarker();
@@ -1461,6 +1465,51 @@ bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
 
+	static bool renderHierarchy = false;
+	if (ImGui::Button("Toggle Scene Hierarchy"))
+		renderHierarchy = !renderHierarchy;
+
+	if (renderHierarchy)
+	{
+		ImGuiChildFlags childFlags = 0;
+		childFlags |= ImGuiChildFlags_Border;
+		childFlags |= ImGuiChildFlags_ResizeY;
+
+		ImGui::BeginChild("Scene Hierarchy", ImVec2(0, 300), childFlags);
+
+		std::vector<Entity*> sceneContent;
+		_sceneHolder.GetEntities(sceneContent);
+
+		for (auto& entity : sceneContent)
+		{
+			if (entity->GetParent() != nullptr) // Skip non-root entities
+				continue;
+
+			std::string entName = entity->GetName();
+			UINT entIndex = _sceneHolder.GetEntityIndex(entity);
+
+			if (_currSelection >= 0)
+				if (entIndex == _currSelection)
+					entName = std::format("<{}>", entName);
+
+			if (ImGui::SmallButton(std::format("{} ({})", entName, entIndex).c_str()))
+				_currSelection = entIndex;
+
+			if (!RenderTransformUIRecursive(entity, 0))
+			{
+				ImGui::EndChild();
+				return false;
+			}
+		}
+
+		ImGui::EndChild();
+	}
+
+	if (!RenderSelectionUI())
+		return false;
+
+	ImGui::Separator();
+
 	if (ImGui::Button("Generate entity bounds"))
 		DebugGenerateEntityBounds();
 
@@ -1522,6 +1571,106 @@ bool Scene::RenderUI()
 		snprintf(nearPlane, sizeof(nearPlane), "%.2f", projInfo.nearZ);
 		snprintf(farPlane, sizeof(farPlane), "%.1f", projInfo.farZ);
 		ImGui::Text(std::format("({}:{}) Planes Spotlight #{}", nearPlane, farPlane, i).c_str());
+	}
+
+	return true;
+}
+
+bool Scene::RenderSelectionUI()
+{
+	ImGui::Separator();
+	ImGui::Text(std::format("Selected Index: {}", _currSelection).c_str());
+
+	if (_currSelection < 0)
+		return true;
+	
+	Entity *ent = _sceneHolder.GetEntity(_currSelection);
+
+	if (!ent)
+	{
+		ImGui::Text("Entity: NULL");
+		return true;
+	}
+
+	ImGui::Text(std::format("Entity: {}", ent->GetName()).c_str());
+
+	Entity *parent = ent->GetParent();
+	if (parent)
+	{
+		UINT parentIndex = _sceneHolder.GetEntityIndex(parent);
+
+		ImGui::Text("Parent: ");
+		ImGui::SameLine();
+		if (ImGui::SmallButton(std::format("{} ({})", parent->GetName(), parentIndex).c_str()))
+			_currSelection = parentIndex;
+	}
+	else
+	{
+		ImGui::Text("Parent: None");
+	}
+
+	static bool renderHierarchy = false;
+	if (ImGui::Button("Toggle Entity Hierarchy"))
+		renderHierarchy = !renderHierarchy;
+
+	if (renderHierarchy)
+	{
+		ImGuiChildFlags childFlags = 0;
+		childFlags |= ImGuiChildFlags_Border;
+		childFlags |= ImGuiChildFlags_ResizeY;
+
+		ImGui::BeginChild("Entity Hierarchy", ImVec2(0, 300), childFlags);
+
+		ImGui::Text(std::format("<{}> ({})", ent->GetName(), _currSelection).c_str());
+		if (!RenderTransformUIRecursive(ent, 0))
+		{
+			ImGui::EndChild();
+			return false;
+		}
+
+		ImGui::EndChild();
+	}
+
+	return true;
+}
+
+bool Scene::RenderTransformUIRecursive(Entity* ent, UINT depth)
+{
+	if (depth > 0)
+	{
+		std::string indent = "";
+		for (UINT i = 1; i < depth; i++)
+			indent += "| ";
+		indent += "|-";
+
+		if (depth > 16)
+		{
+			ImGui::Text(std::format("{}[...]", indent).c_str());
+			return true;
+		}
+
+		std::string entName = ent->GetName();
+
+		if (_currSelection >= 0)
+			if (ent == _sceneHolder.GetEntity(_currSelection))
+				entName = std::format("<{}>", entName);
+
+		UINT entIndex = _sceneHolder.GetEntityIndex(ent);
+
+		ImGui::Text(indent.c_str());
+		ImGui::SameLine();
+		if (ImGui::SmallButton(std::format("{} ({})", entName, entIndex).c_str()))
+			_currSelection = entIndex;
+
+	}
+
+	const std::vector<Entity*>* children = ent->GetChildren();
+	for (auto& child : *children)
+	{
+		if (!child)
+			continue;
+		if (!RenderTransformUIRecursive(child, depth + 1))
+			return false;
 	}
 
 	return true;

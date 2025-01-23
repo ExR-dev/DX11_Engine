@@ -134,6 +134,9 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
+	io.MouseDrawCursor = true;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
 	ImGui_ImplWin32_Init(window);
 	ImGui_ImplDX11_Init(device, immediateContext);
 	ImGui::StyleColorsDark();
@@ -1471,25 +1474,40 @@ bool Graphics::RenderUI(Time &time)
 	if (ImGui::Button(std::format("Transparency: {}", _renderTransparency ? "Enabled" : "Disabled").c_str()))
 		_renderTransparency = !_renderTransparency;
 
-	ImGui::Text(std::format("Main Draws: {}", _currMainCamera->GetCullCount()).c_str());
-	for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
-	{
-		const CameraD3D11 *spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
-		ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());
-	}
+	static bool renderLightData = false;
+	if (ImGui::Button("View Light Draw Info"))
+		renderLightData = !renderLightData;
 
-	for (UINT i = 0; i < _currDirLightCollection->GetNrOfLights(); i++)
+	if (renderLightData)
 	{
-		const CameraD3D11 *dirlightCamera = _currDirLightCollection->GetLightCamera(i);
-		ImGui::Text(std::format("Dirlight #{} Draws: {}", i, dirlightCamera->GetCullCount()).c_str());
-	}
+		ImGuiChildFlags childFlags = 0;
+		childFlags |= ImGuiChildFlags_Border;
+		childFlags |= ImGuiChildFlags_ResizeY;
 
-	for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
-		for (UINT j = 0; j < 6; j++)
+		ImGui::BeginChild("Entity Hierarchy", ImVec2(0, 300), childFlags);
+
+		ImGui::Text(std::format("Main Draws: {}", _currMainCamera->GetCullCount()).c_str());
+		for (UINT i = 0; i < _currSpotLightCollection->GetNrOfLights(); i++)
 		{
-			const CameraD3D11 *pointlightCamera = _currPointLightCollection->GetLightCamera(i, j);
-			ImGui::Text(std::format("Pointlight #{}:{} Draws: {}", i, j, pointlightCamera->GetCullCount()).c_str());
+			const CameraD3D11* spotlightCamera = _currSpotLightCollection->GetLightCamera(i);
+			ImGui::Text(std::format("Spotlight #{} Draws: {}", i, spotlightCamera->GetCullCount()).c_str());
 		}
+
+		for (UINT i = 0; i < _currDirLightCollection->GetNrOfLights(); i++)
+		{
+			const CameraD3D11* dirlightCamera = _currDirLightCollection->GetLightCamera(i);
+			ImGui::Text(std::format("Dirlight #{} Draws: {}", i, dirlightCamera->GetCullCount()).c_str());
+		}
+
+		for (UINT i = 0; i < _currPointLightCollection->GetNrOfLights(); i++)
+			for (UINT j = 0; j < 6; j++)
+			{
+				const CameraD3D11* pointlightCamera = _currPointLightCollection->GetLightCamera(i, j);
+				ImGui::Text(std::format("Pointlight #{}:{} Draws: {}", i, j, pointlightCamera->GetCullCount()).c_str());
+			}
+
+		ImGui::EndChild();
+	}
 
 	return true;
 }

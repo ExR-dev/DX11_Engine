@@ -50,6 +50,9 @@ private:
 
 	void UpdateSelectionMarker() const;
 
+	[[nodiscard]] bool RenderSelectionUI();
+	[[nodiscard]] bool RenderTransformUIRecursive(Entity *ent, UINT depth);
+
 	void DebugGenerateVolumeTreeStructure();
 	void DebugGenerateEntityBounds();
 

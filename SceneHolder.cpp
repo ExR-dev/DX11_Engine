@@ -145,6 +145,12 @@ const DirectX::BoundingBox& SceneHolder::GetBounds() const
 
 Entity *SceneHolder::GetEntity(const UINT i) const
 {
+	if (i < 0)
+	{
+		ErrMsg("Failed to get entity, i out of range!");
+		return nullptr;
+	}
+
 	if (i >= _entities.size())
 	{
 		ErrMsg("Failed to get entity, i out of range!");
@@ -234,7 +240,7 @@ UINT SceneHolder::GetEntityCount() const
 	return static_cast<UINT>(_entities.size());
 }
 
-void SceneHolder::GetEntities(std::vector<Entity *> entities) const
+void SceneHolder::GetEntities(std::vector<Entity *> &entities) const
 {
 	for (const SceneEntity *ent : _entities)
 		switch (ent->_type)
