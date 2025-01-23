@@ -116,12 +116,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create directional lights
 	const DirLightData dirlightInfo = {
-		2048,
+		1024,
 		std::vector<DirLightData::PerLightInfo> {
 			DirLightData::PerLightInfo {
-				{ 0.0375f, 0.03f, 0.036f },	// color
-				-0.746f,					// rotationX
-				0.867f,						// rotationY
+				{ 0.0475f, 0.0515f, 0.055f },	// color
+				-0.746f,						// rotationX
+				0.867f,							// rotationY
 			},
 		}
 	};
@@ -139,18 +139,18 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		std::vector<PointLightData::PerLightInfo> {
 			PointLightData::PerLightInfo {
 				{ 7.0f, 5.0f, -9.0f },			// initialPosition
-				{ 0.0f, 6.0f, 15.0f },			// color
+				{ 18.0f, 6.0f, 0.5f },			// color
 				4.0f,							// falloff
 				0.1f,							// projectionNearZ
 				15.0f							// projectionFarZ
 			},
 
 			PointLightData::PerLightInfo {
-				{ -5.0f, 2.0f, -5.5f },			// initialPosition
-				{ 39.0f, 44.0f, 52.5f },		// color
-				5.0f,							// falloff
+				{ -5.0f, 3.0f, -5.5f },			// initialPosition
+				{ 44.0f, 49.0f, 57.5f },		// color
+				3.5f,							// falloff
 				0.1f,							// projectionNearZ
-				20.0f							// projectionFarZ
+				25.0f							// projectionFarZ
 			},
 		}
 	};
@@ -163,7 +163,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 256, 0.1f, 16.0f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 128, 0.1f, 15.5f, { 0.0f, 15.0f, 0.0f, 0.0f }))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -194,7 +194,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create room
 	{
-		const UINT
+		/*const UINT
 			meshID = content->GetMeshID("Mesh_Room"),
 			textureID = content->GetTextureID("Tex_texture1"),
 			normalID = CONTENT_LOAD_ERROR,
@@ -210,7 +210,85 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			return false;
 		}
 
+		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });*/
+		
+		const UINT
+			meshID = content->GetMeshID("Mesh_Plane"),
+			textureID = content->GetTextureID("Tex_Metal"),
+			normalID = content->GetTextureMapID("TexMap_Metal_Normal"),
+			specularID = content->GetTextureMapID("TexMap_Metal_Specular"),
+			reflectiveID = content->GetTextureMapID("TexMap_Metal_Reflective"),
+			ambientID = content->GetTextureID("Tex_Ambient"),
+			heightID = CONTENT_LOAD_ERROR;
+
+		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Floor", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room floor object!");
+			return false;
+		}
+
 		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+
+
+		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Roof", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room roof object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 30.0f, 0.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, XM_PI, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+
+
+		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Wall South", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room wall south object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 15.0f, -15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({  0.5f * XM_PI, 0.0f, 0.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+
+
+		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Wall North", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room wall north object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({  -0.5f * XM_PI, 0.0f, 0.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+
+
+		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Wall West", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room wall west object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ -15.0f, 15.0f, 0.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, -0.5f * XM_PI, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+
+
+		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		if (!obj->Initialize(_device, "Room Wall East", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize room wall east object!");
+			return false;
+		}
+
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 15.0f, 15.0f, 0.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, 0.5f * XM_PI, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
 	}
 
 	// Create model
@@ -369,7 +447,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	std::string nextParent = "Parent";
 	std::string nextChild = "Child 1";
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 32; i++)
 	{
 		// Create child i
 		const UINT
@@ -401,7 +479,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create emitter
 	{
-		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingOrientedBox({ 0,0,0 }, { 15,15,15 }, { 0,0,0,1 }), EntityType::EMITTER));
+		Emitter *emitter = reinterpret_cast<Emitter *>(_sceneHolder.AddEntity(DirectX::BoundingOrientedBox({ 0,0,0 }, { 1,1,1 }, { 0,0,0,1 }), EntityType::EMITTER));
 
 		EmitterData emitterData = { };
 		emitterData.particleCount = 1024;	
@@ -1682,10 +1760,13 @@ void Scene::DebugGenerateVolumeTreeStructure()
 	static int lastEntityCount = -1;
 	static int lastBoxCount = 0;
 
+	bool remove = false;
 	if (lastEntityCount >= 0)
+	{
+		remove = true;
 		for (int i = 0; i < lastBoxCount; i++)
 		{
-			const Entity *ent = _sceneHolder.GetEntity(lastEntityCount);
+			const Entity* ent = _sceneHolder.GetEntity(lastEntityCount);
 			if (!_sceneHolder.RemoveEntity(lastEntityCount))
 			{
 				ErrMsg("Failed to remove entity!");
@@ -1694,7 +1775,14 @@ void Scene::DebugGenerateVolumeTreeStructure()
 			}
 			delete ent;
 		}
+	}
 	lastEntityCount = _sceneHolder.GetEntityCount();
+
+	if (remove)
+	{
+		lastEntityCount = -1;
+		return;
+	}
 
 	std::vector<BoundingBox> treeStructure;
 	_sceneHolder.DebugGetTreeStructure(treeStructure);
@@ -1732,10 +1820,13 @@ void Scene::DebugGenerateEntityBounds()
 	static int lastEntityCount = -1;
 	static int lastBoxCount = 0;
 
+	bool remove = false;
 	if (lastEntityCount >= 0)
+	{
+		remove = true;
 		for (int i = 0; i < lastBoxCount; i++)
 		{
-			const Entity *ent = _sceneHolder.GetEntity(lastEntityCount);
+			const Entity* ent = _sceneHolder.GetEntity(lastEntityCount);
 			if (!_sceneHolder.RemoveEntity(lastEntityCount))
 			{
 				ErrMsg("Failed to remove entity!");
@@ -1744,7 +1835,14 @@ void Scene::DebugGenerateEntityBounds()
 			}
 			delete ent;
 		}
+	}
 	lastEntityCount = _sceneHolder.GetEntityCount();
+
+	if (remove)
+	{
+		lastEntityCount = -1;
+		return;
+	}
 
 	std::vector<BoundingOrientedBox> entityBounds;
 	for (int i = 0; i < lastEntityCount; i++)

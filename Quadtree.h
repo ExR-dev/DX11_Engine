@@ -30,18 +30,18 @@ private:
 			const DirectX::XMFLOAT3
 				center = bounds.Center,
 				extents = bounds.Extents,
-				min = { center.x - extents.x, 0.0f, center.z - extents.z },
-				max = { center.x + extents.x, 0.0f, center.z + extents.z };
+				min = { center.x - extents.x, center.y - extents.y, center.z - extents.z },
+				max = { center.x + extents.x, center.y + extents.y, center.z + extents.z };
 
 			children[0] = std::make_unique<Node>();
 			children[1] = std::make_unique<Node>();
 			children[2] = std::make_unique<Node>();
 			children[3] = std::make_unique<Node>();
 
-			DirectX::BoundingBox::CreateFromPoints(children[0]->bounds, { min.x, -extents.y, min.z, 0 }, { center.x, extents.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, -extents.y, min.z, 0 }, { max.x, extents.y, center.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, -extents.y, center.z, 0 }, { center.x, extents.y, max.z, 0 });
-			DirectX::BoundingBox::CreateFromPoints(children[3]->bounds, { center.x, -extents.y, center.z, 0 }, { max.x, extents.y, max.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[0]->bounds, { min.x, min.y, min.z, 0 }, { center.x, max.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[1]->bounds, { center.x, min.y, min.z, 0 }, { max.x, max.y, center.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[2]->bounds, { min.x, min.y, center.z, 0 }, { center.x, max.y, max.z, 0 });
+			DirectX::BoundingBox::CreateFromPoints(children[3]->bounds, { center.x, min.y, center.z, 0 }, { max.x, max.y, max.z, 0 });
 
 			for (int i = 0; i < data.size(); i++)
 				if (data[i] != nullptr)
