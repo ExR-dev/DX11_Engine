@@ -31,13 +31,11 @@ protected:
 	Entity *_parent = nullptr;
 	std::vector<Entity *> _children;
 
-	void AddChild(Entity *child, bool keepWorldTransform = false);
-	void RemoveChild(Entity *child, bool keepWorldTransform = false);
-
-
 	Entity(UINT id, const DirectX::BoundingOrientedBox &bounds);
-
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const std::string &name);
+
+	inline void AddChild(Entity *child, bool keepWorldTransform = false);
+	inline void RemoveChild(Entity *child, bool keepWorldTransform = false);
 
 	[[nodiscard]] bool InternalUpdate(ID3D11DeviceContext *context);
 	[[nodiscard]] bool InternalBindBuffers(ID3D11DeviceContext *context) const;

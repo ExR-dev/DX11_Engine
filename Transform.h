@@ -24,11 +24,11 @@ private:
 	Transform *_parent = nullptr;
 	std::vector<Transform*> _children;
 
-	void NormalizeBases();
-	void OrthogonalizeBases();
+	inline void NormalizeBases();
+	inline void OrthogonalizeBases();
 
-	void AddChild(Transform *child);
-	void RemoveChild(Transform *child);
+	inline void AddChild(Transform *child);
+	inline void RemoveChild(Transform *child);
 
 public:
 	Transform() = default;
@@ -67,6 +67,24 @@ public:
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
 	[[nodiscard]] DirectX::XMFLOAT4A GetEulerRotation() const;
+
+
+	/*void SetLocalPosition(const DirectX::XMFLOAT4A &position);
+	void SetLocalRotation(const DirectX::XMFLOAT4A &rotation);
+	void SetLocalScale(const DirectX::XMFLOAT4A &scale);
+
+	void SetWorldPosition(const DirectX::XMFLOAT4A &position);
+	void SetWorldRotation(const DirectX::XMFLOAT4A &rotation);
+	void SetWorldScale(const DirectX::XMFLOAT4A &scale);
+
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetLocalPosition() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetLocalRotation() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetLocalScale() const;
+
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetWorldPosition() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetWorldRotation() const;
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetWorldScale() const;*/
+
 
 	void SetDirty();
 	[[nodiscard]] bool GetDirty() const;

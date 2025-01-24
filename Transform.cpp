@@ -1,17 +1,14 @@
 #include "Transform.h"
-
 #include "ErrMsg.h"
 
-
 using namespace DirectX;
-
 
 #define TO_VEC(x)		( *reinterpret_cast<XMVECTOR *>(&(x))		)
 #define TO_VEC_PTR(x)	(  reinterpret_cast<XMVECTOR *>(&(x))		)
 #define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
 
 
-void Transform::NormalizeBases()
+inline void Transform::NormalizeBases()
 {
 	XMVECTOR
 		*rightPtr = TO_VEC_PTR(_right),
@@ -23,7 +20,7 @@ void Transform::NormalizeBases()
 	(*forwardPtr) = XMVector3Normalize(*forwardPtr);
 }
 
-void Transform::OrthogonalizeBases()
+inline void Transform::OrthogonalizeBases()
 {
 	constexpr float epsilon = 0.001f;
 
@@ -48,37 +45,6 @@ void Transform::OrthogonalizeBases()
 		// Recalculate right vector with cross product
 		(*rightPtr) = XMVector3Normalize(XMVector3Cross(*forwardPtr, *upPtr));
 	}
-}
-
-
-void Transform::AddChild(Transform *child)
-{
-	if (!child)
-		return;
-
-	if (!_children.empty())
-	{
-		auto it = std::find(_children.begin(), _children.end(), child);
-
-		if (it != _children.end())
-			return;
-	}
-
-	_children.push_back(child);
-}
-
-void Transform::RemoveChild(Transform *child)
-{
-    if (!child)
-        return;
-
-    if (_children.empty())
-        return;
-
-    auto it = std::find(_children.begin(), _children.end(), child);
-
-    if (it != _children.end())
-        _children.erase(it);
 }
 
 
@@ -148,26 +114,58 @@ bool Transform::Initialize(ID3D11Device *device)
 }
 
 
-void Transform::SetParent(Transform *parent, bool keepWorldTransform)
+inline void Transform::AddChild(Transform *child)
 {
-    if (_parent == parent)
+	if (!child)
+		return;
+
+	if (!_children.empty())
+	{
+		auto it = std::find(_children.begin(), _children.end(), child);
+
+		if (it != _children.end())
+			return;
+	}
+
+	_children.push_back(child);
+}
+
+inline void Transform::RemoveChild(Transform *child)
+{
+    if (!child)
         return;
 
-    XMMATRIX worldMatrix = GetWorldMatrix();
+    if (_children.empty())
+        return;
+
+    auto it = std::find(_children.begin(), _children.end(), child);
+
+    if (it != _children.end())
+        _children.erase(it);
+}
+
+void Transform::SetParent(Transform *newParent, bool keepWorldTransform)
+{
+    if (_parent == newParent)
+        return;
+
+    XMMATRIX worldMatrix;
+	if (keepWorldTransform)
+		worldMatrix = GetWorldMatrix();
 
     if (_parent)
-        _parent->RemoveChild(this);
+		_parent->RemoveChild(this);
 
-    _parent = parent;
+    _parent = newParent;
 
-    if (parent)
-        parent->AddChild(this);
+    if (newParent)
+		newParent->AddChild(this);
 
     if (keepWorldTransform)
     {
-        XMMATRIX inverseParentWorldMatrix = XMMatrixIdentity();
-        if (_parent)
-            inverseParentWorldMatrix = XMMatrixInverse(nullptr, _parent->GetWorldMatrix());
+        XMMATRIX inverseParentWorldMatrix = _parent ? 
+			XMMatrixInverse(nullptr, _parent->GetWorldMatrix()) : 
+			XMMatrixIdentity();
 
         XMMATRIX localMatrix = XMMatrixMultiply(worldMatrix, inverseParentWorldMatrix);
         TO_VEC(_right) = localMatrix.r[0];
@@ -364,11 +362,6 @@ DirectX::XMFLOAT4A Transform::GetEulerRotation() const
 		pitch = asin(matrixView._21);
 		roll = atan2(-matrixView._23, matrixView._22);
 	}
-
-	/*const float
-		roll = atan2f(_forward.y, _forward.z),
-		pitch = atan2f(-_forward.x, sqrtf(_forward.y * _forward.y + _forward.z * _forward.z)),
-		yaw = atan2f(_up.x, _right.x);*/
 
 	return { pitch, yaw, roll, 0.0f };
 }

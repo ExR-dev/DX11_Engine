@@ -1,5 +1,4 @@
 #include "Entity.h"
-
 #include "ErrMsg.h"
 
 
@@ -20,40 +19,6 @@ Entity::~Entity()
 
 	if (_parent)
 		_parent->RemoveChild(this);
-}
-
-
-void Entity::AddChild(Entity *child, bool keepWorldTransform)
-{
-	if (!child)
-		return;
-
-	if (!_children.empty())
-	{
-		auto it = std::find(_children.begin(), _children.end(), child);
-
-		if (it != _children.end())
-			return;
-	}
-
-	_children.push_back(child);
-	child->_transform.SetParent(&_transform, keepWorldTransform);
-}
-
-void Entity::RemoveChild(Entity *child, bool keepWorldTransform)
-{
-	if (!child)
-		return;
-
-	if (_children.empty())
-		return;
-
-	auto it = std::find(_children.begin(), _children.end(), child);
-
-	if (it != _children.end())
-		_children.erase(it);
-
-	child->_transform.SetParent(nullptr, keepWorldTransform);
 }
 
 
@@ -92,28 +57,77 @@ void Entity::SetDirty()
 }
 
 
+inline void Entity::AddChild(Entity *child, bool keepWorldTransform)
+{
+	if (!child)
+		return;
 
-void Entity::SetParent(Entity *parent, bool keepWorldTransform)
+	if (!_children.empty())
+	{
+		auto it = std::find(_children.begin(), _children.end(), child);
+		if (it != _children.end())
+			return;
+	}
+
+	_children.push_back(child);
+
+	child->SetParent(this, keepWorldTransform);
+	child->_transform.SetParent(&_transform, keepWorldTransform);
+}
+
+inline void Entity::RemoveChild(Entity *child, bool keepWorldTransform)
+{
+	if (!child)
+		return;
+
+	if (_children.empty())
+		return;
+
+	auto it = std::find(_children.begin(), _children.end(), child);
+	if (it != _children.end())
+		_children.erase(it);
+
+	child->_transform.SetParent(nullptr, keepWorldTransform);
+}
+
+void Entity::SetParent(Entity *newParent, bool keepWorldTransform)
 {
 	keepWorldTransform = false; // TODO: Fix bug that causes crash after deleting child entities with keepWorldTransform = true
 
-	if (_parent == parent)
+	if (_parent == newParent)
 		return;
 
+	// Check if new parent is a child of this entity
+	if (newParent)
+	{
+		Entity *parentInHierarchy = newParent->GetParent();
+		while (parentInHierarchy)
+		{
+			if (parentInHierarchy == this)
+			{
+				ErrMsg("Cannot parent an entity to it's child! (Did you mean to unparent the child first?)");
+				return;
+			}
+
+			parentInHierarchy = parentInHierarchy->GetParent();
+		}
+	}
+
 	if (_parent)
+	{
 		_parent->RemoveChild(this, keepWorldTransform);
+	}
 
-	_parent = parent;
+	_parent = newParent;
 
-	/*if (parent)
-		parent->AddChild(this);
-	
-	_transform.SetParent(parent ? parent->GetTransform() : nullptr, keepWorldTransform);*/
-
-	if (parent)
-		parent->AddChild(this, keepWorldTransform);
+	if (newParent)
+	{
+		newParent->AddChild(this, keepWorldTransform);
+	}
 	else
+	{
 		_transform.SetParent(nullptr, keepWorldTransform);
+	}
 
 	SetDirty();
 }
