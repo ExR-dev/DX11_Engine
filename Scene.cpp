@@ -7,6 +7,7 @@
 #include "ImGui/imgui.h"
 
 using namespace DirectX;
+using namespace SimpleMath;
 
 
 Scene::Scene()
@@ -40,7 +41,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	_graphics = graphics;
 
 	// Create scene content holder
-	constexpr BoundingBox sceneBounds = BoundingBox(XMFLOAT3(0, 15, 0), XMFLOAT3(16, 16, 16));
+	constexpr BoundingBox sceneBounds = BoundingBox(Vector3(0, 15, 0), Vector3(16, 16, 16));
 	if (!_sceneHolder.Initialize(sceneBounds))
 	{
 		ErrMsg("Failed to initialize scene holder!");
@@ -50,7 +51,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	// Create camera
 	if (!_camera->Initialize(device,
 		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 100.0f), 
-		XMFLOAT4A(0.0f, 2.0f, -2.0f, 0.0f)))
+		Vector3(0.0f, 2.0f, -2.0f)))
 	{
 		ErrMsg("Failed to initialize camera!");
 		return false;
@@ -59,7 +60,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	// Create secondary camera
 	if (!_secondaryCamera->Initialize(device,
 		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 500.0f),
-		XMFLOAT4A(0.0f, 2.0f, -2.0f, 0.0f)))
+		Vector3(0.0f, 2.0f, -2.0f)))
 	{
 		ErrMsg("Failed to initialize secondary camera!");
 		return false;
@@ -163,7 +164,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 
 	// Create cubemap
-	if (!_cubemap.Initialize(device, 128, 0.1f, 15.5f, { 0.0f, 15.0f, 0.0f, 0.0f }))
+	if (!_cubemap.Initialize(device, 128, 0.1f, 15.5f, Vector3(0.0f, 15.0f, 0.0f)))
 	{
 		ErrMsg("Failed to initialize cubemap!");
 		return false;
@@ -172,277 +173,268 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 
 	// Create selection marker
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_WireframeCube"),
-			textureID = content->GetTextureID("Tex_Red"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_WireframeCube");
+		const Material material = {
+			content->GetTextureID("Tex_Red"),
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			content->GetTextureID("Tex_Red"),
+			CONTENT_LOAD_ERROR
+		};
 
 		constexpr BoundingOrientedBox dotBounds = BoundingOrientedBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1));
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Selection Marker", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Selection Marker", meshID, material))
 		{
 			ErrMsg("Failed to initialize pointer dot object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0, 0, 0, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0, 0, 0 });
 	}
 
 	// Create room
 	{
-		/*const UINT
-			meshID = content->GetMeshID("Mesh_Room"),
-			textureID = content->GetTextureID("Tex_texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_Plane");
+		const Material material = {
+			content->GetTextureID("Tex_Metal"),
+			content->GetTextureMapID("TexMap_Metal_Normal"),
+			content->GetTextureMapID("TexMap_Metal_Specular"),
+			content->GetTextureMapID("TexMap_Metal_Reflective"),
+			content->GetTextureID("Tex_Ambient"),
+			CONTENT_LOAD_ERROR
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
-		{
-			ErrMsg("Failed to initialize room object!");
-			return false;
-		}
-
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });*/
-		
-		const UINT
-			meshID = content->GetMeshID("Mesh_Plane"),
-			textureID = content->GetTextureID("Tex_Metal"),
-			normalID = content->GetTextureMapID("TexMap_Metal_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Metal_Specular"),
-			reflectiveID = content->GetTextureMapID("TexMap_Metal_Reflective"),
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
-
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Floor", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Floor", meshID, material))
 		{
 			ErrMsg("Failed to initialize room floor object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Roof", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Roof", meshID, material))
 		{
 			ErrMsg("Failed to initialize room roof object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 30.0f, 0.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, XM_PI, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({ 0, 30, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({ 0, 0, XM_PI });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Wall South", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Wall South", meshID, material))
 		{
 			ErrMsg("Failed to initialize room wall south object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 15.0f, -15.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({  0.5f * XM_PI, 0.0f, 0.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({ 0, 15, -15 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({  0.5f * XM_PI, 0, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Wall North", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Wall North", meshID, material))
 		{
 			ErrMsg("Failed to initialize room wall north object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 15.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({  -0.5f * XM_PI, 0.0f, 0.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({ 0, 15, 15});
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({  -0.5f * XM_PI, 0, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Wall West", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Wall West", meshID, material))
 		{
 			ErrMsg("Failed to initialize room wall west object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ -15.0f, 15.0f, 0.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, -0.5f * XM_PI, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({ -15, 15, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({ 0, 0, -0.5f * XM_PI });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room Wall East", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Room Wall East", meshID, material))
 		{
 			ErrMsg("Failed to initialize room wall east object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Move({ 15.0f, 15.0f, 0.0f, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({ 0.0f, 0.0f, 0.5f * XM_PI, 0 });
-		reinterpret_cast<Entity*>(obj)->GetTransform()->ScaleRelative({ 15.0f, 15.0f, 15.0f, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({ 15, 15, 0 });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({ 0, 0, 0.5f * XM_PI });
+		reinterpret_cast<Entity*>(obj)->GetTransform()->SetScale({ 15, 15, 15 });
 	}
 
 	// Create model
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
-			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_CharacterSculptLow1");
+		const Material material = {
+			content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			content->GetTextureID("Tex_Ambient"),
+			CONTENT_LOAD_ERROR
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Character", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Character", meshID, material))
 		{
 			ErrMsg("Failed to initialize model object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 0.0f, 0.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, XM_PI, 0.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ 0, 0, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetEuler({ 0, XM_PI, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.3f, 0.3f, 0.3f });
 	}
 
 	// Create reflective sphere
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_Sphere"),
-			textureID = content->GetTextureID("Tex_White"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = content->GetTextureMapID("TexMap_White_Reflective"),
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_Sphere");
+		const Material material = {
+			content->GetTextureID("Tex_White"),					// Texture
+			CONTENT_LOAD_ERROR,									// Normal
+			CONTENT_LOAD_ERROR,									// Specular
+			content->GetTextureID("TexMap_White_Reflective"),	// Reflective
+			content->GetTextureID("Tex_Ambient"),				// Ambient
+			CONTENT_LOAD_ERROR									// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Reflective Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Reflective Sphere", meshID, material))
 		{
 			ErrMsg("Failed to initialize reflective sphere object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ 0.0f, 15.0f, 0.0f });
 	}
 
 	// Create submesh
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_SimpleSubmesh"),
-			textureID = content->GetTextureID("Tex_White"),
-			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Default_Specular"),
-			reflectiveID = content->GetTextureMapID("TexMap_Default_Reflective"),
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_SimpleSubmesh");
+		const Material material = {
+			content->GetTextureID("Tex_White"),					// Texture
+			content->GetTextureID("TexMap_Default_Normal"),		// Normal
+			content->GetTextureID("TexMap_Default_Specular"),	// Specular
+			content->GetTextureID("TexMap_Default_Reflective"),	// Reflective
+			content->GetTextureID("Tex_Ambient"),				// Ambient
+			CONTENT_LOAD_ERROR									// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Submesh", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Submesh", meshID, material))
 		{
 			ErrMsg("Failed to initialize submesh object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -5.0f, 10.0f, 5.0f, 0.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ -5.0f, 10.0f, 5.0f });
 	}
 	
 	// Create PBR-sphere
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_Sphere"),
-			textureID = content->GetTextureID("Tex_Cobble"),
-			normalID = content->GetTextureMapID("TexMap_Cobble_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Cobble_Specular"),
-			reflectiveID = content->GetTextureMapID("TexMap_Cobble_Reflective"),
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = content->GetTextureMapID("TexMap_Cobble_Height");
+		const UINT meshID = content->GetMeshID("Mesh_Sphere");
+		const Material material = {
+			content->GetTextureID("Tex_Cobble"),				// Texture
+			content->GetTextureID("TexMap_Cobble_Normal"),		// Normal
+			content->GetTextureID("TexMap_Cobble_Specular"),	// Specular
+			content->GetTextureID("TexMap_Cobble_Reflective"),	// Reflective
+			content->GetTextureID("Tex_Ambient"),				// Ambient
+			content->GetTextureID("TexMap_Cobble_Height")		// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "PBR Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "PBR Sphere", meshID, material))
 		{
 			ErrMsg("Failed to initialize PBR object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 6.0f, 2.5f, -7.5f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ 6.0f, 2.5f, -7.5f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.5f, 0.5f, 0.5f });
 	}
 
 	// Create error
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_Error"),
-			textureID = content->GetTextureID("Tex_White"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_Error");
+		const Material material = {
+			content->GetTextureID("Tex_White"),	// Texture
+			CONTENT_LOAD_ERROR,					// Normal
+			CONTENT_LOAD_ERROR,					// Specular
+			CONTENT_LOAD_ERROR,					// Reflective
+			content->GetTextureID("Tex_Red"),	// Ambient
+			CONTENT_LOAD_ERROR					// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "ERROR", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "ERROR", meshID, material))
 		{
 			ErrMsg("Failed to initialize error object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -4.0f, 3.0f, 7.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -XM_PIDIV2, 0.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 1.2f, 1.2f, 1.2f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ -4.0f, 3.0f, 7.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetEuler({ 0.0f, -XM_PIDIV2, 0.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 1.2f, 1.2f, 1.2f });
 	}
 
 	// Create transparent
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_Fallback"),
-			textureID = content->GetTextureID("Tex_Transparent"),
-			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
-			specularID = content->GetTextureMapID("TexMap_Bricks_Specular"),
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = CONTENT_LOAD_ERROR,
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_Fallback");
+		const Material material = {
+			content->GetTextureID("Tex_Transparent"),			// Texture
+			content->GetTextureID("TexMap_Bricks_Normal"),		// Normal
+			content->GetTextureID("TexMap_Bricks_Specular"),	// Specular
+			CONTENT_LOAD_ERROR,									// Reflective
+			CONTENT_LOAD_ERROR,									// Ambient
+			CONTENT_LOAD_ERROR									// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Transparent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
+		if (!obj->Initialize(_device, "Transparent", meshID, material, true))
 		{
 			ErrMsg("Failed to initialize transparent object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 2.0f, 1.5f, 4.0f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ 2.0f, 1.5f, 4.0f });
 	}
 
 	// Create parent
 	{
-		const UINT
-			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
-			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_CharacterSculptLow1");
+		const Material material = {
+			content->GetTextureID("Tex_CharacterSculptLow0Texture1"),	// Texture
+			CONTENT_LOAD_ERROR,											// Normal
+			CONTENT_LOAD_ERROR,											// Specular
+			CONTENT_LOAD_ERROR,											// Reflective
+			content->GetTextureID("Tex_Ambient"),						// Ambient
+			CONTENT_LOAD_ERROR											// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Parent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Parent", meshID, material))
 		{
 			ErrMsg("Failed to initialize parent object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ -7.5f, 0.0f, -7.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, 0.5f * XM_PI, 0.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.3f, 0.3f, 0.3f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ -7.5f, 0.0f, -7.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetEuler({ 0.0f, 0.5f * XM_PI, 0.0f });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.3f, 0.3f, 0.3f });
 	}
 
 	std::string nextParent = "Parent";
@@ -450,25 +442,26 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	for (int i = 0; i < 32; i++)
 	{
 		// Create child i
-		const UINT
-			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
-			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+		const UINT meshID = content->GetMeshID("Mesh_CharacterSculptLow1");
+		const Material material = {
+			content->GetTextureID("Tex_CharacterSculptLow0Texture1"),	// Texture
+			CONTENT_LOAD_ERROR,											// Normal
+			CONTENT_LOAD_ERROR,											// Specular
+			CONTENT_LOAD_ERROR,											// Reflective
+			content->GetTextureID("Tex_Ambient"),						// Ambient
+			CONTENT_LOAD_ERROR											// Height
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, nextChild, meshID, material))
 		{
 			ErrMsg(std::format("Failed to initialize {} object!", nextChild));
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Move({ 1.0f, 0.0f, 2.5f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->Rotate({ 0.0f, -0.25f, 0.0f, 0 });
-		reinterpret_cast<Entity *>(obj)->GetTransform()->ScaleRelative({ 0.9f, 0.9f, 0.9f, 0 });
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition({ 1.0f, 0.0f, 2.5f }, Local);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetEuler({ 0.0f, -0.25f, 0.0f }, Local);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0.9f, 0.9f, 0.9f }, Local);
 
 		reinterpret_cast<Entity *>(obj)->SetParent(_sceneHolder.GetEntityByName(nextParent), true);
 
@@ -492,7 +485,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(emitter)->GetTransform()->Move({ 0.0f, 15.0f, 0.0f, 0 });
+		reinterpret_cast<Entity *>(emitter)->GetTransform()->SetPosition({ 0, 15, 0 });
 	}
 	
 	_initialized = true;
@@ -576,9 +569,9 @@ bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const 
 
 	if (input.IsInFocus()) // Handle user input while window is in focus
 	{
-		DirectX::XMFLOAT4A playerForward = basisCamera->GetForward();
+		Vector3 playerForward = basisCamera->GetForward();
 		playerForward.y = 0.0f;
-		*reinterpret_cast<XMVECTOR*>(&(playerForward)) = XMVector3Normalize(*reinterpret_cast<XMVECTOR*>(&(playerForward)));
+		playerForward.Normalize();
 
 		// Move camera
 		if (input.GetKey(KeyCode::D) == KeyState::Held)
@@ -617,13 +610,13 @@ bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const 
 
 		if (playerY < playerHeight)
 		{
-			basisCamera->Move(playerHeight - playerY, { 0.0f, 1.0f, 0.0f, 0.0f });
+			basisCamera->Move(playerHeight - playerY, { 0.0f, 1.0f, 0.0f });
 		}
 	}
 
 	if (playerVelocity != 0.0f)
 	{
-		_currCameraPtr->Move(playerVelocity * time.deltaTime, { 0.0f, 1.0f, 0.0f, 0.0f });
+		_currCameraPtr->Move(playerVelocity * time.deltaTime, { 0.0f, 1.0f, 0.0f });
 	}
 
 	return true;
@@ -664,75 +657,74 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 		static UINT transparentStart = _content->GetTextureID("Tex_Transparent");
 		static UINT ambientID = _content->GetTextureID("Tex_Ambient");
 
-		if (input.GetKey(KeyCode::P) == KeyState::Pressed)
-		{ // Create 25 random entities within the scene bounds
+		if (input.GetKey(KeyCode::P) == KeyState::Pressed) // Create 10 random entities within the scene bounds
+		{ 
 			const BoundingBox sceneBounds = _sceneHolder.GetBounds();
-			const XMFLOAT3
+			const Vector3
 				sceneCenter = sceneBounds.Center,
 				sceneExtents = sceneBounds.Extents;
 
-			for (size_t i = 0; i < 25; i++)
+			for (size_t i = 0; i < 10; i++)
 			{
 				const UINT
 					meshID = rand() % _content->GetMeshCount(),
 					textureID = rand() % _content->GetTextureCount();
 
-				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-				if (!obj->Initialize(_device, "Random Entity",
-					meshID, textureID,
-					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
-					CONTENT_LOAD_ERROR, ambientID,
+				const Material material = {
+					textureID,
 					CONTENT_LOAD_ERROR,
-					(textureID >= transparentStart)))
+					CONTENT_LOAD_ERROR,
+					CONTENT_LOAD_ERROR,
+					ambientID,
+					CONTENT_LOAD_ERROR
+				};
+
+				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+				if (!obj->Initialize(_device, "Random Entity", meshID, material, (textureID >= transparentStart)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
 					return false;
 				}
 
-				reinterpret_cast<Entity*>(obj)->GetTransform()->Move({
+				reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition({
 					sceneCenter.x + sceneExtents.x * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
 					sceneCenter.y + sceneExtents.y * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
-					sceneCenter.z + sceneExtents.z * static_cast<float>((rand() % 2000) - 1000) / 1000.0f,
-					0
+					sceneCenter.z + sceneExtents.z * static_cast<float>((rand() % 2000) - 1000) / 1000.0f
 				});
-
-				reinterpret_cast<Entity*>(obj)->GetTransform()->Rotate({
+				reinterpret_cast<Entity*>(obj)->GetTransform()->SetEuler({
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
 					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
-					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f),
-					0
+					static_cast<float>((rand() % 2000)) * (XM_2PI / 2000.0f)
 				});
 
 				if (_currSelection >= 0)
 				{
-					reinterpret_cast<Entity*>(obj)->SetParent(_sceneHolder.GetEntity(_currSelection));
+					reinterpret_cast<Entity*>(obj)->SetParent(_sceneHolder.GetEntity(_currSelection), true);
 				}
 			}
 		}
-		else if (input.GetKey(KeyCode::O) == KeyState::Pressed)
-		{ // Create one custom entity in front of the camera
+		else if (input.GetKey(KeyCode::O) == KeyState::Pressed) // Create one custom entity in front of the camera
+		{ 
+			const Material material = { 
+				selectedTextureID, 
+				CONTENT_LOAD_ERROR, 
+				CONTENT_LOAD_ERROR, 
+				CONTENT_LOAD_ERROR, 
+				ambientID, 
+				CONTENT_LOAD_ERROR 
+			};
+
 			Object* obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-			if (!obj->Initialize(_device, "Custom Entity",
-				selectedMeshID, selectedTextureID,
-				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
-				CONTENT_LOAD_ERROR, ambientID,
-				CONTENT_LOAD_ERROR,
-				(selectedTextureID >= transparentStart)))
+			if (!obj->Initialize(_device, "Custom Entity", selectedMeshID, material, (selectedTextureID >= transparentStart)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
 				return false;
 			}
 
-			XMFLOAT4A camForward = basisCamera->GetForward();
-			*reinterpret_cast<XMVECTOR*>(&camForward) *= 3.0f;
-			*reinterpret_cast<XMVECTOR*>(&camForward) += *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetPosition());
+			Vector3 camFocus = (basisCamera->GetForward() * 3.0f) + basisCamera->GetPosition();
 
-			reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition(camForward);
-			reinterpret_cast<Entity*>(obj)->GetTransform()->SetAxes(
-				basisCamera->GetRight(),
-				basisCamera->GetUp(),
-				basisCamera->GetForward()
-			);
+			reinterpret_cast<Entity*>(obj)->GetTransform()->SetPosition(camFocus);
+			reinterpret_cast<Entity*>(obj)->GetTransform()->SetRotation(basisCamera->GetTransform().GetRotation());
 
 			if (_currSelection >= 0)
 			{
@@ -742,19 +734,6 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 
 		UpdateSelectionMarker();
 
-		/*const UINT entityCount = _sceneHolder.GetEntityCount();
-		for (UCHAR i = 0; i < entityCount; i++)
-		{
-			if (i > 10)
-				break;
-
-			if (input.GetKey(static_cast<KeyCode>(static_cast<UCHAR>(KeyCode::D1) + i)) == KeyState::Pressed)
-			{
-				_currSelection = (_currSelection == i) ? -1 : i;
-				break;
-			}
-		}*/
-
 		if (input.GetKey(KeyCode::M3) == KeyState::Pressed)
 		{
 			if (_currSelection != -1)
@@ -763,7 +742,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 			}
 			else
 			{
-				const XMFLOAT4A
+				const Vector3
 					camPos = basisCamera->GetPosition(),
 					camDir = basisCamera->GetForward();
 
@@ -839,19 +818,19 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
 					relativeToCamera = !relativeToCamera;
 
-				XMVECTOR right, up, forward;
+				Vector3 right, up, forward;
 
 				if (relativeToCamera)
 				{
-					right = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetRight());
-					up = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetUp());
-					forward = *reinterpret_cast<const XMVECTOR*>(&basisCamera->GetForward());
+					right = basisCamera->GetRight();
+					up = basisCamera->GetUp();
+					forward = basisCamera->GetForward();
 				}
 				else
 				{
-					right = XMVectorSet(1, 0, 0, 0);
-					up = XMVectorSet(0, 1, 0, 0);
-					forward = XMVectorSet(0, 0, 1, 0);
+					right = { 1, 0, 0 };
+					up = { 0, 1, 0 };
+					forward = { 0, 0, 1 };
 				}
 
 				static bool isRotating = false;
@@ -868,7 +847,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 					isScaling = false;
 				}
 
-				XMVECTOR transformationVector = XMVectorZero();
+				Vector3 transformationVector = XMVectorZero();
 				bool doMove = false;
 
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
@@ -909,7 +888,8 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 					if (movePointLights)
 					{
 						_currSelection = std::clamp(_currSelection, 0, static_cast<int>(_pointlights->GetNrOfLights()) - 1);
-						_pointlights->Move(_currSelection, *reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+						const XMFLOAT4A tv4 = { transformationVector.x, transformationVector.y, transformationVector.z, 0 };
+						_pointlights->Move(_currSelection, tv4);
 					}
 					else
 					{
@@ -917,11 +897,11 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 						Transform* entityTransform = ent->GetTransform();
 
 						if (isRotating)
-							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+							entityTransform->Rotate(transformationVector);
 						else if (isScaling)
-							entityTransform->ScaleAbsolute(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+							entityTransform->SetScale(transformationVector);
 						else
-							entityTransform->Move(*reinterpret_cast<XMFLOAT4A*>(&transformationVector));
+							entityTransform->Move(transformationVector);
 
 						if (!_sceneHolder.UpdateEntityPosition(ent))
 						{
@@ -1095,19 +1075,15 @@ void Scene::UpdateSelectionMarker() const
 	if (selection)
 		selection->StoreBounds(box);
 
-	const XMFLOAT4A
-		center = { box.Center.x, box.Center.y, box.Center.z, 0 },
-		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
+	const Vector3
+		center = { box.Center.x, box.Center.y, box.Center.z},
+		extents = { box.Extents.x, box.Extents.y, box.Extents.z };
 
 	marker->GetTransform()->SetPosition(center);
 
 	if (selection)
 	{
-		marker->GetTransform()->SetAxes(
-			selection->GetTransform()->GetRight(),
-			selection->GetTransform()->GetUp(),
-			selection->GetTransform()->GetForward()
-		);
+		marker->GetTransform()->SetRotation(selection->GetTransform()->GetRotation());
 	}
 
 	marker->GetTransform()->SetScale(extents);
@@ -1624,7 +1600,7 @@ bool Scene::RenderUI()
 		}
 	}
 
-	XMFLOAT4A camPos = _camera->GetPosition();
+	Vector3 camPos = _camera->GetPosition();
 	char camXCoord[32]{}, camYCoord[32]{}, camZCoord[32]{};
 	snprintf(camXCoord, sizeof(camXCoord), "%.2f", camPos.x);
 	snprintf(camYCoord, sizeof(camYCoord), "%.2f", camPos.y);
@@ -1661,7 +1637,7 @@ bool Scene::RenderSelectionUI()
 
 	if (_currSelection < 0)
 		return true;
-	
+
 	Entity *ent = _sceneHolder.GetEntity(_currSelection);
 
 	if (!ent)
@@ -1670,119 +1646,148 @@ bool Scene::RenderSelectionUI()
 		return true;
 	}
 
+	static bool _worldSpace = false;
+	ImGui::Checkbox("WorldSpace", &_worldSpace);
+	ReferenceSpace space = _worldSpace ? ReferenceSpace::World : ReferenceSpace::Local;
+
 	ImGui::Text(std::format("Entity: {}", ent->GetName()).c_str());
 
 	float inputWidth = 128.0f;
 	float inputFloat;
 	bool isChanged = false;
-	XMFLOAT4A entPos = ent->GetTransform()->GetPosition();
-	 
-	ImGui::Text("Position: ");
-
-	inputFloat = entPos.x;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("PX", &inputFloat/*, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue*/))
+	
+	// Position
 	{
-		entPos.x = inputFloat;
-		isChanged = true;
+		Vector3 entPos = ent->GetTransform()->GetPosition(space);
+		ImGui::Text("Position: ");
+
+		inputFloat = entPos.x;
+		ImGui::PushID("PX");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat/*, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue*/))
+		{
+			entPos.x = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+
+		inputFloat = entPos.y;
+		ImGui::PushID("PY");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entPos.y = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		inputFloat = entPos.z;
+		ImGui::PushID("PZ");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entPos.z = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		if (isChanged)
+			ent->GetTransform()->SetPosition(entPos, space);
 	}
 
-	inputFloat = entPos.y;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("PY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	// Rotation
 	{
-		entPos.y = inputFloat;
-		isChanged = true;
+		float degreeConversion = 180.0f / XM_PI; // TODO: Does ToEuler() return radians or degrees? Remove this if degrees.
+		isChanged = false;
+		Vector3 entRot = ent->GetTransform()->GetRotation(space).ToEuler();
+
+		ImGui::Text("Rotation: ");
+
+		inputFloat = entRot.x * degreeConversion;
+		ImGui::PushID("RX");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entRot.x = inputFloat / degreeConversion;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		inputFloat = entRot.y * degreeConversion;
+		ImGui::PushID("RY");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entRot.y = inputFloat / degreeConversion;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		inputFloat = entRot.z * degreeConversion;
+		ImGui::PushID("RZ");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entRot.z = inputFloat / degreeConversion;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		if (isChanged)
+			ent->GetTransform()->SetRotation(Quaternion::CreateFromYawPitchRoll(entRot), space);
 	}
 
-	inputFloat = entPos.z;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("PZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+	// Scale
 	{
-		entPos.z = inputFloat;
-		isChanged = true;
+		isChanged = false;
+		Vector3 entScale = ent->GetTransform()->GetScale(space);
+
+		ImGui::Text("Scale:    ");
+
+		inputFloat = entScale.x;
+		ImGui::PushID("SX");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entScale.x = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		inputFloat = entScale.y;
+		ImGui::PushID("SY");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entScale.y = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		inputFloat = entScale.z;
+		ImGui::PushID("SZ");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(inputWidth);
+		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			entScale.z = inputFloat;
+			isChanged = true;
+		}
+		ImGui::PopID();
+
+		if (isChanged)
+			ent->GetTransform()->SetScale(entScale, space);
 	}
-
-	if (isChanged)
-		ent->GetTransform()->SetPosition(entPos);
-
-
-	float degreeConversion = 180.0f / XM_PI;
-	isChanged = false;
-	XMFLOAT4A entRot = ent->GetTransform()->GetEulerRotation();
-
-	ImGui::Text("Rotation: ");
-
-	inputFloat = entRot.x * degreeConversion;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("RX", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entRot.x = inputFloat / degreeConversion;
-		isChanged = true;
-	}
-
-	inputFloat = entRot.y * degreeConversion;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("RY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entRot.y = inputFloat / degreeConversion;
-		isChanged = true;
-	}
-
-	inputFloat = entRot.z * degreeConversion;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("RZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entRot.z = inputFloat / degreeConversion;
-		isChanged = true;
-	}
-
-	if (isChanged)
-		ent->GetTransform()->SetEulerRotation(entRot);
-
-
-	isChanged = false;
-	XMFLOAT4A entScale = ent->GetTransform()->GetScale();
-
-	ImGui::Text("Scale: ");
-
-	inputFloat = entScale.x;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("SX", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entScale.x = inputFloat;
-		isChanged = true;
-	}
-
-	inputFloat = entScale.y;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("SY", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entScale.y = inputFloat;
-		isChanged = true;
-	}
-
-	inputFloat = entScale.z;
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(inputWidth);
-	if (ImGui::InputFloat("SZ", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-	{
-		entScale.z = inputFloat;
-		isChanged = true;
-	}
-
-	if (isChanged)
-		ent->GetTransform()->SetScale(entScale);
-
-
+	
 	Entity *parent = ent->GetParent();
 	if (parent)
 	{
@@ -1901,25 +1906,26 @@ void Scene::DebugGenerateVolumeTreeStructure()
 
 	for (const BoundingBox &box : treeStructure)
 	{
-		static UINT
-			meshID = _content->GetMeshID("Mesh_WireframeCube"),
-			textureID = _content->GetTextureID("Tex_Red"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = _content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+		static UINT meshID = _content->GetMeshID("Mesh_WireframeCube");
+		static Material material = {
+			_content->GetTextureID("Tex_Green"),
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			_content->GetTextureID("Tex_Green"),
+			CONTENT_LOAD_ERROR
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Tree Wireframe", meshID, material))
 		{
 			ErrMsg("Failed to initialize Tree Wireframe object!");
 			return;
 		}
 
-		const XMFLOAT4A
-			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
-			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
+		const Vector3
+			center = { box.Center.x, box.Center.y, box.Center.z},
+			scale = { box.Extents.x, box.Extents.y, box.Extents.z };
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
@@ -1968,38 +1974,25 @@ void Scene::DebugGenerateEntityBounds()
 
 	for (const BoundingOrientedBox &box : entityBounds)
 	{
-		static UINT
-			meshID = _content->GetMeshID("Mesh_WireframeCube"),
-			textureID = _content->GetTextureID("Tex_Red"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = _content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+		static UINT meshID = _content->GetMeshID("Mesh_WireframeCube");
+		static Material material = {
+			_content->GetTextureID("Tex_Blue"),
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			CONTENT_LOAD_ERROR,
+			_content->GetTextureID("Tex_Blue"),
+			CONTENT_LOAD_ERROR
+		};
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Entity Bounds Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		if (!obj->Initialize(_device, "Entity Bounds Wireframe", meshID, material))
 		{
 			ErrMsg("Failed to initialize Entity Bounds Wireframe object!");
 			return;
 		}
 
-		const XMFLOAT4A
-			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
-			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
-
-		XMVECTOR boxOrientation = DirectX::XMLoadFloat4(&box.Orientation);
-
-		XMFLOAT4A boxRightFloat;
-		XMFLOAT4A boxUpFloat;
-		XMFLOAT4A boxForwardFloat;
-
-		DirectX::XMStoreFloat4A(&boxRightFloat, XMVector3Rotate({ 1, 0, 0 }, boxOrientation));
-		DirectX::XMStoreFloat4A(&boxUpFloat, XMVector3Rotate({ 0, 1, 0 }, boxOrientation));
-		DirectX::XMStoreFloat4A(&boxForwardFloat, XMVector3Rotate({ 0, 0, 1 }, boxOrientation));
-
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetAxes(boxRightFloat, boxUpFloat, boxForwardFloat);
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(box.Center);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetRotation(box.Orientation);
+		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(box.Extents);
 	}
 }

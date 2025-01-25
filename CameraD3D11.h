@@ -5,9 +5,11 @@
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
 #include <DirectXMath.h>
+#include <SimpleMath.h>
 
 #include "ConstantBufferD3D11.h"
 #include "Content.h"
+#include "Material.h"
 #include "Transform.h"
 
 
@@ -21,43 +23,22 @@ struct ProjectionInfo
 
 struct GeometryBufferData
 {
-	DirectX::XMFLOAT4X4A viewMatrix;
-	DirectX::XMFLOAT4A position;
+	DirectX::SimpleMath::Matrix viewMatrix;
+	DirectX::SimpleMath::Vector4 position;
 };
 
 
 struct ResourceGroup
 {
-	UINT
-		meshID = CONTENT_LOAD_ERROR,
-		texID = CONTENT_LOAD_ERROR,
-		normalID = CONTENT_LOAD_ERROR,
-		specularID = CONTENT_LOAD_ERROR,
-		reflectiveID = CONTENT_LOAD_ERROR,
-		ambientID = CONTENT_LOAD_ERROR,
-		heightID = CONTENT_LOAD_ERROR;
+	UINT meshID = CONTENT_LOAD_ERROR;
+	Material material = Material(CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR);
 
 	bool operator<(const ResourceGroup &other) const
 	{
-		if (meshID != other.meshID)
-			return meshID < other.meshID;
+		if (material != other.material)
+			return material < other.material;
 
-		if (texID != other.texID)
-			return texID < other.texID;
-
-		if (normalID != other.normalID)
-			return normalID < other.normalID;
-
-		if (specularID != other.specularID)
-			return specularID < other.specularID;
-
-		if (reflectiveID != other.reflectiveID)
-			return reflectiveID < other.reflectiveID;
-
-		if (ambientID != other.ambientID)
-			return ambientID < other.ambientID;
-
-		return heightID < other.heightID;
+		return meshID < other.meshID;
 	}
 };
 
@@ -101,7 +82,7 @@ private:
 public:
 	CameraD3D11() = default;
 	CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), 
+		const DirectX::SimpleMath::Vector3 &initialPosition = DirectX::SimpleMath::Vector3::Zero, 
 		bool hasCSBuffer = true, bool isOrtho = false);
 	~CameraD3D11();
 	CameraD3D11(const CameraD3D11 &other) = delete;
@@ -110,10 +91,10 @@ public:
 	CameraD3D11 &operator=(CameraD3D11 &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo,
-		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true, bool isOrtho = false);
+		const DirectX::SimpleMath::Vector3 &initialPosition = DirectX::SimpleMath::Vector3::Zero, bool hasCSBuffer = true, bool isOrtho = false);
 
-	void Move(float amount, const DirectX::XMFLOAT4A &direction);
-	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
+	void Move(float amount, const DirectX::SimpleMath::Vector3 &direction);
+	void MoveLocal(float amount, const DirectX::SimpleMath::Vector3 &direction);
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);
@@ -129,18 +110,18 @@ public:
 	void SetFOV(float amount);
 	void SetOrtho(bool state);
 
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition() const;
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward() const;
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight() const;
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp() const;
+	[[nodiscard]] DirectX::SimpleMath::Vector3 GetPosition();
+	[[nodiscard]] DirectX::SimpleMath::Vector3 GetForward();
+	[[nodiscard]] DirectX::SimpleMath::Vector3 GetRight();
+	[[nodiscard]] DirectX::SimpleMath::Vector3 GetUp();
 
-	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewMatrix() const;
-	[[nodiscard]] DirectX::XMFLOAT4X4A GetProjectionMatrix() const;
-	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewProjectionMatrix() const;
+	[[nodiscard]] DirectX::SimpleMath::Matrix GetViewMatrix();
+	[[nodiscard]] DirectX::SimpleMath::Matrix GetProjectionMatrix();
+	[[nodiscard]] DirectX::SimpleMath::Matrix GetViewProjectionMatrix();
 	[[nodiscard]] const ProjectionInfo &GetCurrProjectionInfo() const;
 
-	[[nodiscard]] bool ScaleToContents(const std::vector<DirectX::XMFLOAT4A> &nearBounds, const std::vector<DirectX::XMFLOAT4A> &innerBounds);
-	[[nodiscard]] bool FitPlanesToPoints(const std::vector<DirectX::XMFLOAT4A> &points);
+	[[nodiscard]] bool ScaleToContents(const std::vector<DirectX::SimpleMath::Vector3> &nearBounds, const std::vector<DirectX::SimpleMath::Vector3> &innerBounds);
+	[[nodiscard]] bool FitPlanesToPoints(const std::vector<DirectX::SimpleMath::Vector3> &points);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 
 	[[nodiscard]] bool BindShadowCasterBuffers(ID3D11DeviceContext *context) const;
@@ -164,7 +145,7 @@ public:
 	[[nodiscard]] const std::multimap<ResourceGroup, RenderInstance> &GetParticleQueue() const;
 
 	[[nodiscard]] bool GetOrtho() const;
-	[[nodiscard]] const Transform &GetTransform() const;
+	[[nodiscard]] Transform &GetTransform();
 	[[nodiscard]] ID3D11Buffer *GetCameraVSBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraGSBuffer() const;
 	[[nodiscard]] ID3D11Buffer *GetCameraCSBuffer() const;

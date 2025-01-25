@@ -1,18 +1,13 @@
 #include "Object.h"
-
 #include "ErrMsg.h"
 
 
 Object::Object(const UINT id, const DirectX::BoundingOrientedBox &bounds) : Entity(id, bounds)
 {
-
+	_material = { CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR };
 }
 
-bool Object::Initialize(ID3D11Device *device, const std::string &name,
-	const UINT meshID, const UINT texID, 
-	const UINT normalID, const UINT specularID,
-	const UINT reflectiveID, const UINT ambientID, 
-	const UINT heightID, const bool isTransparent)
+bool Object::Initialize(ID3D11Device *device, const std::string &name, const UINT meshID, const Material material, const bool isTransparent)
 {
 	if (!Entity::Initialize(device, name))
 	{
@@ -21,19 +16,14 @@ bool Object::Initialize(ID3D11Device *device, const std::string &name,
 	}
 
 	_meshID = meshID;
-	_texID = texID;
-	_normalID = normalID;
-	_specularID = specularID;
-	_reflectiveID = reflectiveID;
-	_ambientID = ambientID;
-	_heightID = heightID;
+	_material = material;
 	_isTransparent = isTransparent;
 
 	MaterialProperties materialProperties = { };
-	materialProperties.sampleNormal = _normalID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleSpecular = _specularID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleReflection = _reflectiveID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleAmbient = _ambientID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleNormal = _material.normalID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleSpecular = _material.specularID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleReflection = _material.reflectiveID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleAmbient = _material.ambientID != CONTENT_LOAD_ERROR;
 
 	if (!_materialBuffer.Initialize(device, sizeof(MaterialProperties), &materialProperties))
 	{
@@ -41,8 +31,10 @@ bool Object::Initialize(ID3D11Device *device, const std::string &name,
 		return false;
 	}
 
+	DirectX::SimpleMath::Vector3 worldPos = _transform.GetPosition(World);
+	DirectX::SimpleMath::Vector4 paddedPos = { worldPos.x, worldPos.y, worldPos.z, 0 };
 
-	if (!_posBuffer.Initialize(device, sizeof(DirectX::XMFLOAT4A), &_transform.GetPosition()))
+	if (!_posBuffer.Initialize(device, sizeof(DirectX::SimpleMath::Vector4), &paddedPos))
 	{
 		ErrMsg("Failed to initialize position buffer!");
 		return false;
@@ -52,17 +44,17 @@ bool Object::Initialize(ID3D11Device *device, const std::string &name,
 }
 
 
-EntityType Object::GetType() const				{ return EntityType::OBJECT; }
-UINT Object::GetMeshID(const UINT id) const		{ return _meshID; }
-UINT Object::GetTextureID(const UINT id) const	{ return _texID; }
+EntityType Object::GetType() const		{ return EntityType::OBJECT; }
+UINT Object::GetMeshID() const			{ return _meshID; }
+Material Object::GetMaterial() const	{ return _material; }
 
-void Object::SetMesh(const UINT id)		{ _meshID = id;	}
-void Object::SetTexture(const UINT id)	{ _texID = id;	}
+void Object::SetMeshID(const UINT id)				{ _meshID = id;	}
+void Object::SetMaterial(const Material material)	{ _material = material;	}
 
 
 bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input)
 {
-	bool updatePosBuffer = _transform.GetDirty();
+	bool updatePosBuffer = _transform.IsDirty();
 
 	if (!InternalUpdate(context))
 	{
@@ -74,7 +66,7 @@ bool Object::Update(ID3D11DeviceContext *context, Time &time, const Input &input
 	{
 		DirectX::BoundingOrientedBox worldSpaceBounds;
 		StoreBounds(worldSpaceBounds);
-		const DirectX::XMFLOAT4A center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0.0f };
+		const DirectX::SimpleMath::Vector4 center = { worldSpaceBounds.Center.x, worldSpaceBounds.Center.y, worldSpaceBounds.Center.z, 0 };
 
 		if (!_posBuffer.UpdateBuffer(context, &center))
 		{
@@ -113,12 +105,7 @@ bool Object::Render(CameraD3D11 *camera)
 
 	const ResourceGroup resources = {
 		_meshID,
-		_texID,
-		_normalID,
-		_specularID,
-		_reflectiveID,
-		_ambientID,
-		_heightID,
+		_material,
 	};
 
 	const RenderInstance instance = {

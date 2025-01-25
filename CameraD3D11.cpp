@@ -3,12 +3,13 @@
 #include "ErrMsg.h"
 
 using namespace DirectX;
+using namespace SimpleMath;
 
 #define TO_VEC(x)		( *reinterpret_cast<XMVECTOR *>(&(x))		)
 #define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
 
 
-CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer, const bool isOrtho)
+CameraD3D11::CameraD3D11(ID3D11Device *device, const ProjectionInfo &projectionInfo, const Vector3 &initialPosition, const bool hasCSBuffer, const bool isOrtho)
 {
 	if (!Initialize(device, projectionInfo, initialPosition, hasCSBuffer, isOrtho))
 		ErrMsg("Failed to initialize camera buffer in camera constructor!");
@@ -21,14 +22,14 @@ CameraD3D11::~CameraD3D11()
 }
 
 
-bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const XMFLOAT4A &initialPosition, const bool hasCSBuffer, const bool isOrtho)
+bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &projectionInfo, const Vector3 &initialPosition, const bool hasCSBuffer, const bool isOrtho)
 {
 	_ortho = isOrtho;
 	_currProjInfo = _defaultProjInfo = projectionInfo;
 	_transform.SetPosition(initialPosition);
 
-	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
-	if (!_viewProjBuffer.Initialize(device, sizeof(XMFLOAT4X4A), &viewProjMatrix))
+	const Matrix viewProjMatrix = GetViewProjectionMatrix();
+	if (!_viewProjBuffer.Initialize(device, sizeof(Matrix), &viewProjMatrix))
 	{
 		ErrMsg("Failed to initialize camera VS buffer!");
 		return false;
@@ -36,7 +37,9 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 
 	if (hasCSBuffer)
 	{
-		const GeometryBufferData bufferData = { GetViewMatrix(), _transform.GetPosition() };
+		Vector4 paddedPos = { initialPosition.x, initialPosition.y, initialPosition.z, 0 };
+
+		const GeometryBufferData bufferData = { GetViewMatrix(), paddedPos };
 		_viewProjPosBuffer = new ConstantBufferD3D11();
 		if (!_viewProjPosBuffer->Initialize(device, sizeof(GeometryBufferData), &bufferData))
 		{
@@ -45,7 +48,7 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 		}
 
 		_posBuffer = new ConstantBufferD3D11();
-		if (!_posBuffer->Initialize(device, sizeof(XMFLOAT4A), &initialPosition))
+		if (!_posBuffer->Initialize(device, sizeof(Vector4), &paddedPos))
 		{
 			ErrMsg("Failed to initialize camera CS buffer!");
 			return false;
@@ -60,49 +63,47 @@ bool CameraD3D11::Initialize(ID3D11Device *device, const ProjectionInfo &project
 			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
 			height = 0.5f * _currProjInfo.fovAngleY;
 
-		const XMFLOAT3 corners[8] = {
-			XMFLOAT3(-width, -height, nearZ),
-			XMFLOAT3(width, -height, nearZ),
-			XMFLOAT3(-width,  height, nearZ),
-			XMFLOAT3(width,  height, nearZ),
-			XMFLOAT3(-width, -height, farZ),
-			XMFLOAT3(width, -height, farZ),
-			XMFLOAT3(-width,  height, farZ),
-			XMFLOAT3(width,  height, farZ)
+		const Vector3 corners[8] = {
+			Vector3(-width, -height, nearZ),
+			Vector3(width, -height, nearZ),
+			Vector3(-width,  height, nearZ),
+			Vector3(width,  height, nearZ),
+			Vector3(-width, -height, farZ),
+			Vector3(width, -height, farZ),
+			Vector3(-width,  height, farZ),
+			Vector3(width,  height, farZ)
 		};
 
-		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(Vector3));
 	}
 	else
 	{
-		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+		const Matrix projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, projMatrix);
 	}
 
 	return true;
 }
 
 
-void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
+void CameraD3D11::Move(const float amount, const Vector3 &direction)
 {
 	_transform.Move({
 		direction.x * amount,
 		direction.y * amount,
-		direction.z * amount,
-		0.0f
+		direction.z * amount
 	});
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
-void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
+void CameraD3D11::MoveLocal(const float amount, const Vector3 &direction)
 {
-	_transform.MoveLocal({
+	_transform.Move({
 		direction.x * amount,
 		direction.y * amount,
-		direction.z * amount,
-		0.0f
-	});
+		direction.z * amount
+	}, Local);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
@@ -110,21 +111,21 @@ void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
 
 void CameraD3D11::MoveForward(const float amount)
 {
-	MoveLocal(amount, { 0.0f, 0.0f, 1.0f, 0.0f });
+	MoveLocal(amount, { 0.0f, 0.0f, 1.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveRight(const float amount)
 {
-	MoveLocal(amount, { 1.0f, 0.0f, 0.0f, 0.0f });
+	MoveLocal(amount, { 1.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveUp(const float amount)
 {
-	MoveLocal(amount, { 0.0f, 1.0f, 0.0f, 0.0f });
+	MoveLocal(amount, { 0.0f, 1.0f, 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
@@ -132,21 +133,21 @@ void CameraD3D11::MoveUp(const float amount)
 
 void CameraD3D11::RotateRoll(const float amount)
 {
-	_transform.RotateLocal({ 0.0f, 0.0f, amount, 0.0f });
+	_transform.Rotate({ 0.0f, 0.0f, amount }, Local);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::RotatePitch(const float amount)
 {
-	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
+	_transform.Rotate({ amount, 0.0f, 0.0f }, Local);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::RotateYaw(const float amount)
 {
-	_transform.RotateLocal({ 0.0f, amount, 0.0f, 0.0f });
+	_transform.Rotate({ 0.0f, amount, 0.0f }, Local);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
@@ -154,14 +155,17 @@ void CameraD3D11::RotateYaw(const float amount)
 
 void CameraD3D11::LookX(const float amount)
 {
-	_transform.Rotate({ 0.0f, amount * (XMVectorGetX(XMVector3Dot(TO_CONST_VEC(_transform.GetUp()), {0, 1, 0, 0})) > 0.0f ? 1.0f : -1.0f), 0.0f, 0.0f });
+	Vector3 upVec = _transform.Up();
+	XMFLOAT4A up = { upVec.x, upVec.y, upVec.z, 0 };
+
+	_transform.Rotate({ 0.0f, amount * (XMVectorGetX(XMVector3Dot(TO_CONST_VEC(up), {0, 1, 0, 0})) > 0.0f ? 1.0f : -1.0f), 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::LookY(const float amount)
 {
-	_transform.RotateLocal({ amount, 0.0f, 0.0f, 0.0f });
+	_transform.Rotate({ amount, 0.0f, 0.0f }, Local);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
@@ -178,23 +182,23 @@ void CameraD3D11::SetFOV(const float amount)
 			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
 			height = 0.5f * _currProjInfo.fovAngleY;
 
-		const XMFLOAT3 corners[8] = {
-			XMFLOAT3(-width, -height, nearZ),
-			XMFLOAT3(width, -height, nearZ),
-			XMFLOAT3(-width,  height, nearZ),
-			XMFLOAT3(width,  height, nearZ),
-			XMFLOAT3(-width, -height, farZ),
-			XMFLOAT3(width, -height, farZ),
-			XMFLOAT3(-width,  height, farZ),
-			XMFLOAT3(width,  height, farZ)
+		const Vector3 corners[8] = {
+			Vector3(-width, -height, nearZ),
+			Vector3(width, -height, nearZ),
+			Vector3(-width,  height, nearZ),
+			Vector3(width,  height, nearZ),
+			Vector3(-width, -height, farZ),
+			Vector3(width, -height, farZ),
+			Vector3(-width,  height, farZ),
+			Vector3(width,  height, farZ)
 		};
 
-		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(Vector3));
 	}
 	else
 	{
-		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+		const Matrix projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const Matrix *>(&projMatrix));
 	}
 
 	_isDirty = true;
@@ -213,23 +217,23 @@ void CameraD3D11::SetOrtho(bool state)
 			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
 			height = 0.5f * _currProjInfo.fovAngleY;
 
-		const XMFLOAT3 corners[8] = {
-			XMFLOAT3(-width, -height, nearZ),
-			XMFLOAT3( width, -height, nearZ),
-			XMFLOAT3(-width,  height, nearZ),
-			XMFLOAT3( width,  height, nearZ),
-			XMFLOAT3(-width, -height, farZ),
-			XMFLOAT3( width, -height, farZ),
-			XMFLOAT3(-width,  height, farZ),
-			XMFLOAT3( width,  height, farZ)
+		const Vector3 corners[8] = {
+			Vector3(-width, -height, nearZ),
+			Vector3( width, -height, nearZ),
+			Vector3(-width,  height, nearZ),
+			Vector3( width,  height, nearZ),
+			Vector3(-width, -height, farZ),
+			Vector3( width, -height, farZ),
+			Vector3(-width,  height, farZ),
+			Vector3( width,  height, farZ)
 		};
 
-		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(Vector3));
 	}
 	else
 	{
-		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX*>(&projMatrix));
+		const Matrix projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const Matrix *>(&projMatrix));
 	}
 
 	_isDirty = true;
@@ -237,87 +241,65 @@ void CameraD3D11::SetOrtho(bool state)
 }
 
 
-const XMFLOAT4A &CameraD3D11::GetRight() const		{ return _transform.GetRight();		}
-const XMFLOAT4A &CameraD3D11::GetUp() const			{ return _transform.GetUp();		}
-const XMFLOAT4A &CameraD3D11::GetForward() const	{ return _transform.GetForward();	}
-const XMFLOAT4A &CameraD3D11::GetPosition() const	{ return _transform.GetPosition();	}
+Vector3 CameraD3D11::GetPosition() 	{ return _transform.GetPosition();	}
+Vector3 CameraD3D11::GetRight() 	{ return _transform.Right();		}
+Vector3 CameraD3D11::GetUp() 		{ return _transform.Up();			}
+Vector3 CameraD3D11::GetForward() 	{ return _transform.Forward();		}
 
 
-XMFLOAT4X4A CameraD3D11::GetViewMatrix() const
+Matrix CameraD3D11::GetViewMatrix()
 {
-	const XMFLOAT4A
+	const Vector3
 		cPos = _transform.GetPosition(),
-		cFwd = _transform.GetForward(),
-		cUp = _transform.GetUp();
+		cFwd = _transform.Forward(),
+		cUp = _transform.Up();
 
-	XMMATRIX projectionMatrix = XMMatrixLookAtLH(
-		TO_CONST_VEC(cPos),
-		TO_CONST_VEC(cPos) + TO_CONST_VEC(cFwd),
-		TO_CONST_VEC(cUp)
-	);
-
-	return *reinterpret_cast<XMFLOAT4X4A *>(&projectionMatrix);
+	return Matrix::CreateLookAt(cPos, cPos + cFwd, cUp);
 }
 
-XMFLOAT4X4A CameraD3D11::GetProjectionMatrix() const
+Matrix CameraD3D11::GetProjectionMatrix()
 {
-	XMMATRIX projectionMatrix;
+	Matrix projectionMatrix;
 
 	if (_ortho)
 	{
-		projectionMatrix = XMMatrixOrthographicLH(
+		XMStoreFloat4x4(&projectionMatrix, XMMatrixOrthographicLH(
 			_currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
 			_currProjInfo.fovAngleY,
 			_currProjInfo.nearZ,
 			_currProjInfo.farZ
-		);
+		));
+
+		/*projectionMatrix = Matrix::CreateOrthographic( // TODO: RH instead of LH, is this a problem?
+			_currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
+			_currProjInfo.fovAngleY,
+			_currProjInfo.nearZ,
+			_currProjInfo.farZ
+		);*/
 	}
 	else
 	{
-		projectionMatrix = XMMatrixPerspectiveFovLH(
+		XMStoreFloat4x4(&projectionMatrix, XMMatrixPerspectiveFovLH(
 			_currProjInfo.fovAngleY,
 			_currProjInfo.aspectRatio,
 			_currProjInfo.nearZ,
 			_currProjInfo.farZ
-		);
+		));
+
+		/*projectionMatrix = Matrix::CreatePerspectiveFieldOfView( // TODO: RH instead of LH, is this a problem?
+			_currProjInfo.fovAngleY,
+			_currProjInfo.aspectRatio,
+			_currProjInfo.nearZ,
+			_currProjInfo.farZ
+		);*/
 	}
 
-	return *reinterpret_cast<XMFLOAT4X4A *>(&projectionMatrix);
+	return projectionMatrix;
 }
 
-XMFLOAT4X4A CameraD3D11::GetViewProjectionMatrix() const
+Matrix CameraD3D11::GetViewProjectionMatrix()
 {
-	XMFLOAT4A
-		cPos = _transform.GetPosition(),
-		cFwd = _transform.GetForward(),
-		cUp = _transform.GetUp();
-
-	XMFLOAT4X4A vpMatrix = { };
-
-	XMStoreFloat4x4(
-		&vpMatrix,
-		XMMatrixTranspose(
-			XMMatrixLookAtLH(
-				TO_VEC(cPos),
-				TO_VEC(cPos) + TO_VEC(cFwd),
-				TO_VEC(cUp)
-			) * (_ortho ? 
-			XMMatrixOrthographicLH(
-				_currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
-				_currProjInfo.fovAngleY,
-				_currProjInfo.farZ,
-				_currProjInfo.nearZ
-			) :
-			XMMatrixPerspectiveFovLH(
-				_currProjInfo.fovAngleY,
-				_currProjInfo.aspectRatio,
-				_currProjInfo.farZ,
-				_currProjInfo.nearZ
-			))
-		)
-	);
-
-	return vpMatrix;
+	return XMMatrixTranspose(GetViewMatrix() * GetProjectionMatrix());
 }
 
 const ProjectionInfo &CameraD3D11::GetCurrProjectionInfo() const
@@ -326,20 +308,20 @@ const ProjectionInfo &CameraD3D11::GetCurrProjectionInfo() const
 }
 
 
-bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, const std::vector<XMFLOAT4A> &innerBounds)
+bool CameraD3D11::ScaleToContents(const std::vector<Vector3> &nearBounds, const std::vector<Vector3> &innerBounds)
 {
 	if (!_ortho)
 		return false;
 
-	const XMVECTOR
-		forward = TO_CONST_VEC(_transform.GetForward()),
-		right = TO_CONST_VEC(_transform.GetRight()),
-		up = TO_CONST_VEC(_transform.GetUp());
+	const Vector3
+		forward = _transform.Forward(),
+		right = _transform.Right(),
+		up = _transform.Up();
 
-	XMVECTOR mid = { 0.0f, 0.0f, 0.0f, 0.0f };
-	for (const XMFLOAT4A &point : innerBounds)
-		mid = XMVectorAdd(mid, TO_CONST_VEC(point));
-	mid = XMVectorScale(mid, 1.0f / static_cast<float>(innerBounds.size()));
+	Vector3 mid = { 0.0f, 0.0f, 0.0f};
+	for (const Vector3 &point : innerBounds)
+		mid += point;
+	mid /= static_cast<float>(innerBounds.size());
 
 	float
 		nearDist = FLT_MAX, farDist = -FLT_MAX,
@@ -351,15 +333,14 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		sceneLeftDist = FLT_MAX, sceneRightDist = -FLT_MAX,
 		sceneDownDist = FLT_MAX, sceneUpDist = -FLT_MAX;
 
-	for (const XMFLOAT4A &point : nearBounds)
+	for (const Vector3 &point : nearBounds)
 	{
-		const XMVECTOR pointVec = TO_CONST_VEC(point);
-		const XMVECTOR toPoint = pointVec - mid;
+		const Vector3 toPoint = point - mid;
 
 		const float
-			xDot = XMVectorGetX(XMVector3Dot(toPoint, right)),
-			yDot = XMVectorGetX(XMVector3Dot(toPoint, up)),
-			zDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
+			xDot = toPoint.Dot(right),
+			yDot = toPoint.Dot(up),
+			zDot = toPoint.Dot(forward);
 
 		if (xDot < sceneLeftDist)	sceneLeftDist = xDot;
 		if (xDot > sceneRightDist)	sceneRightDist = xDot;
@@ -371,15 +352,14 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		if (zDot > sceneFarDist)	sceneFarDist = zDot;
 	}
 
-	for (const XMFLOAT4A &point : innerBounds)
+	for (const Vector3 &point : innerBounds)
 	{
-		const XMVECTOR pointVec = TO_CONST_VEC(point);
-		const XMVECTOR toPoint = pointVec - mid;
+		const Vector3 toPoint = point - mid;
 
 		const float
-			xDot = XMVectorGetX(XMVector3Dot(toPoint, right)),
-			yDot = XMVectorGetX(XMVector3Dot(toPoint, up)),
-			zDot = XMVectorGetX(XMVector3Dot(toPoint, forward));
+			xDot = toPoint.Dot(right),
+			yDot = toPoint.Dot(up),
+			zDot = toPoint.Dot(forward);
 
 		if (xDot < leftDist)	leftDist = xDot;
 		if (xDot > rightDist)	rightDist = xDot;
@@ -401,12 +381,12 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		return false;
 	}
 
-	XMFLOAT4A newPos;
-	TO_VEC(newPos) = XMVectorAdd(mid, XMVectorScale(forward, nearDist - 1.0f));
-	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(right, (rightDist + leftDist) * 0.5f));
-	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(up, (upDist + downDist) * 0.5f));
+	Vector3 newPos = mid + 
+		(forward * (nearDist - 1.0f)) + 
+		(right * ((rightDist + leftDist) * 0.5f)) +
+		(up * ((upDist + downDist) * 0.5f));
 
-	_transform.SetPosition(newPos);
+	_transform.SetPosition(newPos, Local);
 
 	const float
 		nearZ = 1.0f,
@@ -414,18 +394,18 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		width = (rightDist - leftDist) * 0.5f,
 		height = (upDist - downDist) * 0.5f;
 
-	const XMFLOAT3 corners[8] = {
-		XMFLOAT3(-width, -height, nearZ),
-		XMFLOAT3( width, -height, nearZ),
-		XMFLOAT3(-width,  height, nearZ),
-		XMFLOAT3( width,  height, nearZ),
-		XMFLOAT3(-width, -height, farZ),
-		XMFLOAT3( width, -height, farZ),
-		XMFLOAT3(-width,  height, farZ),
-		XMFLOAT3( width,  height, farZ)
+	const Vector3 corners[8] = {
+		Vector3(-width, -height, nearZ),
+		Vector3( width, -height, nearZ),
+		Vector3(-width,  height, nearZ),
+		Vector3( width,  height, nearZ),
+		Vector3(-width, -height, farZ),
+		Vector3( width, -height, farZ),
+		Vector3(-width,  height, farZ),
+		Vector3( width,  height, farZ)
 	};
 
-	BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+	BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(Vector3));
 
 	_currProjInfo.nearZ = nearZ;
 	_currProjInfo.farZ = farZ;
@@ -436,22 +416,21 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 	return true;
 }
 
-bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
+bool CameraD3D11::FitPlanesToPoints(const std::vector<Vector3> &points)
 {
 	const float
 		currNear = _currProjInfo.nearZ,
 		currFar = _currProjInfo.farZ;
 
-	const XMVECTOR origin = TO_CONST_VEC(_transform.GetPosition());
-	const XMVECTOR direction = TO_CONST_VEC(_transform.GetForward());
+	const Vector3 origin = _transform.GetPosition();
+	const Vector3 direction = _transform.Forward();
 
 	float minDist = FLT_MAX, maxDist = -FLT_MAX;
-	for (const XMFLOAT4A &point : points)
+	for (const Vector3 &point : points)
 	{
-		const XMVECTOR pointVec = TO_CONST_VEC(point);
-		const XMVECTOR toPoint = pointVec - origin;
+		const Vector3 toPoint = point - origin;
 
-		const float dot = XMVectorGetX(XMVector3Dot(toPoint, direction));
+		const float dot = toPoint.Dot(direction);
 
 		if (dot < minDist)
 			minDist = dot;
@@ -477,23 +456,23 @@ bool CameraD3D11::FitPlanesToPoints(const std::vector<XMFLOAT4A> &points)
 			width = 0.5f * _currProjInfo.fovAngleY * _currProjInfo.aspectRatio,
 			height = 0.5f * _currProjInfo.fovAngleY;
 
-		const XMFLOAT3 corners[8] = {
-			XMFLOAT3( -width, -height, nearZ ),
-			XMFLOAT3(  width, -height, nearZ ),
-			XMFLOAT3( -width,  height, nearZ ),
-			XMFLOAT3(  width,  height, nearZ ),
-			XMFLOAT3( -width, -height, farZ  ),
-			XMFLOAT3(  width, -height, farZ  ),
-			XMFLOAT3( -width,  height, farZ  ),
-			XMFLOAT3(  width,  height, farZ  )
+		const Vector3 corners[8] = {
+			Vector3( -width, -height, nearZ ),
+			Vector3(  width, -height, nearZ ),
+			Vector3( -width,  height, nearZ ),
+			Vector3(  width,  height, nearZ ),
+			Vector3( -width, -height, farZ  ),
+			Vector3(  width, -height, farZ  ),
+			Vector3( -width,  height, farZ  ),
+			Vector3(  width,  height, farZ  )
 		};
 
-		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(XMFLOAT3));
+		BoundingOrientedBox::CreateFromPoints(_bounds.ortho, 8, corners, sizeof(Vector3));
 	}
 	else
 	{
-		const XMFLOAT4X4A projMatrix = GetProjectionMatrix();
-		BoundingFrustum::CreateFromMatrix(_bounds.perspective, *reinterpret_cast<const XMMATRIX *>(&projMatrix));
+		const Matrix projMatrix = GetProjectionMatrix();
+		BoundingFrustum::CreateFromMatrix(_bounds.perspective, projMatrix);
 	}
 
 	if (abs(currNear - _currProjInfo.nearZ) + abs(currFar - _currProjInfo.farZ) > 0.01f)
@@ -509,7 +488,7 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 	if (!_isDirty)
 		return true;
 
-	const XMFLOAT4X4A viewProjMatrix = GetViewProjectionMatrix();
+	const Matrix viewProjMatrix = GetViewProjectionMatrix();
 	if (!_viewProjBuffer.UpdateBuffer(context, &viewProjMatrix))
 	{
 		ErrMsg("Failed to update camera view projection buffer!");
@@ -518,7 +497,10 @@ bool CameraD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 	if (_viewProjPosBuffer != nullptr)
 	{
-		const GeometryBufferData bufferData = { viewProjMatrix, _transform.GetPosition() };
+		Vector3 pos = _transform.GetPosition();
+		XMFLOAT4A paddedPos = { pos.x, pos.y, pos.z, 0 };
+
+		const GeometryBufferData bufferData = { viewProjMatrix, paddedPos };
 		if (!_viewProjPosBuffer->UpdateBuffer(context, &bufferData))
 		{
 			ErrMsg("Failed to update camera view projection positon buffer!");
@@ -689,7 +671,7 @@ bool CameraD3D11::GetOrtho() const
 	return _ortho;
 }
 
-const Transform &CameraD3D11::GetTransform() const 
+Transform &CameraD3D11::GetTransform()
 {
 	return _transform;
 }

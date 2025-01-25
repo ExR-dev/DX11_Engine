@@ -53,7 +53,9 @@ void Entity::SetDirty()
 		child->SetDirty();
 
 	_recalculateBounds = true;
-	_transform.SetDirty();
+
+	if (!_transform.IsDirty())
+		_transform.SetDirty();
 }
 
 
@@ -92,7 +94,7 @@ inline void Entity::RemoveChild(Entity *child, bool keepWorldTransform)
 
 void Entity::SetParent(Entity *newParent, bool keepWorldTransform)
 {
-	keepWorldTransform = false; // TODO: Fix bug that causes crash after deleting child entities with keepWorldTransform = true
+	keepWorldTransform = false; // TODO: Fix curious bug that causes crash after deleting child entities with keepWorldTransform = true
 
 	if (_parent == newParent)
 		return;
@@ -184,7 +186,7 @@ bool Entity::InternalUpdate(ID3D11DeviceContext *context)
 		return false;
 	}
 
-	if (_transform.GetDirty())
+	if (_transform.IsDirty())
 	{
 		SetDirty();
 	}

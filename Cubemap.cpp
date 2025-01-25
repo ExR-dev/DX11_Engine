@@ -1,7 +1,8 @@
 ﻿#include "Cubemap.h"
-
 #include "ErrMsg.h"
 
+using namespace DirectX;
+using namespace SimpleMath;
 
 constexpr float UPDATE_INTERVAL = 0.075f;
 
@@ -13,7 +14,7 @@ Cubemap::Cubemap()
 	_uavs.fill(nullptr);
 }
 
-Cubemap::Cubemap(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const DirectX::XMFLOAT4A &initialPosition)
+Cubemap::Cubemap(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const Vector3 &initialPosition)
 {
 	if (!Initialize(device, resolution, nearZ, farZ, initialPosition))
 		ErrMsg("Failed to initialize cubemap from constructor!");
@@ -40,10 +41,10 @@ Cubemap::~Cubemap()
 			delete camera;
 }
 
-bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const DirectX::XMFLOAT4A &initialPosition)
+bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const float nearZ, const float farZ, const Vector3 &initialPosition)
 {
 	const ProjectionInfo projInfo {
-		DirectX::XM_PIDIV2,
+		XM_PIDIV2,
 		1.0f,
 		nearZ,
 		farZ
@@ -65,20 +66,20 @@ bool Cubemap::Initialize(ID3D11Device *device, const UINT resolution, const floa
 		}
 	}
 
-	_cameras[0]->LookX(DirectX::XM_PIDIV2);
-	_cameras[0]->RotateRoll(DirectX::XM_PI);
+	_cameras[0]->LookX(XM_PIDIV2);
+	_cameras[0]->RotateRoll(XM_PI);
 
-	_cameras[1]->LookX(-DirectX::XM_PIDIV2);
-	_cameras[1]->RotateRoll(DirectX::XM_PI);
+	_cameras[1]->LookX(-XM_PIDIV2);
+	_cameras[1]->RotateRoll(XM_PI);
 
-	_cameras[2]->LookY(DirectX::XM_PIDIV2);
+	_cameras[2]->LookY(XM_PIDIV2);
 
-	_cameras[3]->LookY(-DirectX::XM_PIDIV2);
+	_cameras[3]->LookY(-XM_PIDIV2);
 
-	_cameras[4]->LookX(DirectX::XM_PI);
-	_cameras[4]->RotateRoll(DirectX::XM_PI);
+	_cameras[4]->LookX(XM_PI);
+	_cameras[4]->RotateRoll(XM_PI);
 
-	_cameras[5]->RotateRoll(DirectX::XM_PI);
+	_cameras[5]->RotateRoll(XM_PI);
 
 
 	D3D11_TEXTURE2D_DESC textureDesc = { };
@@ -249,7 +250,7 @@ const D3D11_VIEWPORT &Cubemap::GetViewport() const
 void Cubemap::StoreBounds(DirectX::BoundingBox &bounds) const
 {
 	const ProjectionInfo projInfo = _cameras[0]->GetCurrProjectionInfo();
-	const DirectX::XMFLOAT4A pos = _cameras[0]->GetPosition();
+	const Vector3 pos = _cameras[0]->GetPosition();
 
 	bounds.Extents = { projInfo.farZ, projInfo.farZ, projInfo.farZ };
 	bounds.Center = { pos.x, pos.y, pos.z };

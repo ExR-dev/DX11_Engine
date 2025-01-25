@@ -1,11 +1,11 @@
-
 #include "SpotLightCollectionD3D11.h"
+#include "ErrMsg.h"
 
 #include <DirectXCollision.h>
 
-#include "ErrMsg.h"
 
 using namespace DirectX;
+using namespace SimpleMath;
 
 
 SpotLightCollectionD3D11::~SpotLightCollectionD3D11()
@@ -29,14 +29,14 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 		shadowCamera.camera = new CameraD3D11(
 			device,
 			ProjectionInfo(iLightInfo.angle, 1.0f, iLightInfo.projectionNearZ, iLightInfo.projectionFarZ),
-			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
+			{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z },
 			true, iLightInfo.orthographic
 		);
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
 		shadowCamera.camera->LookX(iLightInfo.rotationX);
 
-		XMFLOAT4A dir = shadowCamera.camera->GetForward();
+		Vector3 dir = shadowCamera.camera->GetForward();
 
 		LightBuffer lightBuffer;
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
@@ -79,21 +79,21 @@ bool SpotLightCollectionD3D11::Initialize(ID3D11Device *device, const SpotLightD
 }
 
 
-bool SpotLightCollectionD3D11::ScaleLightFrustumsToCamera(const CameraD3D11 &viewCamera)
+bool SpotLightCollectionD3D11::ScaleLightFrustumsToCamera(CameraD3D11 &viewCamera)
 {
 	const XMMATRIX cameraWorldMatrix = viewCamera.GetTransform().GetWorldMatrix();
-	XMFLOAT4X4A cameraProjectionMatrix = viewCamera.GetProjectionMatrix();
+	Matrix cameraProjectionMatrix = viewCamera.GetProjectionMatrix();
 
 	BoundingFrustum viewFrustum;
-	viewFrustum.CreateFromMatrix(viewFrustum, *reinterpret_cast<XMMATRIX *>(&cameraProjectionMatrix));
+	viewFrustum.CreateFromMatrix(viewFrustum, cameraProjectionMatrix);
 	viewFrustum.Transform(viewFrustum, cameraWorldMatrix);
 
-	XMFLOAT3 corners[8];
+	Vector3 corners[8];
 	viewFrustum.GetCorners(corners);
 
-	std::vector<XMFLOAT4A> frustumCorners;
-	for (XMFLOAT3 &corner : corners)
-		frustumCorners.push_back({ corner.x, corner.y, corner.z, 0.0f });
+	std::vector<Vector3> frustumCorners;
+	for (Vector3 &corner : corners)
+		frustumCorners.push_back({ corner.x, corner.y, corner.z });
 
 	for (ShadowCamera &shadowCamera : _shadowCameras)
 		shadowCamera.isEnabled = shadowCamera.camera->FitPlanesToPoints(frustumCorners);
@@ -119,8 +119,12 @@ bool SpotLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 		LightBuffer &lightBuffer = _bufferData.at(i);
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
-		memcpy(&lightBuffer.position, &shadowCamera.camera->GetPosition(), sizeof(XMFLOAT3));
-		memcpy(&lightBuffer.direction, &shadowCamera.camera->GetForward(), sizeof(XMFLOAT3));
+
+		const Vector3 pos = shadowCamera.camera->GetPosition();
+		const Vector3 fwd = shadowCamera.camera->GetForward();
+
+		memcpy(&lightBuffer.position, &pos, sizeof(Vector3));
+		memcpy(&lightBuffer.direction, &fwd, sizeof(Vector3));
 	}
 
 	if (!_lightBuffer.UpdateBuffer(context, _bufferData.data()))

@@ -795,52 +795,52 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 		else if (loadedMesh == nullptr)
 			loadedMesh = _content->GetMesh(resources.meshID);
 
-		if (_currTexID != resources.texID)
+		if (_currTexID != resources.material.textureID)
 		{
-			srv = _content->GetTexture(resources.texID)->GetSRV();
+			srv = _content->GetTexture(resources.material.textureID)->GetSRV();
 			_context->PSSetShaderResources(0, 1, &srv);
-			_currTexID = resources.texID;
+			_currTexID = resources.material.textureID;
 		}
 
-		if (resources.normalID != CONTENT_LOAD_ERROR)
-			if (_currNormalID != resources.normalID)
+		if (resources.material.normalID != CONTENT_LOAD_ERROR)
+			if (_currNormalID != resources.material.normalID)
 			{
-				srv = _content->GetTextureMap(resources.normalID)->GetSRV();
+				srv = _content->GetTextureMap(resources.material.normalID)->GetSRV();
 				_context->PSSetShaderResources(1, 1, &srv);
-				_currNormalID = resources.normalID;
+				_currNormalID = resources.material.normalID;
 			}
 
-		if (resources.specularID != CONTENT_LOAD_ERROR)
-			if (_currSpecularID != resources.specularID)
+		if (resources.material.specularID != CONTENT_LOAD_ERROR)
+			if (_currSpecularID != resources.material.specularID)
 			{
-				srv = _content->GetTextureMap(resources.specularID)->GetSRV();
+				srv = _content->GetTextureMap(resources.material.specularID)->GetSRV();
 				_context->PSSetShaderResources(2, 1, &srv);
-				_currSpecularID = resources.specularID;
+				_currSpecularID = resources.material.specularID;
 			}
 
-		if (resources.reflectiveID != CONTENT_LOAD_ERROR)
-			if (_currReflectiveID != resources.reflectiveID)
+		if (resources.material.reflectiveID != CONTENT_LOAD_ERROR)
+			if (_currReflectiveID != resources.material.reflectiveID)
 			{
-				srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
+				srv = _content->GetTextureMap(resources.material.reflectiveID)->GetSRV();
 				_context->PSSetShaderResources(3, 1, &srv);
-				_currReflectiveID = resources.reflectiveID;
+				_currReflectiveID = resources.material.reflectiveID;
 			}
 
-		if (resources.ambientID != CONTENT_LOAD_ERROR)
-			if (_currAmbientID != resources.ambientID)
+		if (resources.material.ambientID != CONTENT_LOAD_ERROR)
+			if (_currAmbientID != resources.material.ambientID)
 			{
-				srv = _content->GetTexture(resources.ambientID)->GetSRV();
+				srv = _content->GetTexture(resources.material.ambientID)->GetSRV();
 				_context->PSSetShaderResources(4, 1, &srv);
-				_currAmbientID = resources.ambientID;
+				_currAmbientID = resources.material.ambientID;
 			}
 
-		if (resources.heightID != CONTENT_LOAD_ERROR)
+		if (resources.material.heightID != CONTENT_LOAD_ERROR)
 		{
-			if (_currHeightID != resources.heightID)
+			if (_currHeightID != resources.material.heightID)
 			{
-				srv = _content->GetTextureMap(resources.heightID)->GetSRV();
+				srv = _content->GetTextureMap(resources.material.heightID)->GetSRV();
 				_context->DSSetShaderResources(0, 1, &srv);
-				_currHeightID = resources.heightID;
+				_currHeightID = resources.material.heightID;
 			}
 		}
 		else if (_currHeightID != defaultHeightID)
@@ -1250,36 +1250,36 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 		else if (loadedMesh == nullptr)
 			loadedMesh = _content->GetMesh(resources.meshID);
 
-		if (_currTexID != resources.texID)
+		if (_currTexID != resources.material.textureID)
 		{
-			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+			ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.material.textureID)->GetSRV();
 			_context->PSSetShaderResources(0, 1, &srv);
-			_currTexID = resources.texID;
+			_currTexID = resources.material.textureID;
 		}
 
-		if (resources.normalID != CONTENT_LOAD_ERROR)
-			if (_currNormalID != resources.normalID)
+		if (resources.material.normalID != CONTENT_LOAD_ERROR)
+			if (_currNormalID != resources.material.normalID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.normalID)->GetSRV();
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.material.normalID)->GetSRV();
 				_context->PSSetShaderResources(1, 1, &srv);
-				_currNormalID = resources.normalID;
+				_currNormalID = resources.material.normalID;
 			}
 
-		if (resources.specularID != CONTENT_LOAD_ERROR)
-			if (_currSpecularID != resources.specularID)
+		if (resources.material.specularID != CONTENT_LOAD_ERROR)
+			if (_currSpecularID != resources.material.specularID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.specularID)->GetSRV();
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.material.specularID)->GetSRV();
 				_context->PSSetShaderResources(2, 1, &srv);
-				_currSpecularID = resources.specularID;
+				_currSpecularID = resources.material.specularID;
 			}
 
-		if (resources.heightID != CONTENT_LOAD_ERROR)
+		if (resources.material.heightID != CONTENT_LOAD_ERROR)
 		{
-			if (_currHeightID != resources.heightID)
+			if (_currHeightID != resources.material.heightID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.heightID)->GetSRV();
+				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.material.heightID)->GetSRV();
 				_context->DSSetShaderResources(0, 1, &srv);
-				_currHeightID = resources.heightID;
+				_currHeightID = resources.material.heightID;
 			}
 		}
 		else if (_currHeightID != defaultHeightID)
@@ -1363,12 +1363,12 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 			}
 		}
 
-		if (resources.texID != CONTENT_LOAD_ERROR)
-			if (_currTexID != resources.texID)
+		if (resources.material.textureID != CONTENT_LOAD_ERROR)
+			if (_currTexID != resources.material.textureID)
 			{
-				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
+				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.material.textureID)->GetSRV();
 				_context->PSSetShaderResources(0, 1, &srv);
-				_currTexID = resources.texID;
+				_currTexID = resources.material.textureID;
 			}
 
 		// Bind private emitter resources

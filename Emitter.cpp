@@ -154,7 +154,7 @@ bool Emitter::Render(CameraD3D11 *camera)
 
 	const ResourceGroup resources = {
 		CONTENT_LOAD_ERROR,
-		_texID,
+		{_texID, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR }
 	};
 
 	const RenderInstance instance = {

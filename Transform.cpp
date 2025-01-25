@@ -2,58 +2,18 @@
 #include "ErrMsg.h"
 
 using namespace DirectX;
+using namespace SimpleMath;
 
-#define TO_VEC(x)		( *reinterpret_cast<XMVECTOR *>(&(x))		)
-#define TO_VEC_PTR(x)	(  reinterpret_cast<XMVECTOR *>(&(x))		)
-#define TO_CONST_VEC(x) ( *reinterpret_cast<const XMVECTOR *>(&(x))	)
-
-
-inline void Transform::NormalizeBases()
-{
-	XMVECTOR
-		*rightPtr = TO_VEC_PTR(_right),
-		*upPtr = TO_VEC_PTR(_up),
-		*forwardPtr = TO_VEC_PTR(_forward);
-
-	(*rightPtr) = XMVector3Normalize(*rightPtr);
-	(*upPtr) = XMVector3Normalize(*upPtr);
-	(*forwardPtr) = XMVector3Normalize(*forwardPtr);
-}
-
-inline void Transform::OrthogonalizeBases()
-{
-	constexpr float epsilon = 0.001f;
-
-	XMVECTOR
-		*rightPtr = TO_VEC_PTR(_right),
-		*upPtr = TO_VEC_PTR(_up),
-		*forwardPtr = TO_VEC_PTR(_forward);
-
-	if (abs(XMVectorGetX(XMVector3Dot(*forwardPtr, *upPtr))) > epsilon)
-	{
-		ErrMsg("Forward and up vectors not orthogonal! Attempting to fix.");
-
-		// Apply Gram-Schmidt process
-		(*upPtr) = XMVector3Normalize(XMVectorSubtract(*upPtr, XMVector3Dot(*upPtr, *forwardPtr) * (*forwardPtr)));
-	}
-
-	if (abs(XMVectorGetX(XMVector3Dot(*forwardPtr, *rightPtr))) > epsilon ||
-		abs(XMVectorGetX(XMVector3Dot(*upPtr, *rightPtr))) > epsilon)
-	{
-		ErrMsg("Right vector is not orthogonal! Attempting to fix.");
-
-		// Recalculate right vector with cross product
-		(*rightPtr) = XMVector3Normalize(XMVector3Cross(*forwardPtr, *upPtr));
-	}
-}
+#define TO_VEC(x)		(*reinterpret_cast<XMVECTOR *>(&(x)))
+#define TO_VEC_PTR(x)	( reinterpret_cast<XMVECTOR *>(&(x)))
+#define TO_CONST_VEC(x)	(*reinterpret_cast<const XMVECTOR *>(&(x)))
 
 
-Transform::Transform(ID3D11Device *device, const XMMATRIX &worldMatrix)
+Transform::Transform(ID3D11Device *device, const Matrix &worldMatrix)
 {
 	if (!Initialize(device, worldMatrix))
 		ErrMsg("Failed to initialize transform from constructor!");
 }
-
 Transform::~Transform()
 {
 	for (auto &child : _children)
@@ -67,31 +27,20 @@ Transform::~Transform()
 		_parent->RemoveChild(this);
 }
 
-
-bool Transform::Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix)
+bool Transform::Initialize(ID3D11Device *device, const Matrix &worldMatrix)
 {
-	TO_VEC(_right) = worldMatrix.r[0];
-	TO_VEC(_up) = worldMatrix.r[1];
-	TO_VEC(_forward) = worldMatrix.r[2];
-	TO_VEC(_pos) = worldMatrix.r[3];
+	worldMatrix.Decompose(_localScale, _localRotation, _localPosition);
 
-	_scale = {
-		XMVectorGetX(XMVector3Length(worldMatrix.r[0])),
-		XMVectorGetX(XMVector3Length(worldMatrix.r[1])),
-		XMVectorGetX(XMVector3Length(worldMatrix.r[2])),
-		0.0f
-	};
+	const Matrix transposeWorldMatrix = GetWorldMatrix().Transpose();
+	Matrix inverseTransposeWorldMatrix;
+	transposeWorldMatrix.Invert(inverseTransposeWorldMatrix);
 
-	NormalizeBases();
-	OrthogonalizeBases();
-
-	const XMMATRIX transposeWorldMatrix = XMMatrixTranspose(GetWorldMatrix());
-	const XMMATRIX worldMatrixData[2] = {
+	const Matrix worldMatrixData[2] = {
 		transposeWorldMatrix,
-		XMMatrixTranspose(XMMatrixInverse(nullptr, transposeWorldMatrix)),
+		transposeWorldMatrix.Transpose(),
 	};
 
-	if (!_worldMatrixBuffer.Initialize(device, sizeof(XMMATRIX) * 2, &worldMatrixData))
+	if (!_worldMatrixBuffer.Initialize(device, sizeof(Matrix) * 2, &worldMatrixData))
 	{
 		ErrMsg("Failed to initialize world matrix buffer!");
 		return false;
@@ -100,11 +49,9 @@ bool Transform::Initialize(ID3D11Device *device, const XMMATRIX& worldMatrix)
 	SetDirty();
 	return true;
 }
-
 bool Transform::Initialize(ID3D11Device *device)
 {
-	const XMMATRIX worldMatrix = GetWorldMatrix();
-	if (!Initialize(device, worldMatrix))
+	if (!Initialize(device, GetWorldMatrix()))
 	{
 		ErrMsg("Failed to initialize world matrix buffer!");
 		return false;
@@ -112,7 +59,6 @@ bool Transform::Initialize(ID3D11Device *device)
 
 	return true;
 }
-
 
 inline void Transform::AddChild(Transform *child)
 {
@@ -129,7 +75,6 @@ inline void Transform::AddChild(Transform *child)
 
 	_children.push_back(child);
 }
-
 inline void Transform::RemoveChild(Transform *child)
 {
     if (!child)
@@ -144,14 +89,178 @@ inline void Transform::RemoveChild(Transform *child)
         _children.erase(it);
 }
 
+void Transform::SetWorldPositionDirty()
+{
+	_isWorldPositionDirty = true;
+	_isWorldMatrixDirty = true;
+	_isDirty = true;
+
+	for (auto child : _children)
+	{
+		child->SetWorldPositionDirty();
+	}
+}
+void Transform::SetWorldRotationDirty()
+{
+	_isWorldRotationDirty = true;
+	_isWorldMatrixDirty = true;
+	_isDirty = true;
+
+	for (auto child : _children)
+	{
+		child->_isWorldPositionDirty = true;
+		child->_isWorldScaleDirty = true;
+		child->SetWorldRotationDirty();
+	}
+}
+void Transform::SetWorldScaleDirty()
+{
+	_isWorldScaleDirty = true;
+	_isWorldMatrixDirty = true;
+	_isDirty = true;
+
+	for (auto child : _children)
+	{
+		child->_isWorldPositionDirty = true;
+		child->SetWorldScaleDirty();
+	}
+}
+void Transform::SetAllDirty()
+{
+	_isWorldPositionDirty = true;
+	_isWorldRotationDirty = true;
+	_isWorldScaleDirty = true;
+	_isLocalMatrixDirty = true;
+	_isWorldMatrixDirty = true;
+	_isDirty = true;
+
+	for (auto child : _children)
+	{
+		child->SetAllDirty();
+	}
+}
+void Transform::SetDirty()
+{
+	_isDirty = true;
+
+	for (auto child : _children)
+		if (!child->_isDirty)
+			child->SetDirty();
+}
+bool Transform::IsDirty() const
+{
+	return _isDirty;
+}
+
+Vector3 *Transform::WorldPosition()
+{
+	if (!_isWorldPositionDirty)
+		return &_worldPosition;
+	
+	// Recalculate.
+	// _worldPosition = WorldMatrix()->Translation();
+
+	Vector3 worldPos = _localPosition;
+
+	Transform *iter = _parent;
+	while (iter != nullptr) 
+	{
+		worldPos = worldPos * iter->_localScale;
+		worldPos = worldPos * iter->_localRotation;
+		worldPos += iter->_localPosition;
+		iter = iter->_parent;
+	}
+
+	_worldPosition = worldPos;
+
+	_isWorldPositionDirty = false;
+	return &_worldPosition;
+}
+Quaternion *Transform::WorldRotation()
+{
+	if (!_isWorldRotationDirty)
+		return &_worldRotation;
+
+	// Recalculate.
+	FXMMATRIX M = *WorldMatrix();
+	XMMATRIX matTemp{};
+
+	matTemp.r[0] = M.r[0];
+	matTemp.r[1] = M.r[1];
+	matTemp.r[2] = M.r[2];
+	matTemp.r[3] = g_XMIdentityR3.v;
+
+	_worldRotation = XMQuaternionRotationMatrix(matTemp);
+
+	_isWorldRotationDirty = false;
+	return &_worldRotation;
+}
+Vector3 *Transform::WorldScale()
+{
+	if (!_isWorldScaleDirty)
+		return &_worldScale;
+
+	// Recalculate.
+	Matrix *worldMatrix = WorldMatrix();
+
+	_worldScale = Vector3(
+		worldMatrix->Right().Length(),
+		worldMatrix->Up().Length(),
+		worldMatrix->Forward().Length()
+	);
+
+	_isWorldScaleDirty = false;
+	return &_worldScale;
+}
+Matrix *Transform::WorldMatrix()
+{
+	if (!_isWorldMatrixDirty)
+		return &_worldMatrix;
+	
+	// Recalculate.
+	if (!_parent)
+		return LocalMatrix();
+
+	_worldMatrix = (*LocalMatrix()) * (*_parent->WorldMatrix());
+
+	_isWorldMatrixDirty = false;
+	return &_worldMatrix;
+}
+Matrix *Transform::LocalMatrix()
+{
+	if (!_isLocalMatrixDirty)
+		return &_localMatrix;
+
+	// Recalculate.
+	const Vector3 t = _localPosition;
+
+	Vector3 x = Vector3::Transform(Vector3::Right, _localRotation);
+	Vector3 y = Vector3::Transform(Vector3::Up, _localRotation);
+	Vector3 z = Vector3::Transform(Vector3::Forward, _localRotation);
+
+	x = x * _localScale.x;
+	y = y * _localScale.y;
+	z = z * _localScale.z;
+
+	_localMatrix = Matrix(
+		x.x, x.y, x.z, 0,
+		y.x, y.y, y.z, 0,
+		z.x, z.y, z.z, 0,
+		t.x, t.y, t.z, 1
+	);
+
+	_isLocalMatrixDirty = false;
+	return &_localMatrix;
+}
+
 void Transform::SetParent(Transform *newParent, bool keepWorldTransform)
 {
     if (_parent == newParent)
         return;
 
-    XMMATRIX worldMatrix;
+    /*XMMATRIX worldMatrix;
 	if (keepWorldTransform)
-		worldMatrix = GetWorldMatrix();
+		worldMatrix = GetWorldMatrix();*/
 
     if (_parent)
 		_parent->RemoveChild(this);
@@ -161,7 +270,7 @@ void Transform::SetParent(Transform *newParent, bool keepWorldTransform)
     if (newParent)
 		newParent->AddChild(this);
 
-    if (keepWorldTransform)
+    /*if (keepWorldTransform)
     {
         XMMATRIX inverseParentWorldMatrix = _parent ? 
 			XMMatrixInverse(nullptr, _parent->GetWorldMatrix()) : 
@@ -172,220 +281,311 @@ void Transform::SetParent(Transform *newParent, bool keepWorldTransform)
         TO_VEC(_up) = localMatrix.r[1];
         TO_VEC(_forward) = localMatrix.r[2];
         TO_VEC(_pos) = localMatrix.r[3];
-    }
+    }*/
 
-    SetDirty();
+	SetAllDirty();
 }
-
 Transform *Transform::GetParent() const
 {
 	return _parent;
 }
 
-
-void Transform::Move(const XMFLOAT4A &movement)
+const Vector3 Transform::Right(ReferenceSpace space)
 {
-	TO_VEC(_pos) += TO_CONST_VEC(movement);
+	if (!_parent)
+		space = Local;
 
-	SetDirty();
-}
-
-void Transform::Rotate(const XMFLOAT4A &rotation)
-{
-	const XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYawFromVector(TO_CONST_VEC(rotation));
-
-	XMVECTOR
-		*rightPtr = TO_VEC_PTR(_right),
-		*upPtr = TO_VEC_PTR(_up),
-		*forwardPtr = TO_VEC_PTR(_forward);
-
-	(*rightPtr) = XMVector3Transform(*rightPtr, rotationMatrix);
-	(*upPtr) = XMVector3Transform(*upPtr, rotationMatrix);
-	(*forwardPtr) = XMVector3Transform(*forwardPtr, rotationMatrix);
-
-	NormalizeBases();
-	OrthogonalizeBases();
-
-	SetDirty();
-}
-
-void Transform::ScaleAbsolute(const XMFLOAT4A &scale)
-{
-	_scale.x += scale.x;
-	_scale.y += scale.y;
-	_scale.z += scale.z;
-
-	SetDirty();
-}
-
-
-void Transform::MoveLocal(const XMFLOAT4A &movement)
-{
-	TO_VEC(_pos) += 
-		(TO_VEC(_right) * movement.x) + 
-		(TO_VEC(_up) * movement.y) +
-		(TO_VEC(_forward) * movement.z);
-
-	SetDirty();
-}
-
-void Transform::RotateLocal(const XMFLOAT4A &rotation)
-{
-	XMVECTOR
-		*rightPtr = TO_VEC_PTR(_right),
-		*upPtr = TO_VEC_PTR(_up),
-		*forwardPtr = TO_VEC_PTR(_forward);
-
-	XMMATRIX rotationMatrix = XMMatrixRotationNormal(*forwardPtr, rotation.z);
-	rotationMatrix = XMMatrixMultiply(rotationMatrix, XMMatrixRotationNormal(*rightPtr, rotation.x));
-	rotationMatrix = XMMatrixMultiply(rotationMatrix, XMMatrixRotationNormal(*upPtr, rotation.y));
-
-	(*rightPtr) = XMVector3Transform(*rightPtr, rotationMatrix);
-	(*upPtr) = XMVector3Transform(*upPtr, rotationMatrix);
-	(*forwardPtr) = XMVector3Transform(*forwardPtr, rotationMatrix);
-
-	NormalizeBases();
-	OrthogonalizeBases();
-
-	SetDirty();
-}
-
-void Transform::ScaleRelative(const XMFLOAT4A &scale)
-{
-	_scale.x *= scale.x;
-	_scale.y *= scale.y;
-	_scale.z *= scale.z;
-
-	SetDirty();
-}
-
-
-// Unlikely to work, avoid using.
-void Transform::RotateByQuaternion(const XMVECTOR &quaternion)
-{
-	const XMVECTOR
-		quatIdentity = XMQuaternionIdentity(),
-		quatInverse = XMQuaternionInverse(quaternion);
-
-	XMVECTOR
-		*rightPtr = TO_VEC_PTR(_right),
-		*upPtr = TO_VEC_PTR(_up),
-		*forwardPtr = TO_VEC_PTR(_forward);
-
-	(*rightPtr) = XMQuaternionMultiply(quatIdentity, *rightPtr),
-	(*upPtr) = XMQuaternionMultiply(quatIdentity, *upPtr),
-	(*forwardPtr) = XMQuaternionMultiply(quatIdentity, *forwardPtr);
-
-	(*rightPtr) = XMQuaternionMultiply(*rightPtr, quatInverse);
-	(*upPtr) = XMQuaternionMultiply(*upPtr, quatInverse);
-	(*forwardPtr) = XMQuaternionMultiply(*forwardPtr, quatInverse);
-
-	NormalizeBases();
-	OrthogonalizeBases();
-
-	SetDirty();
-}
-
-
-void Transform::SetPosition(const XMFLOAT4A &position)
-{
-	_pos = position;
-
-	SetDirty();
-}
-
-void Transform::SetScale(const XMFLOAT4A &scale)
-{
-	_scale = scale;
-
-	SetDirty();
-}
-
-void Transform::SetAxes(const XMFLOAT4A &right, const XMFLOAT4A &up, const XMFLOAT4A &forward)
-{
-	_right = right;
-	_up = up;
-	_forward = forward;
-
-	_scale = {
-		XMVectorGetX(XMVector3Length(TO_VEC(_right))),
-		XMVectorGetX(XMVector3Length(TO_VEC(_up))),
-		XMVectorGetX(XMVector3Length(TO_VEC(_forward))),
-		0.0f
-	};
-
-	NormalizeBases();
-	OrthogonalizeBases();
-
-	SetDirty();
-}
-
-void Transform::SetEulerRotation(const XMFLOAT4A &euler)
-{
-	_right = { 1, 0, 0, 0 };
-	_up = { 0, 1, 0, 0 };
-	_forward = { 0, 0, 1, 0 };
-
-	Transform::Rotate(euler);
-}
-
-
-const XMFLOAT4A &Transform::GetPosition() const	{ return _pos;		}
-const XMFLOAT4A &Transform::GetScale() const	{ return _scale;	}
-const XMFLOAT4A &Transform::GetRight() const	{ return _right;	}
-const XMFLOAT4A &Transform::GetUp() const		{ return _up;		}
-const XMFLOAT4A &Transform::GetForward() const	{ return _forward;	}
-
-DirectX::XMFLOAT4A Transform::GetEulerRotation() const
-{
-	XMFLOAT4X4 matrixView;
-	XMStoreFloat4x4(&matrixView, GetLocalMatrix());
-
-	float roll, pitch, yaw;
-
-	if (matrixView._11 == 1.0f)
+	switch (space)
 	{
-		yaw = atan2f(matrixView._13, matrixView._34);
-		pitch = 0;
-		roll = 0;
+	case Local:
+		return Vector3::Transform(Vector3::Right, _localRotation);
 
+	case World:
+		return WorldMatrix()->Right();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Vector3::Right;
 	}
-	else if (matrixView._11 == -1.0f)
+}
+const Vector3 Transform::Up(ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
 	{
-		yaw = atan2f(matrixView._13, matrixView._34);
-		pitch = 0;
-		roll = 0;
+	case Local:
+		return Vector3::Transform(Vector3::Up, _localRotation);
+
+	case World:
+		return WorldMatrix()->Up();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Vector3::Up;
 	}
-	else
+}
+const Vector3 Transform::Forward(ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
 	{
-		yaw = atan2(-matrixView._31, matrixView._11);
-		pitch = asin(matrixView._21);
-		roll = atan2(-matrixView._23, matrixView._22);
+	case Local:
+		return Vector3::Transform(Vector3::Forward, _localRotation);
+
+	case World:
+		return WorldMatrix()->Forward();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Vector3::Forward;
+	}
+}
+
+const Vector3 &Transform::GetPosition(ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		return _localPosition;
+
+	case World:
+		return *WorldPosition();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Vector3::Zero;
+	}
+}
+const Quaternion &Transform::GetRotation(ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		return _localRotation;
+
+	case World:
+		return *WorldRotation();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Quaternion::Identity;
+	}
+}
+const Vector3 &Transform::GetScale(ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		return _localScale;
+
+	case World:
+		return *WorldScale();
+
+	default:
+		ErrMsg("Invalid reference space!");
+		return Vector3::One;
+	}
+}
+
+const Vector3 Transform::InverseTransformPoint(Vector3 &point) const
+{
+	if (_parent)
+		point = _parent->InverseTransformPoint(point);
+
+	// First, apply the inverse translation of the transform
+	point = point - _localPosition;
+
+	// Next, apply the inverse rotation of the transform
+	Quaternion invRot;
+	_localRotation.Inverse(invRot);
+
+	point = point * invRot;
+	return point / _localScale;
+}
+const Matrix Transform::GetGlobalRotationAndScale()
+{
+	Matrix worldRS = Matrix::CreateFromQuaternion(_localRotation) * Matrix::CreateScale(_localScale);
+
+	if (_parent) 
+	{
+		Matrix parentRS = _parent->GetGlobalRotationAndScale();
+		worldRS = parentRS * worldRS;
 	}
 
-	return { pitch, yaw, roll, 0.0f };
+	return worldRS;
 }
 
-void Transform::SetDirty()
+void Transform::SetPosition(const Vector3 &position, ReferenceSpace space)
 {
-	_isDirty = true;
+	if (!_parent)
+		space = Local;
 
-	for (auto child : _children)
-		child->SetDirty();
+	switch (space)
+	{
+	case Local:
+		_localPosition = position;
+		break;
+
+	case World:
+	{
+		Vector3 point = position;
+		_localPosition = InverseTransformPoint(point);
+		break;
+	}
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldPositionDirty();
+	_isLocalMatrixDirty = true;
 }
-
-bool Transform::GetDirty() const
+void Transform::SetRotation(const Quaternion &rotation, ReferenceSpace space)
 {
-	return _isDirty;
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		_localRotation = rotation;
+		break;
+
+	case World:
+	{
+		Quaternion invParentGlobal;
+		_parent->WorldRotation()->Inverse(invParentGlobal);
+
+		_localRotation = Quaternion::Concatenate(invParentGlobal, rotation);
+		break;
+	}
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldRotationDirty();
+	_isLocalMatrixDirty = true;
+}
+void Transform::SetScale(const Vector3 &scale, ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		_localScale = scale;
+		break;
+
+	case World:
+	{
+		const Quaternion globalRotation = *WorldRotation();
+
+		const Vector3 x = Vector3(scale.x, 0, 0) * globalRotation;
+		const Vector3 y = Vector3(0, scale.y, 0) * globalRotation;
+		const Vector3 z = Vector3(0, 0, scale.z) * globalRotation;
+
+		const Matrix rsMat = Matrix(
+			x.x, x.y, x.z, 0,
+			y.x, y.y, y.z, 0,
+			z.x, z.y, z.z, 0,
+			0, 0, 0, 1
+		);
+
+		_localScale = Vector3(1, 1, 1);
+
+		const Matrix inverseRS = GetGlobalRotationAndScale().Invert();
+		const Matrix localRS = inverseRS * rsMat;
+
+		// Main diagonal is the new scale
+		_localScale = Vector3(localRS._11, localRS._22, localRS._33);
+		break;
+	}
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldScaleDirty();
+	_isLocalMatrixDirty = true;
 }
 
+void Transform::Move(const DirectX::SimpleMath::Vector3 &direction, ReferenceSpace space)
+{
+	switch (space)
+	{
+	case Local:
+		_localPosition += direction;
+		break;
+
+	case World:
+		SetPosition((*WorldPosition()) + direction, World);
+		break;
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldPositionDirty();
+	_isLocalMatrixDirty = true;
+}
+void Transform::Rotate(const DirectX::SimpleMath::Vector3 &euler, ReferenceSpace space)
+{
+	switch (space)
+	{
+	case Local:
+		_localRotation = Quaternion::Concatenate(_localRotation, Quaternion::CreateFromYawPitchRoll(euler));
+		break;
+
+	case World:
+		SetRotation(Quaternion::Concatenate(*WorldRotation(), Quaternion::CreateFromYawPitchRoll(euler)), World);
+		break;
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldRotationDirty();
+	_isLocalMatrixDirty = true;
+}
+
+const Vector3 Transform::GetEuler(ReferenceSpace space)
+{
+	return GetRotation(space).ToEuler();
+}
+void Transform::SetEuler(const DirectX::SimpleMath::Vector3 &rollPitchYaw, ReferenceSpace space)
+{
+	SetRotation(Quaternion::CreateFromYawPitchRoll(rollPitchYaw), space);
+}
 
 bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)
 {
-	const XMMATRIX transposeWorldMatrix = XMMatrixTranspose(GetWorldMatrix());
-	const XMMATRIX worldMatrixData[2] = {
+	const Matrix transposeWorldMatrix = GetWorldMatrix().Transpose();
+	Matrix inverseTransposeWorldMatrix;
+	transposeWorldMatrix.Invert(inverseTransposeWorldMatrix);
+
+	const Matrix worldMatrixData[2] = {
 		transposeWorldMatrix,
-		XMMatrixTranspose(XMMatrixInverse(nullptr, transposeWorldMatrix)),
+		transposeWorldMatrix.Transpose(),
 	};
 
 	if (!_worldMatrixBuffer.UpdateBuffer(context, &worldMatrixData))
@@ -397,25 +597,16 @@ bool Transform::UpdateConstantBuffer(ID3D11DeviceContext *context)
 	_isDirty = false;
 	return true;
 }
-
 ID3D11Buffer *Transform::GetConstantBuffer() const
 {
 	return _worldMatrixBuffer.GetBuffer();
 }
 
-XMMATRIX Transform::GetLocalMatrix() const
+Matrix Transform::GetLocalMatrix()
 {
-	return XMMatrixSet(
-		_right.x * _scale.x,	_right.y * _scale.x,	_right.z * _scale.x,	0,
-		_up.x * _scale.y,		_up.y * _scale.y,		_up.z * _scale.y,		0,
-		_forward.x * _scale.z,	_forward.y * _scale.z,	_forward.z * _scale.z,	0,
-		_pos.x,					_pos.y,					_pos.z,					1
-	);
+	return *LocalMatrix();
 }
-XMMATRIX Transform::GetWorldMatrix() const
+Matrix Transform::GetWorldMatrix()
 {
-	if (!_parent)
-		return GetLocalMatrix();
-
-	return XMMatrixMultiply(GetLocalMatrix(), _parent->GetWorldMatrix());
+	return *WorldMatrix();
 }

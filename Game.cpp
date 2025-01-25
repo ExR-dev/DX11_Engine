@@ -142,6 +142,8 @@ bool Game::Setup(Time& time, const UINT width, const UINT height, const HWND win
 		{ "Black",							"Black"							},
 		{ "Ambient",						"Ambient"						},
 		{ "Red",							"Red"							},
+		{ "Green",							"Green"							},
+		{ "Blue",							"Blue"							},
 		{ "Fade",							"Fade"							},
 		{ "Bricks",							"Bricks"						},
 		{ "Metal",							"Metal"							},

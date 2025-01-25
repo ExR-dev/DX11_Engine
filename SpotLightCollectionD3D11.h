@@ -71,7 +71,7 @@ public:
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device, const SpotLightData &lightInfo);
 
-	[[nodiscard]] bool ScaleLightFrustumsToCamera(const CameraD3D11 &viewCamera);
+	[[nodiscard]] bool ScaleLightFrustumsToCamera(CameraD3D11 &viewCamera);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context);
 	[[nodiscard]] bool BindCSBuffers(ID3D11DeviceContext *context) const;
 	[[nodiscard]] bool BindPSBuffers(ID3D11DeviceContext *context) const;

@@ -149,6 +149,7 @@
     <ClCompile Include="DirLightCollectionD3D11.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="ErrMsg.cpp" />
@@ -205,6 +206,7 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="InputLayoutD3D11.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Notree.h" />
     <ClInclude Include="Object.h" />

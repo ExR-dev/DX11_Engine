@@ -7,7 +7,6 @@
 #include "RenderTargetD3D11.h"
 #include "Time.h"
 
-
 constexpr UINT G_BUFFER_COUNT = 4;
 
 
@@ -28,19 +27,16 @@ private:
 	float _updateTimer = 9999.9f;
 	bool _doUpdate = true;
 
-
-
-
 public:
 	Cubemap();
-	Cubemap(ID3D11Device *device, UINT resolution, float nearZ, float farZ, const DirectX::XMFLOAT4A &initialPosition);
+	Cubemap(ID3D11Device *device, UINT resolution, float nearZ, float farZ, const DirectX::SimpleMath::Vector3 &initialPosition);
 	~Cubemap();
 	Cubemap(const Cubemap &other) = delete;
 	Cubemap &operator=(const Cubemap &other) = delete;
 	Cubemap(Cubemap &&other) = delete;
 	Cubemap &operator=(Cubemap &&other) = delete;
 
-	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT resolution, float nearZ, float farZ, const DirectX::XMFLOAT4A &initialPosition);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, UINT resolution, float nearZ, float farZ, const DirectX::SimpleMath::Vector3 &initialPosition);
 
 	[[nodiscard]] bool Update(ID3D11DeviceContext *context, Time &time);
 	[[nodiscard]] bool UpdateBuffers(ID3D11DeviceContext *context) const;
