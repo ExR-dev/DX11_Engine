@@ -1,7 +1,6 @@
 #pragma once
 
 #include <d3d11.h>
-#include <GeometricPrimitive.h>
 
 #include "SceneHolder.h"
 #include "Entity.h"

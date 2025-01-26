@@ -3,7 +3,6 @@
 #include <vector>
 #include <memory>
 #include <DirectXMath.h>
-#include <SimpleMath.h>
 
 #include "ConstantBufferD3D11.h"
 
@@ -20,15 +19,21 @@ private:
 	Transform *_parent = nullptr;
 	std::vector<Transform*> _children;
 
-	DirectX::SimpleMath::Vector3 _localPosition = DirectX::SimpleMath::Vector3::Zero;
-	DirectX::SimpleMath::Quaternion _localRotation = DirectX::SimpleMath::Quaternion::Identity;
-	DirectX::SimpleMath::Vector3 _localScale = DirectX::SimpleMath::Vector3::One;
-	DirectX::SimpleMath::Matrix _localMatrix = DirectX::SimpleMath::Matrix::Identity;
+	DirectX::XMFLOAT3A _localPosition = { 0, 0, 0 };
+	DirectX::XMFLOAT4A _localRotation = { 0, 0, 0, 1 };
+	DirectX::XMFLOAT3A _localScale =	{ 1, 1, 1 };
+	DirectX::XMFLOAT4X4A _localMatrix = { 1, 0, 0, 0,
+										  0, 1, 0, 0,
+										  0, 0, 1, 0,
+										  0, 0, 0, 1, };
 
-	DirectX::SimpleMath::Vector3 _worldPosition = DirectX::SimpleMath::Vector3::Zero;
-	DirectX::SimpleMath::Quaternion _worldRotation = DirectX::SimpleMath::Quaternion::Identity;
-	DirectX::SimpleMath::Vector3 _worldScale = DirectX::SimpleMath::Vector3::One;
-	DirectX::SimpleMath::Matrix _worldMatrix = DirectX::SimpleMath::Matrix::Identity;
+	DirectX::XMFLOAT3A _worldPosition = { 0, 0, 0 };
+	DirectX::XMFLOAT4A _worldRotation = { 0, 0, 0, 1 };
+	DirectX::XMFLOAT3A _worldScale =	{ 1, 1, 1 };
+	DirectX::XMFLOAT4X4A _worldMatrix = { 1, 0, 0, 0, 
+										  0, 1, 0, 0, 
+										  0, 0, 1, 0, 
+										  0, 0, 0, 1, };
 
 	ConstantBufferD3D11 _worldMatrixBuffer;
 
@@ -39,6 +44,18 @@ private:
 	bool _isWorldMatrixDirty = true;	// Dirtied by parent position, rotation and scale.
 	bool _isLocalMatrixDirty = true;	// Never dirtied by parent.
 
+	const DirectX::XMFLOAT4A To4(const DirectX::XMFLOAT3A &vec) const;
+	const DirectX::XMFLOAT3A To3(const DirectX::XMFLOAT4A &vec) const;
+
+	[[nodiscard]] inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT3A &float3A) const;
+	[[nodiscard]] inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT4A &float4A) const;
+	[[nodiscard]] inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4A &float4x4A) const;
+	[[nodiscard]] inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT3A *float3A) const;
+	[[nodiscard]] inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT4A *float4A) const;
+	[[nodiscard]] inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4A *float4x4A) const;
+	inline void Store(DirectX::XMFLOAT3A &dest, const DirectX::XMVECTOR &vec) const;
+	inline void Store(DirectX::XMFLOAT4A &dest, const DirectX::XMVECTOR &vec) const;
+	inline void Store(DirectX::XMFLOAT4X4A &dest, const DirectX::XMMATRIX &mat) const;
 
 	inline void AddChild(Transform *child);
 	inline void RemoveChild(Transform *child);
@@ -48,18 +65,18 @@ private:
 	void SetWorldScaleDirty();
 	void SetAllDirty();
 
-	[[nodiscard]] DirectX::SimpleMath::Vector3 *WorldPosition();
-	[[nodiscard]] DirectX::SimpleMath::Quaternion *WorldRotation();
-	[[nodiscard]] DirectX::SimpleMath::Vector3 *WorldScale();
-	[[nodiscard]] DirectX::SimpleMath::Matrix *WorldMatrix();
-	[[nodiscard]] DirectX::SimpleMath::Matrix *LocalMatrix();
+	[[nodiscard]] DirectX::XMFLOAT3A *WorldPosition();
+	[[nodiscard]] DirectX::XMFLOAT4A *WorldRotation();
+	[[nodiscard]] DirectX::XMFLOAT3A *WorldScale();
+	[[nodiscard]] DirectX::XMFLOAT4X4A *WorldMatrix();
+	[[nodiscard]] DirectX::XMFLOAT4X4A *LocalMatrix();
 
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 InverseTransformPoint(DirectX::SimpleMath::Vector3 &point) const;
-	[[nodiscard]] const DirectX::SimpleMath::Matrix GetGlobalRotationAndScale();
+	[[nodiscard]] const DirectX::XMFLOAT3A InverseTransformPoint(DirectX::XMFLOAT3A &point) const;
+	[[nodiscard]] const DirectX::XMFLOAT4X4A GetWorldRotationAndScale();
 
 public:
 	Transform() = default;
-	explicit Transform(ID3D11Device *device, const DirectX::SimpleMath::Matrix &worldMatrix = DirectX::SimpleMath::Matrix::Identity);
+	explicit Transform(ID3D11Device *device, const DirectX::XMFLOAT4X4A &worldMatrix);
 	~Transform();
 	Transform(const Transform &other) = delete;
 	Transform &operator=(const Transform &other) = delete;
@@ -67,7 +84,7 @@ public:
 	Transform &operator=(Transform &&other) = delete;
 
 	[[nodiscard]] bool Initialize(ID3D11Device *device);
-	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirectX::SimpleMath::Matrix &worldMatrix);
+	[[nodiscard]] bool Initialize(ID3D11Device *device, const DirectX::XMFLOAT4X4A &worldMatrix);
 
 	void SetDirty();
 	[[nodiscard]] bool IsDirty() const;
@@ -75,26 +92,33 @@ public:
 	void SetParent(Transform *parent, bool worldPositionStays = false);
 	[[nodiscard]] Transform *GetParent() const;
 
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 Right(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 Up(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 Forward(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &Right(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &Up(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &Forward(ReferenceSpace space = World);
 
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 &GetPosition(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::SimpleMath::Quaternion &GetRotation(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 &GetScale(ReferenceSpace space = Local);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetPosition(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetRotation(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetScale(ReferenceSpace space = Local);
 
-	void SetPosition(const DirectX::SimpleMath::Vector3 &position, ReferenceSpace space = World);
-	void SetRotation(const DirectX::SimpleMath::Quaternion &rotation, ReferenceSpace space = World);
-	void SetScale(const DirectX::SimpleMath::Vector3 &scale, ReferenceSpace space = Local);
+	void SetPosition(const DirectX::XMFLOAT3A &position, ReferenceSpace space = World);
+	void SetPosition(const DirectX::XMFLOAT4A &position, ReferenceSpace space = World);
+	void SetRotation(const DirectX::XMFLOAT4A &rotation, ReferenceSpace space = World);
+	void SetScale(const DirectX::XMFLOAT3A &scale, ReferenceSpace space = Local);
+	void SetScale(const DirectX::XMFLOAT4A &scale, ReferenceSpace space = Local);
 
-	void Move(const DirectX::SimpleMath::Vector3 &direction, ReferenceSpace space = World);
-	void Rotate(const DirectX::SimpleMath::Vector3 &euler, ReferenceSpace space = World);
+	void Move(const DirectX::XMFLOAT3A &direction, ReferenceSpace space = World);
+	void Move(const DirectX::XMFLOAT4A &direction, ReferenceSpace space = World);
+	void Rotate(const DirectX::XMFLOAT3A &euler, ReferenceSpace space = World);
+	void Rotate(const DirectX::XMFLOAT4A &euler, ReferenceSpace space = World);
+	void Scale(const DirectX::XMFLOAT3A &scale, ReferenceSpace space = Local);
+	void Scale(const DirectX::XMFLOAT4A &scale, ReferenceSpace space = Local);
 
-	[[nodiscard]] const DirectX::SimpleMath::Vector3 GetEuler(ReferenceSpace space = World);
-	void SetEuler(const DirectX::SimpleMath::Vector3 &rollPitchYaw, ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A GetEuler(ReferenceSpace space = World);
+	void SetEuler(const DirectX::XMFLOAT3A &rollPitchYaw, ReferenceSpace space = World);
+	void SetEuler(const DirectX::XMFLOAT4A &rollPitchYaw, ReferenceSpace space = World);
 
 	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;
-	[[nodiscard]] DirectX::SimpleMath::Matrix GetLocalMatrix();
-	[[nodiscard]] DirectX::SimpleMath::Matrix GetWorldMatrix();
+	[[nodiscard]] const DirectX::XMFLOAT4X4A &GetLocalMatrix();
+	[[nodiscard]] const DirectX::XMFLOAT4X4A &GetWorldMatrix();
 };

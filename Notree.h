@@ -109,7 +109,7 @@ private:
 				if (item == nullptr)
 					continue;
 
-				DirectX::BoundingOrientedBox itemBounds;
+				DirectX::BoundingBox itemBounds;
 				item->StoreBounds(itemBounds);
 
 				float newLength = 0.0f;

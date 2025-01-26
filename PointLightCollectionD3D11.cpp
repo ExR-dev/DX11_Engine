@@ -3,7 +3,6 @@
 #include "ErrMsg.h"
 
 using namespace DirectX;
-using namespace SimpleMath;
 
 
 PointLightCollectionD3D11::~PointLightCollectionD3D11()
@@ -36,7 +35,7 @@ bool PointLightCollectionD3D11::Initialize(ID3D11Device *device, const PointLigh
 			shadowCameraCube.cameraArray[j] = new CameraD3D11(
 				device,
 				projInfo,
-				{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z },
+				{ iLightInfo.initialPosition.x, iLightInfo.initialPosition.y, iLightInfo.initialPosition.z, 1.0f },
 				false
 			);
 
@@ -96,9 +95,9 @@ void PointLightCollectionD3D11::Move(const UINT lightIndex, const DirectX::XMFLO
 {
 	for (UINT i = 0; i < 6; i++)
 	{
-		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.x, { 1, 0, 0 });
-		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.y, { 0, 1, 0 });
-		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.z, { 0, 0, 1 });
+		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.x, { 1, 0, 0, 0 });
+		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.y, { 0, 1, 0, 0 });
+		_shadowCameraCubes.at(lightIndex).cameraArray[i]->Move(movement.z, { 0, 0, 1, 0 });
 	}
 }
 
@@ -123,8 +122,8 @@ bool PointLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 			LightBuffer &lightBuffer = _bufferData.at(i * 6 + j);
 			lightBuffer.vpMatrix = shadowCameraCube.cameraArray[j]->GetViewProjectionMatrix();
-			Vector3 pos = shadowCameraCube.cameraArray[0]->GetPosition();
-			memcpy(&lightBuffer.position, &pos, sizeof(XMFLOAT3));
+			XMFLOAT4A dir = shadowCameraCube.cameraArray[0]->GetPosition();
+			memcpy(&lightBuffer.position, &dir, sizeof(XMFLOAT3));
 		}
 	}
 

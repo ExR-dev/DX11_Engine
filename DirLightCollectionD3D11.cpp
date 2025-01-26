@@ -6,7 +6,6 @@
 #include "ErrMsg.h"
 
 using namespace DirectX;
-using namespace SimpleMath;
 
 
 DirLightCollectionD3D11::~DirLightCollectionD3D11()
@@ -29,15 +28,15 @@ bool DirLightCollectionD3D11::Initialize(ID3D11Device *device, const DirLightDat
 
 		shadowCamera.camera = new CameraD3D11(
 			device,
-			ProjectionInfo(1, 1, 0.1f, 1),
-			{ 0, 0, 0 },
+			ProjectionInfo(1.0f, 1.0f, 0.1f, 1.0f),
+			{ 0.0f, 0.0f, 0.0f, 1.0f },
 			true, true
 		);
 
 		shadowCamera.camera->LookY(iLightInfo.rotationY);
 		shadowCamera.camera->LookX(iLightInfo.rotationX);
 
-		Vector3 dir = shadowCamera.camera->GetForward();
+		XMFLOAT4A dir = shadowCamera.camera->GetForward();
 
 		LightBuffer lightBuffer;
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
@@ -78,14 +77,14 @@ bool DirLightCollectionD3D11::Initialize(ID3D11Device *device, const DirLightDat
 
 bool DirLightCollectionD3D11::ScaleToScene(CameraD3D11 &viewCamera, const BoundingBox &sceneBounds, const BoundingBox *cubemapBounds)
 {
-	Vector3 sceneCorners[8];
+	XMFLOAT3 sceneCorners[8];
 	sceneBounds.GetCorners(sceneCorners);
 
-	std::vector<Vector3> nearCorners;
-	for (Vector3 &corner : sceneCorners)
-		nearCorners.push_back({ corner.x, corner.y, corner.z });
+	std::vector<XMFLOAT4A> nearCorners;
+	for (XMFLOAT3 &corner : sceneCorners)
+		nearCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 
-	Vector3 cameraCorners[8];
+	XMFLOAT3 cameraCorners[8];
 	if (viewCamera.GetOrtho())
 	{
 		BoundingOrientedBox viewOrientedBox;
@@ -107,17 +106,17 @@ bool DirLightCollectionD3D11::ScaleToScene(CameraD3D11 &viewCamera, const Boundi
 		viewFrustum.GetCorners(cameraCorners);
 	}
 
-	std::vector<Vector3> innerCorners;
-	for (Vector3 &corner : cameraCorners)
-		innerCorners.push_back({ corner.x, corner.y, corner.z });
+	std::vector<XMFLOAT4A> innerCorners;
+	for (XMFLOAT3 &corner : cameraCorners)
+		innerCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 
 	if (cubemapBounds != nullptr)
 	{
-		Vector3 cubemapCorners[8];
+		XMFLOAT3 cubemapCorners[8];
 		cubemapBounds->GetCorners(cubemapCorners);
 
-		for (Vector3 &corner : cubemapCorners)
-			innerCorners.push_back({ corner.x, corner.y, corner.z });
+		for (XMFLOAT3 &corner : cubemapCorners)
+			innerCorners.push_back({ corner.x, corner.y, corner.z, 1.0f });
 	}
 
 	for (ShadowCamera &shadowCamera : _shadowCameras)
@@ -144,10 +143,8 @@ bool DirLightCollectionD3D11::UpdateBuffers(ID3D11DeviceContext *context)
 
 		LightBuffer &lightBuffer = _bufferData.at(i);
 		lightBuffer.vpMatrix = shadowCamera.camera->GetViewProjectionMatrix();
-
-		const Vector3 fwd = shadowCamera.camera->GetForward();
-
-		memcpy(&lightBuffer.direction, &fwd, sizeof(Vector3));
+		XMFLOAT4A dir = shadowCamera.camera->GetForward();
+		memcpy(&lightBuffer.direction, &dir, sizeof(XMFLOAT3));
 	}
 
 	if (!_lightBuffer.UpdateBuffer(context, _bufferData.data()))

@@ -53,9 +53,7 @@ void Entity::SetDirty()
 		child->SetDirty();
 
 	_recalculateBounds = true;
-
-	if (!_transform.IsDirty())
-		_transform.SetDirty();
+	_transform.SetDirty();
 }
 
 
@@ -94,7 +92,7 @@ inline void Entity::RemoveChild(Entity *child, bool keepWorldTransform)
 
 void Entity::SetParent(Entity *newParent, bool keepWorldTransform)
 {
-	keepWorldTransform = false; // TODO: Fix curious bug that causes crash after deleting child entities with keepWorldTransform = true
+	keepWorldTransform = false; // TODO: Fix bug that causes crash after deleting child entities with keepWorldTransform = true
 
 	if (_parent == newParent)
 		return;
@@ -170,7 +168,8 @@ void Entity::StoreBounds(DirectX::BoundingOrientedBox &entityBounds)
 {
 	if (_recalculateBounds)
 	{
-		_bounds.Transform(_transformedBounds, _transform.GetWorldMatrix());
+		DirectX::XMFLOAT4X4A worldMatrix = _transform.GetWorldMatrix();
+		_bounds.Transform(_transformedBounds, DirectX::XMLoadFloat4x4A(&worldMatrix));
 		_recalculateBounds = false;
 	}
 
