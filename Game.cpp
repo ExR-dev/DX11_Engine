@@ -289,7 +289,8 @@ bool Game::Render(Time& time, const Input& input)
 		return false;
 	}
 
-	static float imGuiFontScale = 1.25f; // I have a 1440p monitor, shit's too small at default
+	//static float imGuiFontScale = 1.25f; // I have a 1440p monitor, shit's too small at default scale
+	static float imGuiFontScale = 1.0f;
 	ImGui::SetWindowFontScale(imGuiFontScale);
 
 	/// v==========================================v ///

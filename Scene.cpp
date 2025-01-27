@@ -1865,7 +1865,7 @@ bool Scene::RenderSelectionUI()
 	ImGui::Text("Space:");
 	ImGui::SameLine();
 	if (ImGui::Button((_editSpace == World) ? "World" : "Local"))
-		_editSpace = (_editSpace == World) ? Local : World; // Flip 
+		_editSpace = (_editSpace == World) ? Local : World;
 
 	float inputWidth = 96.0f;
 	bool isChanged = false;
@@ -1935,13 +1935,9 @@ bool Scene::RenderSelectionUI()
 			ent->GetTransform()->SetScale(entScale, _editSpace);
 	}
 	ImGui::PopID();
-
-	static bool openCatalogue = false;
-	if (ImGui::Button("Toggle Transform Catalogue"))
-		openCatalogue = !openCatalogue;
-	
+		
 	ImGui::PushID("Transform Catalogue");
-	if (openCatalogue) // Transform Catalogue
+	if (ImGui::CollapsingHeader("Transform Catalogue"))
 	{
 		ImGuiChildFlags childFlags = 0;
 		childFlags |= ImGuiChildFlags_Border;
@@ -1961,41 +1957,76 @@ bool Scene::RenderSelectionUI()
 		XMFLOAT4A *vec4 = &parameter;
 		XMFLOAT3A *vec3 = reinterpret_cast<XMFLOAT3A*>(&parameter);
 		float *vec1 = &parameter.x;
-
-		ImGui::BeginChild("Methods", ImVec2(0, 100), childFlags);
-		if (ImGui::Button("GetRight()"))
+		
+		if (ImGui::TreeNode("Getters"))
 		{
-			/*
-			Getters:
-			Vec3 GetRight()
-			Vec3 GetUp()
-			Vec3 GetForward()
-			Vec3 GetPosition()
-			Quat GetRotation()
-			Vec3 GetScale()
-			Vec3 GetEuler()
+			//ImGui::BeginChild("", ImVec2(0, 150), childFlags);
+			if (ImGui::Button("Vec3 GetRight()"))
+				std::memcpy(vec3, &trans->GetRight(_editSpace), sizeof(XMFLOAT3));
 
-			Setters:
-			SetPosition(Vec3 position)
-			SetRotation(Quat rotation)
-			SetScale(Vec3 scale)
-			Move(Vec3 direction)
-			Rotate(Vec3 euler)
-			Scale(Vec3 scale)
-			MoveRelative(Vec3 direction)
-			RotateAxis(Vec3 axis, float amount)
-			SetEuler(Vec3 rollPitchYaw)
+			if (ImGui::Button("Vec3 GetUp()"))
+				std::memcpy(vec3, &trans->GetUp(_editSpace), sizeof(XMFLOAT3));
 
-			Maybe:
-			SetMatrix(Mat mat) Optional
-			Mat &GetLocalMatrix()
-			Mat &GetWorldMatrix()
-			*/
+			if (ImGui::Button("Vec3 GetForward()"))
+				std::memcpy(vec3, &trans->GetForward(_editSpace), sizeof(XMFLOAT3));
+			
+			if (ImGui::Button("Vec3 GetPosition()"))
+				std::memcpy(vec3, &trans->GetPosition(_editSpace), sizeof(XMFLOAT3));
+			
+			if (ImGui::Button("Quat GetRotation()"))
+				std::memcpy(vec4, &trans->GetRotation(_editSpace), sizeof(XMFLOAT4));
 
-			trans->SetPosition(*vec3, _editSpace);
+			if (ImGui::Button("Vec3 GetScale()"))
+				std::memcpy(vec3, &trans->GetScale(_editSpace), sizeof(XMFLOAT3));
+
+			if (ImGui::Button("Vec3 GetEuler()"))
+				(*vec3) = trans->GetEuler(_editSpace), sizeof(XMFLOAT3);
+
+			//ImGui::EndChild();
+			ImGui::TreePop();
 		}
-		ImGui::EndChild();
 
+		if (ImGui::TreeNode("Setters"))
+		{
+			//ImGui::BeginChild("", ImVec2(0, 150), childFlags);
+
+			if (ImGui::Button("SetPosition(Vec3)"))
+				trans->SetPosition(*vec3, _editSpace);
+
+			if (ImGui::Button("SetRotation(Quat)"))
+				trans->SetRotation(*vec4, _editSpace);
+
+			if (ImGui::Button("SetScale(Vec3)"))
+				trans->SetScale(*vec3, _editSpace);
+
+			if (ImGui::Button("Move(Vec3)"))
+				trans->Move(*vec3, _editSpace);
+
+			if (ImGui::Button("Rotate(Vec3)"))
+				trans->Rotate(*vec3, _editSpace);
+
+			if (ImGui::Button("Scale(Vec3)"))
+				trans->Scale(*vec3, _editSpace);
+
+			if (ImGui::Button("MoveRelative(Vec3)"))
+				trans->MoveRelative(*vec3, _editSpace);
+
+			if (ImGui::Button("RotateAxis(Vec3, float)"))
+				trans->RotateAxis(*vec3, *vec1, _editSpace);
+
+			if (ImGui::Button("SetEuler(Vec3)"))
+				trans->SetEuler(*vec3, _editSpace);
+
+			//ImGui::EndChild();
+			ImGui::TreePop();
+		}
+
+		/*
+		Maybe implement:
+		SetMatrix(Mat mat) Optional
+		Mat &GetLocalMatrix()
+		Mat &GetWorldMatrix()
+		*/
 		ImGui::EndChild();
 	}
 	ImGui::PopID();
