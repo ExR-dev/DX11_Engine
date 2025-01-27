@@ -19,21 +19,21 @@ private:
 	Transform *_parent = nullptr;
 	std::vector<Transform*> _children;
 
-	DirectX::XMFLOAT3A _localPosition = { 0, 0, 0 };
+	DirectX::XMFLOAT3A _localPosition = { 0, 0, 0    };
 	DirectX::XMFLOAT4A _localRotation = { 0, 0, 0, 1 };
-	DirectX::XMFLOAT3A _localScale =	{ 1, 1, 1 };
+	DirectX::XMFLOAT3A _localScale =	{ 1, 1, 1    };
 	DirectX::XMFLOAT4X4A _localMatrix = { 1, 0, 0, 0,
 										  0, 1, 0, 0,
 										  0, 0, 1, 0,
-										  0, 0, 0, 1, };
+										  0, 0, 0, 1 };
 
-	DirectX::XMFLOAT3A _worldPosition = { 0, 0, 0 };
+	DirectX::XMFLOAT3A _worldPosition = { 0, 0, 0    };
 	DirectX::XMFLOAT4A _worldRotation = { 0, 0, 0, 1 };
-	DirectX::XMFLOAT3A _worldScale =	{ 1, 1, 1 };
+	DirectX::XMFLOAT3A _worldScale =	{ 1, 1, 1    };
 	DirectX::XMFLOAT4X4A _worldMatrix = { 1, 0, 0, 0, 
 										  0, 1, 0, 0, 
 										  0, 0, 1, 0, 
-										  0, 0, 0, 1, };
+										  0, 0, 0, 1 };
 
 	ConstantBufferD3D11 _worldMatrixBuffer;
 
@@ -92,30 +92,37 @@ public:
 	void SetParent(Transform *parent, bool worldPositionStays = false);
 	[[nodiscard]] Transform *GetParent() const;
 
-	[[nodiscard]] const DirectX::XMFLOAT3A &Right(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::XMFLOAT3A &Up(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::XMFLOAT3A &Forward(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetRight(ReferenceSpace space = Local);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetUp(ReferenceSpace space = Local);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetForward(ReferenceSpace space = Local);
+	void GetAxes(DirectX::XMFLOAT3A *right, DirectX::XMFLOAT3A *up, DirectX::XMFLOAT3A *forward, ReferenceSpace space = Local);
 
-	[[nodiscard]] const DirectX::XMFLOAT3A &GetPosition(ReferenceSpace space = World);
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetRotation(ReferenceSpace space = World);
+	[[nodiscard]] const DirectX::XMFLOAT3A &GetPosition(ReferenceSpace space = Local);
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetRotation(ReferenceSpace space = Local);
 	[[nodiscard]] const DirectX::XMFLOAT3A &GetScale(ReferenceSpace space = Local);
 
-	void SetPosition(const DirectX::XMFLOAT3A &position, ReferenceSpace space = World);
-	void SetPosition(const DirectX::XMFLOAT4A &position, ReferenceSpace space = World);
-	void SetRotation(const DirectX::XMFLOAT4A &rotation, ReferenceSpace space = World);
+	void SetPosition(const DirectX::XMFLOAT3A &position, ReferenceSpace space = Local);
+	void SetPosition(const DirectX::XMFLOAT4A &position, ReferenceSpace space = Local);
+	void SetRotation(const DirectX::XMFLOAT4A &rotation, ReferenceSpace space = Local);
 	void SetScale(const DirectX::XMFLOAT3A &scale, ReferenceSpace space = Local);
 	void SetScale(const DirectX::XMFLOAT4A &scale, ReferenceSpace space = Local);
+	void SetMatrix(const DirectX::XMFLOAT4X4A &mat, ReferenceSpace space = Local);
 
-	void Move(const DirectX::XMFLOAT3A &direction, ReferenceSpace space = World);
-	void Move(const DirectX::XMFLOAT4A &direction, ReferenceSpace space = World);
-	void Rotate(const DirectX::XMFLOAT3A &euler, ReferenceSpace space = World);
-	void Rotate(const DirectX::XMFLOAT4A &euler, ReferenceSpace space = World);
+	void Move(const DirectX::XMFLOAT3A &direction, ReferenceSpace space = Local);
+	void Move(const DirectX::XMFLOAT4A &direction, ReferenceSpace space = Local);
+	void Rotate(const DirectX::XMFLOAT3A &euler, ReferenceSpace space = Local);
+	void Rotate(const DirectX::XMFLOAT4A &euler, ReferenceSpace space = Local);
 	void Scale(const DirectX::XMFLOAT3A &scale, ReferenceSpace space = Local);
 	void Scale(const DirectX::XMFLOAT4A &scale, ReferenceSpace space = Local);
 
-	[[nodiscard]] const DirectX::XMFLOAT3A GetEuler(ReferenceSpace space = World);
-	void SetEuler(const DirectX::XMFLOAT3A &rollPitchYaw, ReferenceSpace space = World);
-	void SetEuler(const DirectX::XMFLOAT4A &rollPitchYaw, ReferenceSpace space = World);
+	void MoveRelative(const DirectX::XMFLOAT3A &direction, ReferenceSpace space = Local);
+	void MoveRelative(const DirectX::XMFLOAT4A &direction, ReferenceSpace space = Local);
+	void RotateAxis(const DirectX::XMFLOAT3A &axis, const float &amount, ReferenceSpace space = Local);
+	void RotateAxis(const DirectX::XMFLOAT4A &axis, const float &amount, ReferenceSpace space = Local);
+
+	[[nodiscard]] const DirectX::XMFLOAT3A GetEuler(ReferenceSpace space = Local);
+	void SetEuler(const DirectX::XMFLOAT3A &rollPitchYaw, ReferenceSpace space = Local);
+	void SetEuler(const DirectX::XMFLOAT4A &rollPitchYaw, ReferenceSpace space = Local);
 
 	[[nodiscard]] bool UpdateConstantBuffer(ID3D11DeviceContext *context);
 	[[nodiscard]] ID3D11Buffer *GetConstantBuffer() const;

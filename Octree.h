@@ -12,8 +12,8 @@
 class Octree
 {
 private:
-	static constexpr UINT MAX_ITEMS_IN_NODE = 24;
-	static constexpr UINT MAX_DEPTH = 4;
+	static constexpr UINT MAX_ITEMS_IN_NODE = 16;
+	static constexpr UINT MAX_DEPTH = 3;
 	static constexpr UINT CHILD_COUNT = 8;
 
 

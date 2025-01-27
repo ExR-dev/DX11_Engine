@@ -19,7 +19,6 @@ private:
 	UINT _entityID;
 	std::string _name = "";
 
-
 protected:
 	bool _isInitialized = false;
 	Transform _transform;

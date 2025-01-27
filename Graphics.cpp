@@ -1,16 +1,13 @@
 ﻿#include "Graphics.h"
-
-#include <algorithm>
-
 #include "ErrMsg.h"
 #include "Entity.h"
 #include "Emitter.h"
 #include "D3D11Helper.h"
 #include "Object.h"
-
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
+#include <algorithm>
 
 
 Graphics::~Graphics()
@@ -57,7 +54,6 @@ Graphics::~Graphics()
 	}
 // #endif // _DEBUG
 }
-
 
 bool Graphics::Setup(const UINT width, const UINT height, const HWND window, 
 	ID3D11Device *&device, ID3D11DeviceContext *&immediateContext, Content *content)
@@ -135,7 +131,7 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
 	io.MouseDrawCursor = true;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
 	ImGui_ImplWin32_Init(window);
 	ImGui_ImplDX11_Init(device, immediateContext);
@@ -148,7 +144,6 @@ bool Graphics::Setup(const UINT width, const UINT height, const HWND window,
 	_isSetup = true;
 	return true;
 }
-
 
 bool Graphics::GetUpdateCubemap() const
 {
@@ -171,7 +166,6 @@ bool Graphics::SetCameras(CameraD3D11 *mainCamera, CameraD3D11 *viewCamera)
 	_currViewCamera = viewCamera;
 	return true;
 }
-
 bool Graphics::SetCubemap(Cubemap *cubemap)
 {
 	if (cubemap == nullptr)
@@ -183,7 +177,6 @@ bool Graphics::SetCubemap(Cubemap *cubemap)
 	_currCubemap = cubemap;
 	return true;
 }
-
 bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights)
 {
 	if (spotlights == nullptr)
@@ -195,7 +188,6 @@ bool Graphics::SetSpotlightCollection(SpotLightCollectionD3D11 *spotlights)
 	_currSpotLightCollection = spotlights;
 	return true;
 }
-
 bool Graphics::SetDirlightCollection(DirLightCollectionD3D11 *dirlights)
 {
 	if (dirlights == nullptr)
@@ -207,7 +199,6 @@ bool Graphics::SetDirlightCollection(DirLightCollectionD3D11 *dirlights)
 	_currDirLightCollection = dirlights;
 	return true;
 }
-
 bool Graphics::SetPointlightCollection(PointLightCollectionD3D11 *pointlights)
 {
 	if (pointlights == nullptr)
@@ -219,7 +210,6 @@ bool Graphics::SetPointlightCollection(PointLightCollectionD3D11 *pointlights)
 	_currPointLightCollection = pointlights;
 	return true;
 }
-
 
 bool Graphics::BeginSceneRender()
 {
@@ -238,7 +228,6 @@ bool Graphics::BeginSceneRender()
 	_isRendering = true;
 	return true;
 }
-
 bool Graphics::EndSceneRender(Time &time)
 {
 	if (!_isRendering)
@@ -304,7 +293,6 @@ bool Graphics::EndSceneRender(Time &time)
 	return true;
 }
 
-
 bool Graphics::RenderToTarget(
 	const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
 	ID3D11RenderTargetView *targetRTV, 
@@ -350,20 +338,19 @@ bool Graphics::RenderToTarget(
 		}
 	}
 
-	_currInputLayoutID = CONTENT_LOAD_ERROR;
-	_currMeshID = CONTENT_LOAD_ERROR;
-	_currVsID = CONTENT_LOAD_ERROR;
-	_currPsID = CONTENT_LOAD_ERROR;
-	_currTexID = CONTENT_LOAD_ERROR;
-	_currNormalID = CONTENT_LOAD_ERROR;
-	_currSpecularID = CONTENT_LOAD_ERROR;
-	_currReflectiveID = CONTENT_LOAD_ERROR;
-	_currAmbientID = CONTENT_LOAD_ERROR;
-	_currHeightID = CONTENT_LOAD_ERROR;
+	_currInputLayoutID = CONTENT_NULL;
+	_currMeshID = CONTENT_NULL;
+	_currVsID = CONTENT_NULL;
+	_currPsID = CONTENT_NULL;
+	_currTexID = CONTENT_NULL;
+	_currNormalID = CONTENT_NULL;
+	_currSpecularID = CONTENT_NULL;
+	_currReflectiveID = CONTENT_NULL;
+	_currAmbientID = CONTENT_NULL;
+	_currHeightID = CONTENT_NULL;
 
 	return true;
 }
-
 
 bool Graphics::RenderSpotlights()
 {
@@ -448,7 +435,6 @@ bool Graphics::RenderSpotlights()
 
 	return true;
 }
-
 bool Graphics::RenderDirlights()
 {
 	if (_currDirLightCollection == nullptr)
@@ -532,7 +518,6 @@ bool Graphics::RenderDirlights()
 
 	return true;
 }
-
 bool Graphics::RenderPointlights()
 {
 	if (_currPointLightCollection == nullptr)
@@ -669,7 +654,6 @@ bool Graphics::RenderShadowCasters()
 	return true;
 }
 
-
 bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers, 
 	ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
@@ -802,7 +786,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			_currTexID = resources.texID;
 		}
 
-		if (resources.normalID != CONTENT_LOAD_ERROR)
+		if (resources.normalID != CONTENT_NULL)
 			if (_currNormalID != resources.normalID)
 			{
 				srv = _content->GetTextureMap(resources.normalID)->GetSRV();
@@ -810,7 +794,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				_currNormalID = resources.normalID;
 			}
 
-		if (resources.specularID != CONTENT_LOAD_ERROR)
+		if (resources.specularID != CONTENT_NULL)
 			if (_currSpecularID != resources.specularID)
 			{
 				srv = _content->GetTextureMap(resources.specularID)->GetSRV();
@@ -818,7 +802,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				_currSpecularID = resources.specularID;
 			}
 
-		if (resources.reflectiveID != CONTENT_LOAD_ERROR)
+		if (resources.reflectiveID != CONTENT_NULL)
 			if (_currReflectiveID != resources.reflectiveID)
 			{
 				srv = _content->GetTextureMap(resources.reflectiveID)->GetSRV();
@@ -826,7 +810,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				_currReflectiveID = resources.reflectiveID;
 			}
 
-		if (resources.ambientID != CONTENT_LOAD_ERROR)
+		if (resources.ambientID != CONTENT_NULL)
 			if (_currAmbientID != resources.ambientID)
 			{
 				srv = _content->GetTexture(resources.ambientID)->GetSRV();
@@ -834,7 +818,7 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 				_currAmbientID = resources.ambientID;
 			}
 
-		if (resources.heightID != CONTENT_LOAD_ERROR)
+		if (resources.heightID != CONTENT_NULL)
 		{
 			if (_currHeightID != resources.heightID)
 			{
@@ -877,14 +861,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			if (path != "")
 			{
 				const UINT id = _content->GetTextureIDByPath(path);
-				if (id != CONTENT_LOAD_ERROR && id != _currTexID)
+				if (id != CONTENT_NULL && id != _currTexID)
 				{
 					srv = _content->GetTexture(id)->GetSRV();
 					_context->PSSetShaderResources(0, 1, &srv);
 					_currTexID = id;
 				}
 			}
-			else if (prevTexID != _currTexID && prevTexID != CONTENT_LOAD_ERROR)
+			else if (prevTexID != _currTexID && prevTexID != CONTENT_NULL)
 			{
 				srv = _content->GetTexture(prevTexID)->GetSRV();
 				_context->PSSetShaderResources(0, 1, &srv);
@@ -895,14 +879,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			if (path != "")
 			{
 				const UINT id = _content->GetTextureIDByPath(path);
-				if (id != CONTENT_LOAD_ERROR && id != _currAmbientID)
+				if (id != CONTENT_NULL && id != _currAmbientID)
 				{
 					srv = _content->GetTexture(id)->GetSRV();
 					_context->PSSetShaderResources(4, 1, &srv);
 					_currAmbientID = id;
 				}
 			}
-			else if (prevAmbientID != _currAmbientID && prevAmbientID != CONTENT_LOAD_ERROR)
+			else if (prevAmbientID != _currAmbientID && prevAmbientID != CONTENT_NULL)
 			{
 				srv = _content->GetTexture(prevAmbientID)->GetSRV();
 				_context->PSSetShaderResources(4, 1, &srv);
@@ -913,14 +897,14 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 			if (path != "")
 			{
 				const UINT id = _content->GetTextureMapIDByPath(path, TextureType::SPECULAR);
-				if (id != CONTENT_LOAD_ERROR && id != _currSpecularID)
+				if (id != CONTENT_NULL && id != _currSpecularID)
 				{
 					srv = _content->GetTextureMap(id)->GetSRV();
 					_context->PSSetShaderResources(2, 1, &srv);
 					_currSpecularID = id;
 				}
 			}
-			else if (prevSpecularID != _currSpecularID && prevSpecularID != CONTENT_LOAD_ERROR)
+			else if (prevSpecularID != _currSpecularID && prevSpecularID != CONTENT_NULL)
 			{
 				srv = _content->GetTextureMap(prevSpecularID)->GetSRV();
 				_context->PSSetShaderResources(2, 1, &srv);
@@ -951,7 +935,6 @@ bool Graphics::RenderGeometry(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 	return true;
 }
-
 bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT> *targetGBuffers,
 	ID3D11UnorderedAccessView *targetUAV, const D3D11_VIEWPORT *targetViewport, const bool useCubemapShader) const
 {
@@ -1053,7 +1036,6 @@ bool Graphics::RenderLighting(const std::array<RenderTargetD3D11, G_BUFFER_COUNT
 
 	return true;
 }
-
 bool Graphics::RenderGBuffer(const UINT bufferIndex) const
 {
 	if (bufferIndex >= G_BUFFER_COUNT)
@@ -1086,7 +1068,6 @@ bool Graphics::RenderGBuffer(const UINT bufferIndex) const
 
 	return true;
 }
-
 bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11DepthStencilView *targetDSV, const D3D11_VIEWPORT *targetViewport)
 {
 	_context->OMSetDepthStencilState(_tdss, 0);
@@ -1257,7 +1238,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 			_currTexID = resources.texID;
 		}
 
-		if (resources.normalID != CONTENT_LOAD_ERROR)
+		if (resources.normalID != CONTENT_NULL)
 			if (_currNormalID != resources.normalID)
 			{
 				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.normalID)->GetSRV();
@@ -1265,7 +1246,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 				_currNormalID = resources.normalID;
 			}
 
-		if (resources.specularID != CONTENT_LOAD_ERROR)
+		if (resources.specularID != CONTENT_NULL)
 			if (_currSpecularID != resources.specularID)
 			{
 				ID3D11ShaderResourceView *const srv = _content->GetTextureMap(resources.specularID)->GetSRV();
@@ -1273,7 +1254,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 				_currSpecularID = resources.specularID;
 			}
 
-		if (resources.heightID != CONTENT_LOAD_ERROR)
+		if (resources.heightID != CONTENT_NULL)
 		{
 			if (_currHeightID != resources.heightID)
 			{
@@ -1330,7 +1311,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 			firstEmitter = false;
 
 			_context->IASetInputLayout(nullptr);
-			_currInputLayoutID = CONTENT_LOAD_ERROR;
+			_currInputLayoutID = CONTENT_NULL;
 
 			_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
@@ -1363,7 +1344,7 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 			}
 		}
 
-		if (resources.texID != CONTENT_LOAD_ERROR)
+		if (resources.texID != CONTENT_NULL)
 			if (_currTexID != resources.texID)
 			{
 				ID3D11ShaderResourceView *const srv = _content->GetTexture(resources.texID)->GetSRV();
@@ -1428,7 +1409,6 @@ bool Graphics::RenderTransparency(ID3D11RenderTargetView *targetRTV, ID3D11Depth
 	return true;
 }
 
-
 bool Graphics::BeginUIRender() const
 {
 	_context->OMSetRenderTargets(1, &_rtv, _dsView);
@@ -1440,21 +1420,8 @@ bool Graphics::BeginUIRender() const
 
 	return true;
 }
-
 bool Graphics::RenderUI(Time &time)
 {
-	char fps[8]{};
-	snprintf(fps, sizeof(fps), "%.2f", 1.0f / time.deltaTime);
-	ImGui::Text(std::format("fps: {}", fps).c_str());
-
-	static float minFPS = FLT_MAX;
-	if (minFPS > 1.0f / time.deltaTime)
-		minFPS = 1.0f / time.deltaTime;
-	ImGui::Text(std::format("Drop: {}", minFPS).c_str());
-
-	if (ImGui::Button("Reset FPS"))
-		minFPS = 1.0f / time.deltaTime;
-
 	std::string currRenderOutput;
 	if		(_renderOutput == 1) currRenderOutput = "Position";
 	else if (_renderOutput == 2) currRenderOutput = "Normal";
@@ -1474,11 +1441,7 @@ bool Graphics::RenderUI(Time &time)
 	if (ImGui::Button(std::format("Transparency: {}", _renderTransparency ? "Enabled" : "Disabled").c_str()))
 		_renderTransparency = !_renderTransparency;
 
-	static bool renderLightData = false;
-	if (ImGui::Button("View Light Draw Info"))
-		renderLightData = !renderLightData;
-
-	if (renderLightData)
+	if (ImGui::TreeNode("Light Draw Info"))
 	{
 		ImGuiChildFlags childFlags = 0;
 		childFlags |= ImGuiChildFlags_Border;
@@ -1507,11 +1470,11 @@ bool Graphics::RenderUI(Time &time)
 			}
 
 		ImGui::EndChild();
+		ImGui::TreePop();
 	}
 
 	return true;
 }
-
 bool Graphics::EndUIRender() const
 {
 	ImGui::End();
@@ -1523,7 +1486,6 @@ bool Graphics::EndUIRender() const
 
 	return true;
 }
-
 
 bool Graphics::EndFrame()
 {
@@ -1541,7 +1503,6 @@ bool Graphics::EndFrame()
 
 	return true;
 }
-
 bool Graphics::ResetRenderState()
 {
 	_currMainCamera->ResetRenderQueue();
@@ -1562,16 +1523,16 @@ bool Graphics::ResetRenderState()
 				_currCubemap->GetCamera(i)->ResetRenderQueue();
 	_currCubemap = nullptr;
 
-	_currInputLayoutID	= CONTENT_LOAD_ERROR;
-	_currMeshID			= CONTENT_LOAD_ERROR;
-	_currVsID			= CONTENT_LOAD_ERROR;
-	_currPsID			= CONTENT_LOAD_ERROR;
-	_currTexID			= CONTENT_LOAD_ERROR;
-	_currNormalID		= CONTENT_LOAD_ERROR;
-	_currSpecularID		= CONTENT_LOAD_ERROR;
-	_currReflectiveID	= CONTENT_LOAD_ERROR;
-	_currAmbientID		= CONTENT_LOAD_ERROR;
-	_currHeightID		= CONTENT_LOAD_ERROR;
+	_currInputLayoutID	= CONTENT_NULL;
+	_currMeshID			= CONTENT_NULL;
+	_currVsID			= CONTENT_NULL;
+	_currPsID			= CONTENT_NULL;
+	_currTexID			= CONTENT_NULL;
+	_currNormalID		= CONTENT_NULL;
+	_currSpecularID		= CONTENT_NULL;
+	_currReflectiveID	= CONTENT_NULL;
+	_currAmbientID		= CONTENT_NULL;
+	_currHeightID		= CONTENT_NULL;
 
 	_isRendering = false;
 	return true;

@@ -522,6 +522,25 @@ static void SendFormattedMeshToMeshData(MeshData &meshData,
 		else if (vData.pz > max.z)	max.z = vData.pz;
 	}
 
+	if (min.x >= max.x - 0.001f)
+	{
+		float mid = (min.x + max.x) / 2.0f;
+		min.x = mid - 0.001f;
+		max.x = mid + 0.001f;
+	}
+	if (min.y >= max.y - 0.001f)
+	{
+		float mid = (min.y + max.y) / 2.0f;
+		min.y = mid - 0.001f;
+		max.y = mid + 0.001f;
+	}
+	if (min.z >= max.z - 0.001f)
+	{
+		float mid = (min.z + max.z) / 2.0f;
+		min.z = mid - 0.001f;
+		max.z = mid + 0.001f;
+	}
+
 	DirectX::BoundingBox box;
 	DirectX::BoundingBox().CreateFromPoints(
 		box,

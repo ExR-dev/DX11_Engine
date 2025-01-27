@@ -30,10 +30,10 @@ bool Object::Initialize(ID3D11Device *device, const std::string &name,
 	_isTransparent = isTransparent;
 
 	MaterialProperties materialProperties = { };
-	materialProperties.sampleNormal = _normalID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleSpecular = _specularID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleReflection = _reflectiveID != CONTENT_LOAD_ERROR;
-	materialProperties.sampleAmbient = _ambientID != CONTENT_LOAD_ERROR;
+	materialProperties.sampleNormal = _normalID != CONTENT_NULL;
+	materialProperties.sampleSpecular = _specularID != CONTENT_NULL;
+	materialProperties.sampleReflection = _reflectiveID != CONTENT_NULL;
+	materialProperties.sampleAmbient = _ambientID != CONTENT_NULL;
 
 	if (!_materialBuffer.Initialize(device, sizeof(MaterialProperties), &materialProperties))
 	{

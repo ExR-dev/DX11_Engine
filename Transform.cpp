@@ -282,7 +282,6 @@ XMFLOAT4X4A *Transform::LocalMatrix()
 		return &_localMatrix;
 
 	// Recalculate.
-
 	XMFLOAT3A x;
 	XMFLOAT3A y;
 	XMFLOAT3A z;
@@ -329,7 +328,7 @@ Transform *Transform::GetParent() const
 	return _parent;
 }
 
-const XMFLOAT3A &Transform::Right(ReferenceSpace space)
+const XMFLOAT3A &Transform::GetRight(ReferenceSpace space)
 {
 	if (!_parent)
 		space = Local;
@@ -338,22 +337,21 @@ const XMFLOAT3A &Transform::Right(ReferenceSpace space)
 	{
 	case Local:
 	{
-		auto v = LocalMatrix()->m[0];
+		auto *v = LocalMatrix()->m[0];
 		return { v[0], v[1], v[2] };
 	}
 
 	case World:
 	{
-		auto v = WorldMatrix()->m[0];
+		auto *v = WorldMatrix()->m[0];
 		return { v[0], v[1], v[2] };
 	}
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 1, 0, 0 };
 	}
 }
-const XMFLOAT3A &Transform::Up(ReferenceSpace space)
+const XMFLOAT3A &Transform::GetUp(ReferenceSpace space)
 {
 	if (!_parent)
 		space = Local;
@@ -362,22 +360,21 @@ const XMFLOAT3A &Transform::Up(ReferenceSpace space)
 	{
 	case Local:
 	{
-		auto v = LocalMatrix()->m[1];
+		auto *v = LocalMatrix()->m[1];
 		return { v[0], v[1], v[2] };
 	}
 
 	case World:
 	{
-		auto v = WorldMatrix()->m[1];
+		auto *v = WorldMatrix()->m[1];
 		return { v[0], v[1], v[2] };
 	}
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 0, 1, 0 };
 	}
 }
-const XMFLOAT3A &Transform::Forward(ReferenceSpace space)
+const XMFLOAT3A &Transform::GetForward(ReferenceSpace space)
 {
 	if (!_parent)
 		space = Local;
@@ -386,19 +383,56 @@ const XMFLOAT3A &Transform::Forward(ReferenceSpace space)
 	{
 	case Local:
 	{
-		auto v = LocalMatrix()->m[2];
+		auto *v = LocalMatrix()->m[2];
 		return { v[0], v[1], v[2] };
 	}
 
 	case World:
 	{
-		auto v = WorldMatrix()->m[2];
+		auto *v = WorldMatrix()->m[2];
 		return { v[0], v[1], v[2] };
 	}
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 0, 0, 1 };
+	}
+}
+void Transform::GetAxes(XMFLOAT3A *right, XMFLOAT3A *up, XMFLOAT3A *forward, ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+	{
+		auto m = LocalMatrix()->m;
+		
+		if (right)
+			memcpy(right, m[0], sizeof(XMFLOAT3));
+		if (up)
+			memcpy(up, m[1], sizeof(XMFLOAT3));
+		if (forward)
+			memcpy(forward, m[2], sizeof(XMFLOAT3));
+		break;
+	}
+
+	case World:
+	{
+		auto m = WorldMatrix()->m;
+
+		if (right)
+			memcpy(right, m[0], sizeof(XMFLOAT3));
+		if (up)
+			memcpy(up, m[1], sizeof(XMFLOAT3));
+		if (forward)
+			memcpy(forward, m[2], sizeof(XMFLOAT3));
+		break;
+	}
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
 	}
 }
 
@@ -417,7 +451,6 @@ const XMFLOAT3A &Transform::GetPosition(ReferenceSpace space)
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 0, 0, 0 };
 	}
 }
 const XMFLOAT4A &Transform::GetRotation(ReferenceSpace space)
@@ -435,7 +468,6 @@ const XMFLOAT4A &Transform::GetRotation(ReferenceSpace space)
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 0, 0, 0, 1 };
 	}
 }
 const XMFLOAT3A &Transform::GetScale(ReferenceSpace space)
@@ -453,7 +485,6 @@ const XMFLOAT3A &Transform::GetScale(ReferenceSpace space)
 
 	default:
 		ErrMsg("Invalid reference space!");
-		return { 1, 1, 1 };
 	}
 }
 
@@ -515,7 +546,7 @@ void Transform::SetPosition(const XMFLOAT3A &position, ReferenceSpace space)
 	SetWorldPositionDirty();
 	_isLocalMatrixDirty = true;
 }
-void Transform::SetPosition(const DirectX::XMFLOAT4A &position, ReferenceSpace space)
+void Transform::SetPosition(const XMFLOAT4A &position, ReferenceSpace space)
 {
 	SetPosition(To3(position), space);
 }
@@ -591,9 +622,53 @@ void Transform::SetScale(const XMFLOAT3A &scale, ReferenceSpace space)
 	SetWorldScaleDirty();
 	_isLocalMatrixDirty = true;
 }
-void Transform::SetScale(const DirectX::XMFLOAT4A &scale, ReferenceSpace space)
+void Transform::SetScale(const XMFLOAT4A &scale, ReferenceSpace space)
 {
 	SetScale(To3(scale), space);
+}
+void Transform::SetMatrix(const XMFLOAT4X4A &mat, ReferenceSpace space)
+{
+	if (!_parent)
+		space = Local;
+
+	switch (space)
+	{
+	case Local:
+		XMVECTOR s, r, p;
+
+		XMMatrixDecompose(&s, &r, &p, Load(mat));
+
+		Store(_localScale, s);
+		Store(_localRotation, r);
+		Store(_localPosition, p);
+		break;
+
+	case World:
+	{
+		XMVECTOR s, r, p;
+		XMMatrixDecompose(&s, &r, &p, Load(mat));
+		XMFLOAT3A scale, pos;
+		XMFLOAT4A rot;
+
+		Store(scale, s);
+		Store(rot, r);
+		Store(pos, p);
+
+		SetPosition(pos, World);
+		SetRotation(rot, World);
+		SetScale(scale, World);
+		break;
+	}
+
+	default:
+		ErrMsg("Invalid reference space!");
+		break;
+	}
+
+	SetWorldRotationDirty();
+	_isWorldPositionDirty = true;
+	_isWorldScaleDirty = true;
+	_isLocalMatrixDirty = true;
 }
 
 void Transform::Move(const XMFLOAT3A &direction, ReferenceSpace space)
@@ -680,6 +755,39 @@ void Transform::Scale(const XMFLOAT3A &scale, ReferenceSpace space)
 void Transform::Scale(const XMFLOAT4A &scale, ReferenceSpace space)
 {
 	Scale(To3(scale), space);
+}
+
+void Transform::MoveRelative(const XMFLOAT3A &direction, ReferenceSpace space)
+{
+	XMFLOAT3A right, up, forward;
+	GetAxes(&right, &up, &forward, space);
+
+	XMFLOAT3A relativeDirection = {
+		(right.x * direction.x + up.x * direction.y + forward.x * direction.z),
+		(right.y * direction.x + up.y * direction.y + forward.y * direction.z),
+		(right.z * direction.x + up.z * direction.y + forward.z * direction.z)
+	};
+
+	Move(relativeDirection, space);
+}
+void Transform::MoveRelative(const XMFLOAT4A &direction, ReferenceSpace space)
+{
+	MoveRelative(To3(direction), space);
+
+}
+void Transform::RotateAxis(const DirectX::XMFLOAT3A &axis, const float &amount, ReferenceSpace space)
+{
+	XMVECTOR axisVec = Load(axis);
+	XMVECTOR currentRotation = Load(space == World ? *WorldRotation() : _localRotation);
+
+	XMFLOAT4A newRotation;
+	Store(newRotation, XMQuaternionRotationAxis(axisVec, amount));
+
+	SetRotation(newRotation, space);
+}
+void Transform::RotateAxis(const DirectX::XMFLOAT4A &axis, const float &amount, ReferenceSpace space)
+{
+	RotateAxis(To3(axis), amount, space);
 }
 
 const XMFLOAT3A Transform::GetEuler(ReferenceSpace space)

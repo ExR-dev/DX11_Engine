@@ -91,39 +91,34 @@ void CameraD3D11::Move(const float amount, const XMFLOAT4A &direction)
 	_isDirty = true;
 	_recalculateBounds = true;
 }
-void CameraD3D11::MoveLocal(const float amount, const XMFLOAT4A &direction)
+void CameraD3D11::MoveRelative(const float amount, const XMFLOAT4A &direction)
 {
-	XMFLOAT4A 
-		right = GetRight(),
-		up = GetUp(),
-		forward = GetForward();
-
-	XMFLOAT3A localMovement = {
-		(right.x * direction.x + up.x * direction.y + forward.x * direction.z) * amount,
-		(right.y * direction.x + up.y * direction.y + forward.y * direction.z) * amount,
-		(right.z * direction.x + up.z * direction.y + forward.z * direction.z) * amount
+	XMFLOAT3A movement = {
+		direction.x * amount,
+		direction.y * amount,
+		direction.z * amount
 	};
 
-	_transform.Move(localMovement, World);
+	_transform.MoveRelative(movement, World);
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 
 void CameraD3D11::MoveForward(const float amount)
 {
-	MoveLocal(amount, { 0.0f, 0.0f, 1.0f, 0.0f });
+	MoveRelative(amount, { 0.0f, 0.0f, 1.0f, 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 void CameraD3D11::MoveRight(const float amount)
 {
-	MoveLocal(amount, { 1.0f, 0.0f, 0.0f, 0.0f });
+	MoveRelative(amount, { 1.0f, 0.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
 void CameraD3D11::MoveUp(const float amount)
 {
-	MoveLocal(amount, { 0.0f, 1.0f, 0.0f, 0.0f });
+	MoveRelative(amount, { 0.0f, 1.0f, 0.0f, 0.0f });
 	_isDirty = true;
 	_recalculateBounds = true;
 }
@@ -248,25 +243,32 @@ void CameraD3D11::SetOrtho(bool state)
 	_recalculateBounds = true;
 }
 
+const XMFLOAT4A &CameraD3D11::GetPosition()
+{
+	return *reinterpret_cast<const XMFLOAT4A *>(&_transform.GetPosition());
+}
 const XMFLOAT4A &CameraD3D11::GetRight()		
 {
-	XMFLOAT3A v = _transform.Right();
-	return *reinterpret_cast<const XMFLOAT4A *>(&v);
+	return *reinterpret_cast<const XMFLOAT4A *>(&_transform.GetRight());
 }
 const XMFLOAT4A &CameraD3D11::GetUp()
 {
-	XMFLOAT3A v = _transform.Up();
-	return *reinterpret_cast<const XMFLOAT4A *>(&v);
+	return *reinterpret_cast<const XMFLOAT4A *>(&_transform.GetUp());
 }
 const XMFLOAT4A &CameraD3D11::GetForward()
 {
-	XMFLOAT3A v = _transform.Forward();
-	return *reinterpret_cast<const XMFLOAT4A *>(&v);
+	return *reinterpret_cast<const XMFLOAT4A *>(&_transform.GetForward());
 }
-const XMFLOAT4A &CameraD3D11::GetPosition()
+void CameraD3D11::GetAxes(DirectX::XMFLOAT4A *right, DirectX::XMFLOAT4A *up, DirectX::XMFLOAT4A *forward)
 {
-	XMFLOAT3A v = _transform.GetPosition();
-	return *reinterpret_cast<const XMFLOAT4A *>(&v);
+	auto m = _transform.GetWorldMatrix().m;
+
+	if (right)
+		memcpy(right, m[0], sizeof(XMFLOAT4));
+	if (up)
+		memcpy(up, m[1], sizeof(XMFLOAT4));
+	if (forward)
+		memcpy(forward, m[2], sizeof(XMFLOAT4));
 }
 
 XMFLOAT4X4A CameraD3D11::GetViewMatrix()
@@ -424,7 +426,7 @@ bool CameraD3D11::ScaleToContents(const std::vector<XMFLOAT4A> &nearBounds, cons
 		return false;
 	}
 
-	XMFLOAT4A newPos;
+	XMFLOAT4A newPos = { 0, 0, 0, 0 };
 	TO_VEC(newPos) = XMVectorAdd(mid, XMVectorScale(forward, nearDist - 1.0f));
 	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(right, (rightDist + leftDist) * 0.5f));
 	TO_VEC(newPos) = XMVectorAdd(TO_VEC(newPos), XMVectorScale(up, (upDist + downDist) * 0.5f));

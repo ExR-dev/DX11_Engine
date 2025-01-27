@@ -2,18 +2,17 @@
 
 #include "Entity.h"
 
-
-class Object final : Entity
+class Object final : public Entity
 {
 private:
 	UINT
-		_meshID = CONTENT_LOAD_ERROR,
-		_texID = CONTENT_LOAD_ERROR,
-		_normalID = CONTENT_LOAD_ERROR,
-		_specularID = CONTENT_LOAD_ERROR,
-		_reflectiveID = CONTENT_LOAD_ERROR,
-		_ambientID = CONTENT_LOAD_ERROR,
-		_heightID = CONTENT_LOAD_ERROR;
+		_meshID = CONTENT_NULL,
+		_texID = CONTENT_NULL,
+		_normalID = CONTENT_NULL,
+		_specularID = CONTENT_NULL,
+		_reflectiveID = CONTENT_NULL,
+		_ambientID = CONTENT_NULL,
+		_heightID = CONTENT_NULL;
 
 	bool _isTransparent = false;
 

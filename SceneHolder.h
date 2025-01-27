@@ -119,20 +119,23 @@ public:
 	[[nodiscard]] bool Initialize(const DirectX::BoundingBox &sceneBounds);
 	[[nodiscard]] bool Update();
 
+	// Entity is Not initialized automatically. Initialize manually through the returned pointer.
 	[[nodiscard]] Entity *AddEntity(const DirectX::BoundingOrientedBox &bounds, EntityType type);
 	// Entity must be manually deleted after calling!
 	[[nodiscard]] bool RemoveEntity(Entity *entity);
-	[[nodiscard]] bool RemoveEntity(UINT id);
+	[[nodiscard]] bool RemoveEntity(UINT index);
 
 	[[nodiscard]] bool UpdateEntityPosition(Entity *entity);
 
 	[[nodiscard]] const DirectX::BoundingBox &GetBounds() const;
+
 	[[nodiscard]] Entity *GetEntity(UINT i) const;
 	[[nodiscard]] Entity *GetEntityByID(UINT id) const;
 	[[nodiscard]] Entity *GetEntityByName(const std::string &name) const;
+	void GetEntities(std::vector<Entity *> &entities) const;
+
 	[[nodiscard]] UINT GetEntityIndex(const Entity *entity) const;
 	[[nodiscard]] UINT GetEntityCount() const;
-	void GetEntities(std::vector<Entity *> &entities) const;
 
 	[[nodiscard]] bool FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const;
 	[[nodiscard]] bool BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const;

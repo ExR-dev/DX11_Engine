@@ -12,10 +12,9 @@
 class Quadtree
 {
 private:
-	static constexpr UINT MAX_ITEMS_IN_NODE = 24;
+	static constexpr UINT MAX_ITEMS_IN_NODE = 16;
 	static constexpr UINT MAX_DEPTH = 4;
 	static constexpr UINT CHILD_COUNT = 4;
-
 
 	struct Node
 	{
@@ -239,7 +238,6 @@ private:
 			}
 		}
 
-
 		bool RaycastNode(const DirectX::XMFLOAT3 &orig, const DirectX::XMFLOAT3 &dir, float &length, Entity *&entity) const
 		{
 			if (isLeaf)
@@ -255,9 +253,6 @@ private:
 					float newLength = 0.0f;
 					if (Raycast(orig, dir, itemBounds, newLength))
 					{
-						if (newLength < 0.0f)
-							continue;
-
 						if (newLength >= length)
 							continue;
 
@@ -299,17 +294,24 @@ private:
 				}
 			}
 
-			// Check children in order of closest to furthest. Return first intersection found.
+			// Check children in order of closest to furthest.
+			length = FLT_MAX;
+			entity = nullptr;
+
 			for (int i = 0; i < childHitCount; i++)
 			{
-				length = FLT_MAX;
-				entity = nullptr;
-
-				if (children[childHits[i].index]->RaycastNode(orig, dir, length, entity))
+				if (length < childHits[i].length)
 					return true;
+
+				if (!children[childHits[i].index]->RaycastNode(orig, dir, length, entity))
+				{
+					length = FLT_MAX;
+					entity = nullptr;
+				}
+
 			}
 
-			return false;
+			return (entity != nullptr);
 		}
 
 
@@ -398,8 +400,8 @@ public:
 		if (_root == nullptr)
 			return false;
 
-		float _ = FLT_MAX; // In case Intersects() uses the initial dist value as a maximum. Docs don't specify.
-		if (!Raycast(orig, dir, _root->bounds, _))
+		float len = FLT_MAX; // In case Intersects() uses the initial dist value as a maximum. Docs don't specify.
+		if (!Raycast(orig, dir, _root->bounds, len))
 			return false;
 
 		length = FLT_MAX;

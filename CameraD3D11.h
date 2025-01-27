@@ -29,13 +29,13 @@ struct GeometryBufferData
 struct ResourceGroup
 {
 	UINT
-		meshID = CONTENT_LOAD_ERROR,
-		texID = CONTENT_LOAD_ERROR,
-		normalID = CONTENT_LOAD_ERROR,
-		specularID = CONTENT_LOAD_ERROR,
-		reflectiveID = CONTENT_LOAD_ERROR,
-		ambientID = CONTENT_LOAD_ERROR,
-		heightID = CONTENT_LOAD_ERROR;
+		meshID = CONTENT_NULL,
+		texID = CONTENT_NULL,
+		normalID = CONTENT_NULL,
+		specularID = CONTENT_NULL,
+		reflectiveID = CONTENT_NULL,
+		ambientID = CONTENT_NULL,
+		heightID = CONTENT_NULL;
 
 	bool operator<(const ResourceGroup &other) const
 	{
@@ -113,7 +113,7 @@ public:
 		const DirectX::XMFLOAT4A &initialPosition = DirectX::XMFLOAT4A(0.0f, 0.0f, 0.0f, 0.0f), bool hasCSBuffer = true, bool isOrtho = false);
 
 	void Move(float amount, const DirectX::XMFLOAT4A &direction);
-	void MoveLocal(float amount, const DirectX::XMFLOAT4A &direction);
+	void MoveRelative(float amount, const DirectX::XMFLOAT4A &direction);
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);
@@ -130,9 +130,10 @@ public:
 	void SetOrtho(bool state);
 
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetPosition();
-	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward();
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetRight();
 	[[nodiscard]] const DirectX::XMFLOAT4A &GetUp();
+	[[nodiscard]] const DirectX::XMFLOAT4A &GetForward();
+	void GetAxes(DirectX::XMFLOAT4A *right, DirectX::XMFLOAT4A *up, DirectX::XMFLOAT4A *forward);
 
 	[[nodiscard]] DirectX::XMFLOAT4X4A GetViewMatrix();
 	[[nodiscard]] DirectX::XMFLOAT4X4A GetProjectionMatrix() const;

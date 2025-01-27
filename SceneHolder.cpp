@@ -1,14 +1,11 @@
 #include "SceneHolder.h"
-
 #include "ErrMsg.h"
-
 
 SceneHolder::~SceneHolder()
 {
 	for (const SceneEntity *ent : _entities)
 		delete ent;
 }
-
 bool SceneHolder::Initialize(const DirectX::BoundingBox &sceneBounds)
 {
 	_bounds = sceneBounds;
@@ -43,28 +40,15 @@ bool SceneHolder::Update()
 	return true;
 }
 
-
-// Entity is Not initialized automatically. Initialize manually through the returned pointer.
 Entity *SceneHolder::AddEntity(const DirectX::BoundingOrientedBox &bounds, const EntityType type)
 {
 	SceneEntity *newEntity = new SceneEntity(_entityCounter, bounds, type);
 	_entities.push_back(newEntity);
 	_entityCounter++;
 
-	switch (type)
-	{
-		case EntityType::OBJECT:
-			_treeInsertionQueue.push_back((reinterpret_cast<Entity *>(newEntity->_item.object))->GetID());
-			return reinterpret_cast<Entity *>(_entities.back()->_item.object);
-
-		case EntityType::EMITTER:
-			_treeInsertionQueue.push_back((reinterpret_cast<Entity *>(newEntity->_item.emitter))->GetID());
-			return reinterpret_cast<Entity *>(_entities.back()->_item.emitter);
-	}
-
-	return nullptr;
+	_treeInsertionQueue.push_back(newEntity->GetEntity()->GetID());
+	return _entities.back()->GetEntity();
 }
-
 bool SceneHolder::RemoveEntity(Entity *entity)
 {
 	for (auto& child : *entity->GetChildren())
@@ -87,43 +71,31 @@ bool SceneHolder::RemoveEntity(Entity *entity)
 		return false;
 	}
 
-	switch (entity->GetType())
-	{
-		case EntityType::OBJECT:
-			std::erase_if(_entities, [entity](const SceneEntity *item) { return reinterpret_cast<Entity *>(item->_item.object) == entity; });
-			break;
-
-		case EntityType::EMITTER:
-			std::erase_if(_entities, [entity](const SceneEntity *item) { return reinterpret_cast<Entity *>(item->_item.emitter) == entity; });
-			break;
-	}
-
+	std::erase_if(_entities, [entity](const SceneEntity *item) { return item->GetEntity()->GetID() == entity->GetID(); });
 	return true;
 }
-
-bool SceneHolder::RemoveEntity(const UINT id)
+bool SceneHolder::RemoveEntity(const UINT index)
 {
-	if (id >= _entities.size())
+	if (index >= _entities.size())
 	{
 		ErrMsg("Failed to remove entity, ID out of range!");
 		return false;
 	}
 
-	switch (_entities[id]->_type)
-	{
-		case EntityType::OBJECT:
-			return RemoveEntity(reinterpret_cast<Entity *>(_entities[id]->_item.object));
-
-		case EntityType::EMITTER:
-			return RemoveEntity(reinterpret_cast<Entity *>(_entities[id]->_item.emitter));
-	}
-
-	return false;
+	return RemoveEntity(_entities.at(index)->GetEntity());
 }
-
 
 bool SceneHolder::UpdateEntityPosition(Entity *entity)
 {
+	for (auto &child : *entity->GetChildren())
+	{
+		if (!UpdateEntityPosition(child))
+		{
+			ErrMsg("Failed to update child entity position!");
+			return false;
+		}
+	}
+
 	DirectX::BoundingOrientedBox entityBounds;
 	entity->StoreBounds(entityBounds);
 
@@ -142,7 +114,6 @@ const DirectX::BoundingBox& SceneHolder::GetBounds() const
 	return _bounds;
 }
 
-
 Entity *SceneHolder::GetEntity(const UINT i) const
 {
 	if (i < 0)
@@ -157,60 +128,34 @@ Entity *SceneHolder::GetEntity(const UINT i) const
 		return nullptr;
 	}
 
-	switch (_entities[i]->_type)
-	{
-		case EntityType::OBJECT:
-			return reinterpret_cast<Entity *>(_entities[i]->_item.object);
-
-		case EntityType::EMITTER:
-			return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
-	}
-
-	return nullptr;
+	return _entities[i]->GetEntity();
 }
-
 Entity *SceneHolder::GetEntityByID(const UINT id) const
 {
 	const UINT entityCount = GetEntityCount();
 	for (UINT i = 0; i < entityCount; i++)
 	{
-		switch (_entities[i]->_type)
-		{
-			case EntityType::OBJECT:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetID() != id)
-					break;
-				return reinterpret_cast<Entity *>(_entities[i]->_item.object);
-
-			case EntityType::EMITTER:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetID() != id)
-					break;
-				return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
-		}
+		if (_entities[i]->GetEntity()->GetID() == id)
+			return _entities[i]->GetEntity();
 	}
 
 	return nullptr;
 }
-
 Entity *SceneHolder::GetEntityByName(const std::string &name) const
 {
 	const UINT entityCount = GetEntityCount();
 	for (UINT i = 0; i < entityCount; i++)
 	{
-		switch (_entities[i]->_type)
-		{
-			case EntityType::OBJECT:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.object)->GetName() == name)
-					return reinterpret_cast<Entity *>(_entities[i]->_item.object);
-				break;
-
-			case EntityType::EMITTER:
-				if (reinterpret_cast<Entity *>(_entities[i]->_item.emitter)->GetName() == name)
-					return reinterpret_cast<Entity *>(_entities[i]->_item.emitter);
-				break;
-		}
+		if (_entities[i]->GetEntity()->GetName() == name)
+			return _entities[i]->GetEntity();
 	}
 
 	return nullptr;
+}
+void SceneHolder::GetEntities(std::vector<Entity *> &entities) const
+{
+	for (const SceneEntity *ent : _entities)
+		entities.push_back(ent->GetEntity());
 }
 
 UINT SceneHolder::GetEntityIndex(const Entity *entity) const
@@ -218,43 +163,16 @@ UINT SceneHolder::GetEntityIndex(const Entity *entity) const
 	const UINT entityCount = GetEntityCount();
 	for (UINT i = 0; i < entityCount; i++)
 	{
-		switch (_entities[i]->_type)
-		{
-			case EntityType::OBJECT:
-				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.object))
-					return i;
-				break;
-
-			case EntityType::EMITTER:
-				if (entity == reinterpret_cast<Entity *>(_entities[i]->_item.emitter))
-					return i;
-				break;
-		}
+		if (entity == _entities[i]->GetEntity())
+			return i;
 	}
 
-	return 0xffffffff;
+	return -1;
 }
-
 UINT SceneHolder::GetEntityCount() const
 {
 	return static_cast<UINT>(_entities.size());
 }
-
-void SceneHolder::GetEntities(std::vector<Entity *> &entities) const
-{
-	for (const SceneEntity *ent : _entities)
-		switch (ent->_type)
-		{
-			case EntityType::OBJECT:
-				entities.push_back(reinterpret_cast<Entity *>(ent->_item.object));
-				break;
-
-			case EntityType::EMITTER:
-				entities.push_back(reinterpret_cast<Entity *>(ent->_item.emitter));
-				break;
-		}
-}
-
 
 bool SceneHolder::FrustumCull(const DirectX::BoundingFrustum &frustum, std::vector<Entity *> &containingItems) const
 {
@@ -272,15 +190,11 @@ bool SceneHolder::FrustumCull(const DirectX::BoundingFrustum &frustum, std::vect
 
 	return true;
 }
-
 bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<Entity *> &containingItems) const
 {
 	std::vector<Entity *> containingInterfaces;
 	containingInterfaces.reserve(_entities.capacity());
 
-#ifdef QUADTREE_CULLING
-#elif defined OCTREE_CULLING
-#endif
 	if (!_volumeTree.BoxCull(box, containingInterfaces))
 	{
 		ErrMsg("Failed to box cull volume tree!");
@@ -292,21 +206,12 @@ bool SceneHolder::BoxCull(const DirectX::BoundingOrientedBox &box, std::vector<E
 
 	return true;
 }
-
-
 bool SceneHolder::Raycast(const DirectX::XMFLOAT3A &origin, const DirectX::XMFLOAT3A &direction, RaycastOut &result) const
 {
-#ifdef QUADTREE_CULLING
-#elif defined OCTREE_CULLING
-#endif
 	return _volumeTree.RaycastTree(origin, direction, result.distance, result.entity);
 }
 
-
 void SceneHolder::DebugGetTreeStructure(std::vector<DirectX::BoundingBox> &boxCollection) const
 {
-#ifdef QUADTREE_CULLING
-#elif defined OCTREE_CULLING
-#endif
 	_volumeTree.DebugGetStructure(boxCollection);
 }

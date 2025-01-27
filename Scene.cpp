@@ -1,13 +1,11 @@
 #include "Scene.h"
-
-#include <algorithm>
-#include <cstdlib>
-
 #include "ErrMsg.h"
 #include "ImGui/imgui.h"
+#include <algorithm>
+#include <cstdlib>
+#include <memory>
 
 using namespace DirectX;
-
 
 Scene::Scene()
 {
@@ -19,11 +17,9 @@ Scene::Scene()
 
 	_currCameraPtr = _camera.get();
 }
-
 Scene::~Scene()
 {
 }
-
 
 bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphics)
 {
@@ -42,6 +38,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		return false;
 	}
 
+
 	// Create camera
 	if (!_camera->Initialize(device,
 		ProjectionInfo(70.0f * (XM_PI / 180.0f), 16.0f / 9.0f, 0.05f, 100.0f), 
@@ -59,6 +56,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		ErrMsg("Failed to initialize secondary camera!");
 		return false;
 	}
+
 
 	// Create spotlights
 	const SpotLightData spotlightInfo = {
@@ -165,48 +163,82 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	}
 
 
-	// Create selection marker
+	// Create global selection marker
 	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_WireframeCube"),
 			textureID = content->GetTextureID("Tex_Red"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
-		constexpr BoundingOrientedBox dotBounds = BoundingOrientedBox(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1));
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(dotBounds, EntityType::OBJECT));
+        std::unique_ptr<Entity> entPtr = std::make_unique<Object>(-1, BoundingOrientedBox({ 0, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0, 1 }));
+		Object *obj = reinterpret_cast<Object *>(entPtr.get());
+
 		if (!obj->Initialize(_device, "Selection Marker", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
-			ErrMsg("Failed to initialize pointer dot object!");
+			ErrMsg("Failed to initialize selection marker object!");
 			return false;
 		}
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 0, 0, 0, 0 });
+		_globalEntities.push_back(std::move(entPtr));
 	}
+
+	// Create global transform gizmo
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_TransformGizmo"),
+			textureID = content->GetTextureID("Tex_TransformGizmo"),
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
+			ambientID = content->GetTextureID("Tex_TransformGizmo"),
+			heightID = CONTENT_NULL;
+
+		std::unique_ptr<Entity> entPtr = std::make_unique<Object>(-1, BoundingOrientedBox({ 0, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0, 1 }));
+		Object *obj = reinterpret_cast<Object *>(entPtr.get());
+
+		if (!obj->Initialize(_device, "Transform Gizmo", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize transform gizmo object!");
+			return false;
+		}
+
+		entPtr.get()->GetTransform()->SetScale({0.5f, 0.5f, 0.5f });
+
+		_globalEntities.push_back(std::move(entPtr));
+	}
+
+	// Create global pointer gizmo
+	{
+		const UINT
+			meshID = content->GetMeshID("Mesh_Sphere"),
+			textureID = content->GetTextureID("Tex_Black"),
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
+			ambientID = content->GetTextureID("Tex_White"),
+			heightID = CONTENT_NULL;
+
+		std::unique_ptr<Entity> entPtr = std::make_unique<Object>(-1, BoundingOrientedBox({ 0, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0, 1 }));
+		Object *obj = reinterpret_cast<Object *>(entPtr.get());
+
+		if (!obj->Initialize(_device, "Pointer Gizmo", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		{
+			ErrMsg("Failed to initialize pointer object!");
+			return false;
+		}
+
+		entPtr.get()->GetTransform()->SetScale({ 0.10f, 0.10f, 0.10f });
+
+		_globalEntities.push_back(std::move(entPtr));
+	}
+
 
 	// Create room
 	{
-		/*const UINT
-			meshID = content->GetMeshID("Mesh_Room"),
-			textureID = content->GetTextureID("Tex_texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
-
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Room", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
-		{
-			ErrMsg("Failed to initialize room object!");
-			return false;
-		}
-
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 15.0f, 15.0f, 15.0f });*/
-		
 		const UINT
 			meshID = content->GetMeshID("Mesh_Plane"),
 			textureID = content->GetTextureID("Tex_Metal"),
@@ -214,7 +246,7 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			specularID = content->GetTextureMapID("TexMap_Metal_Specular"),
 			reflectiveID = content->GetTextureMapID("TexMap_Metal_Reflective"),
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Room Floor", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -224,7 +256,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		}
 
 		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale({ 15.0f, 15.0f, 15.0f });
-
 
 		obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Room Roof", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -291,11 +322,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		const UINT
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Character", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -314,11 +345,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		const UINT
 			meshID = content->GetMeshID("Mesh_Sphere"),
 			textureID = content->GetTextureID("Tex_White"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
 			reflectiveID = content->GetTextureMapID("TexMap_White_Reflective"),
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Reflective Sphere", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -334,12 +365,12 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	{
 		const UINT
 			meshID = content->GetMeshID("Mesh_SimpleSubmesh"),
-			textureID = content->GetTextureID("Tex_White"),
-			normalID = content->GetTextureMapID("TexMap_Default_Normal"),
+			textureID = content->GetTextureID("Tex_texture3"),
+			normalID = content->GetTextureMapID("TexMap_texture3_Normal"),
 			specularID = content->GetTextureMapID("TexMap_Default_Specular"),
 			reflectiveID = content->GetTextureMapID("TexMap_Default_Reflective"),
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Submesh", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -378,11 +409,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		const UINT
 			meshID = content->GetMeshID("Mesh_Error"),
 			textureID = content->GetTextureID("Tex_White"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = content->GetTextureID("Tex_Red"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "ERROR", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -403,9 +434,9 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 			textureID = content->GetTextureID("Tex_Transparent"),
 			normalID = content->GetTextureMapID("TexMap_Bricks_Normal"),
 			specularID = content->GetTextureMapID("TexMap_Bricks_Specular"),
-			reflectiveID = CONTENT_LOAD_ERROR,
-			ambientID = CONTENT_LOAD_ERROR,
-			heightID = CONTENT_LOAD_ERROR;
+			reflectiveID = CONTENT_NULL,
+			ambientID = CONTENT_NULL,
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Transparent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID, true))
@@ -422,11 +453,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		const UINT
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, "Parent", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -448,11 +479,11 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 		const UINT
 			meshID = content->GetMeshID("Mesh_CharacterSculptLow1"),
 			textureID = content->GetTextureID("Tex_CharacterSculptLow0Texture1"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = content->GetTextureID("Tex_Ambient"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
 		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 		if (!obj->Initialize(_device, nextChild, meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
@@ -493,7 +524,6 @@ bool Scene::Initialize(ID3D11Device *device, Content *content, Graphics *graphic
 	_initialized = true;
 	return true;
 }
-
 
 bool Scene::Update(ID3D11DeviceContext* context, Time& time, const Input& input)
 {
@@ -554,7 +584,6 @@ bool Scene::UpdatePlayer(ID3D11DeviceContext* context, Time& time, const Input& 
 
 	return true;
 }
-
 bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const Input& input)
 {
 	static float playerHeight = 3.3f;
@@ -623,7 +652,6 @@ bool Scene::UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const 
 
 	return true;
 }
-
 bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const Input& input)
 {
 	if (input.IsInFocus()) // Handle user input while window is in focus
@@ -683,9 +711,9 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				Object *obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 				if (!obj->Initialize(_device, "Random Entity",
 					meshID, textureID,
-					CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
-					CONTENT_LOAD_ERROR, ambientID,
-					CONTENT_LOAD_ERROR,
+					CONTENT_NULL, CONTENT_NULL,
+					CONTENT_NULL, ambientID,
+					CONTENT_NULL,
 					(textureID >= transparentStart)))
 				{
 					ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
@@ -715,9 +743,9 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 			Object* obj = reinterpret_cast<Object*>(_sceneHolder.AddEntity(_content->GetMesh(selectedMeshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
 			if (!obj->Initialize(_device, "Custom Entity",
 				selectedMeshID, selectedTextureID,
-				CONTENT_LOAD_ERROR, CONTENT_LOAD_ERROR,
-				CONTENT_LOAD_ERROR, ambientID,
-				CONTENT_LOAD_ERROR,
+				CONTENT_NULL, CONTENT_NULL,
+				CONTENT_NULL, ambientID,
+				CONTENT_NULL,
 				(selectedTextureID >= transparentStart)))
 			{
 				ErrMsg(std::format("Failed to initialize entity #{}!", reinterpret_cast<Entity*>(obj)->GetID()));
@@ -742,9 +770,7 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 			}
 		}
 
-		UpdateSelectionMarker();
-
-		if (input.GetKey(KeyCode::M3) == KeyState::Pressed)
+		if (input.GetKey(KeyCode::M2) == KeyState::Pressed)
 		{
 			if (_currSelection != -1)
 			{
@@ -801,8 +827,8 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 			if (input.GetKey(KeyCode::LeftControl) == KeyState::Held)
 				currSpeed = 0.5f;
 
-			if (_currSelection == -1 && !movePointLights)
-			{ // Move camera
+			if (_currSelection == -1 && !movePointLights) // Move camera
+			{
 				if (input.GetKey(KeyCode::D) == KeyState::Held)
 					basisCamera->MoveRight(time.deltaTime * currSpeed);
 				else if (input.GetKey(KeyCode::A) == KeyState::Held)
@@ -822,8 +848,8 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				if (mState.dx != 0) basisCamera->LookX(static_cast<float>(mState.dx) / 360.0f);
 				if (mState.dy != 0) basisCamera->LookY(static_cast<float>(mState.dy) / 360.0f);
 			}
-			else
-			{ // Move selected entity or point light
+			else // Move selected entity or point light
+			{
 				static bool relativeToCamera = false;
 				if (input.GetKey(KeyCode::M) == KeyState::Pressed)
 					relativeToCamera = !relativeToCamera;
@@ -832,10 +858,8 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 
 				if (relativeToCamera)
 				{
-					XMFLOAT4A 
-						r = basisCamera->GetRight(),
-						u = basisCamera->GetUp(),
-						f = basisCamera->GetForward();
+					XMFLOAT4A r, u, f;
+					basisCamera->GetAxes(&r, &u, &f);
 
 					right = XMLoadFloat4A(&r);
 					up = XMLoadFloat4A(&u);
@@ -911,11 +935,11 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 						Transform* entityTransform = ent->GetTransform();
 
 						if (isRotating)
-							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), Local);
+							entityTransform->Rotate(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), _editSpace);
 						else if (isScaling)
-							entityTransform->Scale(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), Local);
+							entityTransform->Scale(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), _editSpace);
 						else
-							entityTransform->Move(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), Local);
+							entityTransform->Move(*reinterpret_cast<XMFLOAT4A*>(&transformationVector), _editSpace);
 
 						if (!_sceneHolder.UpdateEntityPosition(ent))
 						{
@@ -941,8 +965,12 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 					_currSelection = -1;
 				}
 			}
+		
+			if (input.GetKey(KeyCode::M1) == KeyState::Held)
+			{
+				_drawPointer = true;
+			}
 		}
-
 
 		static bool hasSetCamera = false;
 		if (input.GetKey(KeyCode::Q) == KeyState::Pressed)
@@ -1000,6 +1028,8 @@ bool Scene::UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const In
 				_currCameraPtr = _dirlights->GetLightCamera(_currCamera - 6 - spotlightCount);
 		}
 	}
+
+	UpdateGlobalEntities();
 
 	return true;
 }
@@ -1070,6 +1100,18 @@ bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input
 		}
 	}
 
+	const UINT globalEntityCount = _globalEntities.size();
+	for (UINT i = 0; i < globalEntityCount; i++)
+	{
+		Entity *ent = _globalEntities.at(i).get();
+
+		if (!ent->Update(context, time, input))
+		{
+			ErrMsg(std::format("Failed to update global entity #{}!", i));
+			return false;
+		}
+	}
+
 	if (!_sceneHolder.Update())
 	{
 		ErrMsg("Failed to update scene holder!");
@@ -1078,32 +1120,100 @@ bool Scene::UpdateEntities(ID3D11DeviceContext *context, Time &time, const Input
 
 	return true;
 }
-
-void Scene::UpdateSelectionMarker() const
+void Scene::UpdateGlobalEntities()
 {
 	Entity
 		*selection = _currSelection < 0 ? nullptr : _sceneHolder.GetEntity(_currSelection),
-		*marker = _sceneHolder.GetEntity(0);
+		*marker = nullptr,
+		*gizmo = nullptr,
+		*pointer = nullptr;
 
-	BoundingOrientedBox box = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 1} };
-	if (selection)
-		selection->StoreBounds(box);
-
-	const XMFLOAT4A
-		center = { box.Center.x, box.Center.y, box.Center.z, 0 },
-		extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 };
-
-	marker->GetTransform()->SetPosition(center);
+	for (auto &entPtr : _globalEntities)
+	{
+		if (entPtr->GetName() == "Selection Marker")
+		{
+			marker = entPtr.get();
+		}
+		else if (entPtr->GetName() == "Transform Gizmo")
+		{
+			gizmo = entPtr.get();
+		}
+		else if (entPtr->GetName() == "Pointer Gizmo")
+		{
+			pointer = entPtr.get();
+		}
+	}
 
 	if (selection)
 	{
-		XMFLOAT4A rot = { box.Orientation.x, box.Orientation.y, box.Orientation.z, box.Orientation.w };
-		marker->GetTransform()->SetRotation(rot);
+		if (marker)
+		{
+			BoundingOrientedBox box = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 1} };
+			selection->StoreBounds(box);
+
+			const XMFLOAT4A
+				center = { box.Center.x, box.Center.y, box.Center.z, 0 },
+				extents = { box.Extents.x, box.Extents.y, box.Extents.z, 0 },
+				rot = { box.Orientation.x, box.Orientation.y, box.Orientation.z, box.Orientation.w };
+
+			marker->GetTransform()->SetPosition(center, World);
+			marker->GetTransform()->SetRotation(rot, World);
+			marker->GetTransform()->SetScale(extents, World);
+		}
+
+		if (gizmo)
+		{
+			gizmo->GetTransform()->SetPosition(selection->GetTransform()->GetPosition(World), World);
+			gizmo->GetTransform()->SetRotation(selection->GetTransform()->GetRotation(World), World);
+		}
 	}
 
-	marker->GetTransform()->SetScale(extents);
-}
+	if (_drawPointer)
+	{
+		if (pointer)
+		{
+			const XMFLOAT3A
+				camPos = _camera->GetTransform().GetPosition(),
+				camDir = _camera->GetTransform().GetForward();
 
+			RaycastOut out;
+			if (_sceneHolder.Raycast(
+				{ camPos.x, camPos.y, camPos.z },
+				{ camDir.x, camDir.y, camDir.z },
+				out))
+			{
+				//out.distance -= 0.05f;
+
+				XMFLOAT3A pos = { 
+					camPos.x + (camDir.x * out.distance),
+					camPos.y + (camDir.y * out.distance),
+					camPos.z + (camDir.z * out.distance)
+				};
+
+				pointer->GetTransform()->SetPosition(pos, World);
+
+				/*
+				//XMFLOAT4A rot = _camera->GetTransform().GetRotation();
+				//XMStoreFloat4A(&rot, XMQuaternionInverse(XMLoadFloat4A(&rot)));
+
+				XMMATRIX lookAtMatrix = DirectX::XMMatrixLookAtLH(XMLoadFloat3A(&pos), XMLoadFloat3A(&camPos), XMVectorSet(0, 1, 0, 0));
+				XMFLOAT4A rot = { 0, 0, 0, 1 };
+				XMStoreFloat4A(&rot, XMQuaternionRotationMatrix(lookAtMatrix));
+
+				pointer->GetTransform()->SetRotation(rot, World);
+				*/
+			}
+			else
+			{
+				_drawPointer = false;
+			}
+		}
+		else
+		{
+			_drawPointer = false;
+		}
+	}
+}
 
 bool Scene::Render(Time &time, const Input &input)
 {
@@ -1165,10 +1275,16 @@ bool Scene::Render(Time &time, const Input &input)
 	}
 	time.TakeSnapshot("FrustumCull");
 
+	if (!RenderGlobal())
+	{
+		ErrMsg("Failed to render global entities!");
+		return false;
+	}
+	
 	const int spotlightCount = static_cast<int>(_spotlights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullSpotlights");
 	if (_doMultiThread)
-		#pragma omp parallel for num_threads(2)
+		#pragma omp parallel for num_threads(2) // TODO: Due to transform batching, this may no longer be thread safe
 		for (int i = 0; i < spotlightCount; i++)
 		{
 			CameraD3D11 *spotlightCamera = _spotlights->GetLightCamera(i);
@@ -1316,7 +1432,7 @@ bool Scene::Render(Time &time, const Input &input)
 	
 	const int dirlightCount = static_cast<int>(_dirlights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullDirlights");
-	#pragma omp parallel for num_threads(2)
+	#pragma omp parallel for num_threads(2) // TODO: Due to transform batching, this may no longer be thread safe
 	for (int i = 0; i < dirlightCount; i++)
 	{
 		CameraD3D11 *dirlightCamera = _dirlights->GetLightCamera(i);
@@ -1361,7 +1477,7 @@ bool Scene::Render(Time &time, const Input &input)
 	const int pointlightCount = static_cast<int>(_pointlights->GetNrOfLights());
 	time.TakeSnapshot("FrustumCullPointlights");
 	if (_doMultiThread)
-		#pragma omp parallel for num_threads(2)
+		#pragma omp parallel for num_threads(2) // TODO: Due to transform batching, this may no longer be thread safe
 		for (int i = 0; i < pointlightCount; i++)
 			for (int j = 0; j < 6; j++)
 			{
@@ -1451,12 +1567,11 @@ bool Scene::Render(Time &time, const Input &input)
 		}
 	time.TakeSnapshot("FrustumCullPointlights");
 
-
 	time.TakeSnapshot("FrustumCullCubemap");
 	if (_graphics->GetUpdateCubemap() && _cubemap.GetUpdate())
 	{
 		if (_doMultiThread)
-			#pragma omp parallel for num_threads(2)
+			#pragma omp parallel for num_threads(2) // TODO: Due to transform batching, this may no longer be thread safe
 			for (int i = 0; i < 6; i++)
 			{
 				CameraD3D11 *cubemapCamera = _cubemap.GetCamera(i);
@@ -1529,16 +1644,58 @@ bool Scene::Render(Time &time, const Input &input)
 
 	return true;
 }
+bool Scene::RenderGlobal()
+{
+	for (auto &entPtr : _globalEntities)
+	{
+		Entity *ent = entPtr.get();
+
+		if (_currSelection >= 0) // Render selection marker and transform gizmo
+		{
+			if (ent->GetName() == "Selection Marker" || 
+				ent->GetName() == "Transform Gizmo")
+			{
+				if (!ent->Render(_camera.get()))
+				{
+					ErrMsg("Failed to render entity!");
+					return false;
+				}
+			}
+		}
+
+		if (_drawPointer) // Render pointer
+		{
+			if (ent->GetName() == "Pointer Gizmo")
+			{
+				if (!ent->Render(_camera.get()))
+				{
+					ErrMsg("Failed to render entity!");
+					return false;
+				}
+				
+				_drawPointer = false;
+			}
+		}
+
+		if (ent->GetName() == "Culling Tree Wireframe" || 
+			ent->GetName() == "Entity Bounds Wireframe")
+		{
+			if (!ent->Render(_camera.get()))
+			{
+				ErrMsg("Failed to render entity!");
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
 
 bool Scene::RenderUI()
 {
 	ImGui::Text(std::format("Objects in scene: {}", _sceneHolder.GetEntityCount()).c_str());
-
-	static bool renderHierarchy = false;
-	if (ImGui::Button("Toggle Scene Hierarchy"))
-		renderHierarchy = !renderHierarchy;
-
-	if (renderHierarchy)
+		
+	if (ImGui::TreeNode("Scene Hierarchy"))
 	{
 		ImGuiChildFlags childFlags = 0;
 		childFlags |= ImGuiChildFlags_Border;
@@ -1564,14 +1721,40 @@ bool Scene::RenderUI()
 			if (ImGui::SmallButton(std::format("{} ({})", entName, entIndex).c_str()))
 				_currSelection = entIndex;
 
-			if (!RenderTransformUIRecursive(entity, 0))
+			if (!RenderHierarchyUI(entity, 0))
 			{
 				ImGui::EndChild();
+				ImGui::TreePop();
 				return false;
 			}
 		}
 
 		ImGui::EndChild();
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Entity Hierarchy"))
+	{
+		ImGuiChildFlags childFlags = 0;
+		childFlags |= ImGuiChildFlags_Border;
+		childFlags |= ImGuiChildFlags_ResizeY;
+
+		ImGui::BeginChild("Entity Hierarchy", ImVec2(0, 300), childFlags);
+		if (_currSelection >= 0)
+		{
+			Entity *ent = _sceneHolder.GetEntity(_currSelection);
+
+			ImGui::Text(std::format("<{}> ({})", ent->GetName(), _currSelection).c_str());
+			if (!RenderHierarchyUI(ent, 0))
+			{
+				ImGui::EndChild();
+				ImGui::TreePop();
+				return false;
+			}
+		}
+		ImGui::EndChild();
+
+		ImGui::TreePop();
 	}
 
 	if (!RenderSelectionUI())
@@ -1596,9 +1779,11 @@ bool Scene::RenderUI()
 	}
 
 	static char fovText[16] = "90.0";
+	ImGuiInputTextFlags textInputFlags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_AutoSelectAll;
+	ImGui::SetNextItemWidth(128);
 	if (isOrtho)
 	{
-		if (ImGui::InputText("View Width", fovText, 16))
+		if (ImGui::InputText("View Width", fovText, 16, textInputFlags))
 		{
 			float newWidth = static_cast<float>(atof(fovText));
 			if (newWidth > 0.0f)
@@ -1607,7 +1792,7 @@ bool Scene::RenderUI()
 	}
 	else
 	{
-		if (ImGui::InputText("FOV", fovText, 16))
+		if (ImGui::InputText("FOV", fovText, 16, textInputFlags))
 		{
 			float newFOV = static_cast<float>(atof(fovText));
 			if (newFOV > 0.0f && newFOV < 180.0f)
@@ -1644,7 +1829,6 @@ bool Scene::RenderUI()
 
 	return true;
 }
-
 bool Scene::RenderSelectionUI()
 {
 	ImGui::Separator();
@@ -1661,149 +1845,8 @@ bool Scene::RenderSelectionUI()
 		return true;
 	}
 
-	static bool _worldSpace = false;
-	ImGui::Checkbox("WorldSpace", &_worldSpace);
-	ReferenceSpace space = _worldSpace ? ReferenceSpace::World : ReferenceSpace::Local;
-
-	ImGui::Text(std::format("Entity: {}", ent->GetName()).c_str());
-
-	float inputWidth = 128.0f;
-	float inputFloat;
-	bool isChanged = false;
-
-	// Position
-	{
-		XMFLOAT3A entPos = ent->GetTransform()->GetPosition(space);
-		ImGui::Text("Position: ");
-
-		inputFloat = entPos.x;
-		ImGui::PushID("PX");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entPos.x = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-
-		inputFloat = entPos.y;
-		ImGui::PushID("PY");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entPos.y = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		inputFloat = entPos.z;
-		ImGui::PushID("PZ");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entPos.z = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		if (isChanged)
-			ent->GetTransform()->SetPosition(entPos, space);
-	}
-
-	// Rotation
-	{
-		float degreeConversion = 180.0f / XM_PI; // TODO: Does ToEuler() return radians or degrees? Remove this if degrees.
-		isChanged = false;
-		XMFLOAT3A entRot = ent->GetTransform()->GetEuler(space);
-
-		ImGui::Text("Rotation: ");
-
-		inputFloat = entRot.x * degreeConversion;
-		ImGui::PushID("RX");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entRot.x = inputFloat / degreeConversion;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		inputFloat = entRot.y * degreeConversion;
-		ImGui::PushID("RY");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entRot.y = inputFloat / degreeConversion;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		inputFloat = entRot.z * degreeConversion;
-		ImGui::PushID("RZ");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entRot.z = inputFloat / degreeConversion;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		if (isChanged)
-			ent->GetTransform()->SetEuler(entRot, space);
-	}
-
-	// Scale
-	{
-		isChanged = false;
-		XMFLOAT3A entScale = ent->GetTransform()->GetScale(space);
-
-		ImGui::Text("Scale:    ");
-
-		inputFloat = entScale.x;
-		ImGui::PushID("SX");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entScale.x = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		inputFloat = entScale.y;
-		ImGui::PushID("SY");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entScale.y = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		inputFloat = entScale.z;
-		ImGui::PushID("SZ");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(inputWidth);
-		if (ImGui::InputFloat("", &inputFloat, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-		{
-			entScale.z = inputFloat;
-			isChanged = true;
-		}
-		ImGui::PopID();
-
-		if (isChanged)
-			ent->GetTransform()->SetScale(entScale, space);
-	}
-
-
+	ImGui::Text(std::format("Entity: {}", ent->GetName()).c_str()); 
+	
 	Entity *parent = ent->GetParent();
 	if (parent)
 	{
@@ -1819,32 +1862,120 @@ bool Scene::RenderSelectionUI()
 		ImGui::Text("Parent: None");
 	}
 
-	static bool renderHierarchy = false;
-	if (ImGui::Button("Toggle Entity Hierarchy"))
-		renderHierarchy = !renderHierarchy;
+	ImGui::Text("Space:");
+	ImGui::SameLine();
+	if (ImGui::Button((_editSpace == World) ? "World" : "Local"))
+		_editSpace = (_editSpace == World) ? Local : World; // Flip 
 
-	if (renderHierarchy)
+	float inputWidth = 96.0f;
+	bool isChanged = false;
+
+	ImGuiInputTextFlags floatInputFlags = ImGuiInputTextFlags_EnterReturnsTrue;
+
+	ImGui::PushID("Position");
+	{
+		XMFLOAT3A entPos = ent->GetTransform()->GetPosition(_editSpace);
+
+		ImGui::Text("Position: ");
+		ImGui::SameLine();
+		if (ImGui::InputFloat3("", &entPos.x, "%.3f", floatInputFlags))
+		{
+			isChanged = true;
+		}
+
+		if (isChanged)
+			ent->GetTransform()->SetPosition(entPos, _editSpace);
+	}
+	ImGui::PopID();
+
+	ImGui::PushID("Rotation");
+	{
+		float degreeConversion = 180.0f / XM_PI;
+		isChanged = false;
+		XMFLOAT3A entRot = ent->GetTransform()->GetEuler(_editSpace);
+		XMFLOAT3A entRotDeg = {
+			entRot.x * degreeConversion,
+			entRot.y * degreeConversion,
+			entRot.z * degreeConversion
+		};
+
+		ImGui::Text("Rotation: ");
+		ImGui::SameLine();
+		if (ImGui::InputFloat3("", &entRotDeg.x, "%.3f", floatInputFlags))
+		{
+			isChanged = true;
+		}
+
+		if (isChanged)
+		{
+			entRot = {
+				entRotDeg.x / degreeConversion,
+				entRotDeg.y / degreeConversion,
+				entRotDeg.z / degreeConversion
+			};
+
+			ent->GetTransform()->SetEuler(entRot, _editSpace);
+		}
+	}
+	ImGui::PopID();
+
+	ImGui::PushID("Scale");
+	{
+		isChanged = false;
+		XMFLOAT3A entScale = ent->GetTransform()->GetScale(_editSpace);
+
+		ImGui::Text("Scale:    ");
+		ImGui::SameLine();
+		if (ImGui::InputFloat3("", &entScale.x, "%.3f", floatInputFlags))
+		{
+			isChanged = true;
+		}
+
+		if (isChanged)
+			ent->GetTransform()->SetScale(entScale, _editSpace);
+	}
+	ImGui::PopID();
+
+	static bool openCatalogue = false;
+	if (ImGui::Button("Toggle Transform Catalogue"))
+		openCatalogue = !openCatalogue;
+	
+	ImGui::PushID("Transform Catalogue");
+	if (openCatalogue) // Transform Catalogue
 	{
 		ImGuiChildFlags childFlags = 0;
 		childFlags |= ImGuiChildFlags_Border;
 		childFlags |= ImGuiChildFlags_ResizeY;
 
-		ImGui::BeginChild("Entity Hierarchy", ImVec2(0, 300), childFlags);
+		ImGui::BeginChild("Transform Catalogue", ImVec2(0, 150), childFlags);
+		ImGui::Text("Note: Getters write the input. Setters read the input.");
+		ImGui::Text("Methods with an additional float parameter use the w-value.");
+		ImGui::Text("The reference space selected above is used for all methods.");
 
-		ImGui::Text(std::format("<{}> ({})", ent->GetName(), _currSelection).c_str());
-		if (!RenderTransformUIRecursive(ent, 0))
+		static XMFLOAT4A parameter = { 0, 0, 0, 0 };
+		ImGui::Text("Input: ");
+		ImGui::SameLine();
+		ImGui::InputFloat4("", &parameter.x, "%.3f", floatInputFlags);
+
+		Transform *trans = ent->GetTransform();
+		XMFLOAT4A *vec4 = &parameter;
+		XMFLOAT3A *vec3 = reinterpret_cast<XMFLOAT3A*>(&parameter);
+		float *vec1 = &parameter.x;
+
+		ImGui::BeginChild("Methods", ImVec2(0, 100), childFlags);
+		if (ImGui::Button("GetRight()"))
 		{
-			ImGui::EndChild();
-			return false;
+			trans->SetPosition(*vec3, _editSpace);
 		}
+		ImGui::EndChild();
 
 		ImGui::EndChild();
 	}
+	ImGui::PopID();
 
 	return true;
 }
-
-bool Scene::RenderTransformUIRecursive(Entity* ent, UINT depth)
+bool Scene::RenderHierarchyUI(Entity* ent, UINT depth)
 {
 	if (depth > 0)
 	{
@@ -1879,62 +2010,58 @@ bool Scene::RenderTransformUIRecursive(Entity* ent, UINT depth)
 	{
 		if (!child)
 			continue;
-		if (!RenderTransformUIRecursive(child, depth + 1))
+		if (!RenderHierarchyUI(child, depth + 1))
 			return false;
 	}
 
 	return true;
 }
 
-
 void Scene::DebugGenerateVolumeTreeStructure()
 {
-	static int lastEntityCount = -1;
-	static int lastBoxCount = 0;
-
-	bool remove = false;
-	if (lastEntityCount >= 0)
+	static bool removePrevResult = false;
+	if (removePrevResult)
 	{
-		remove = true;
-		for (int i = 0; i < lastBoxCount; i++)
+		int globalEntityCount = _globalEntities.size();
+		for (int i = 0; i < globalEntityCount; i++)
 		{
-			const Entity* ent = _sceneHolder.GetEntity(lastEntityCount);
-			if (!_sceneHolder.RemoveEntity(lastEntityCount))
-			{
-				ErrMsg("Failed to remove entity!");
-				delete ent;
-				return;
-			}
-			delete ent;
-		}
-	}
-	lastEntityCount = _sceneHolder.GetEntityCount();
+			Entity *ent = _globalEntities.at(i).get();
 
-	if (remove)
-	{
-		lastEntityCount = -1;
+			if (ent->GetName() != "Culling Tree Wireframe")
+				continue;
+
+			_globalEntities.erase(_globalEntities.begin() + i);
+
+			globalEntityCount--;
+			i--;
+		}
+
+		removePrevResult = false;
 		return;
 	}
 
+	removePrevResult = true;
+
 	std::vector<BoundingBox> treeStructure;
 	_sceneHolder.DebugGetTreeStructure(treeStructure);
-	lastBoxCount = static_cast<int>(treeStructure.size());
 
 	for (const BoundingBox &box : treeStructure)
 	{
-		static UINT
+		static const UINT
 			meshID = _content->GetMeshID("Mesh_WireframeCube"),
 			textureID = _content->GetTextureID("Tex_Green"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = _content->GetTextureID("Tex_Green"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
-		if (!obj->Initialize(_device, "Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
+		std::unique_ptr<Entity> entPtr = std::make_unique<Object>(-1, BoundingOrientedBox({ 0, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0, 1 }));
+		Object *obj = reinterpret_cast<Object *>(entPtr.get());
+
+		if (!obj->Initialize(_device, "Culling Tree Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
-			ErrMsg("Failed to initialize Tree Wireframe object!");
+			ErrMsg("Failed to initialize culling tree wireframe object!");
 			return;
 		}
 
@@ -1942,42 +2069,42 @@ void Scene::DebugGenerateVolumeTreeStructure()
 			center = { box.Center.x, box.Center.y, box.Center.z, 0.0f },
 			scale = { box.Extents.x, box.Extents.y, box.Extents.z, 0.0f };
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
+		entPtr->GetTransform()->SetPosition(center);
+		entPtr->GetTransform()->SetScale(scale);
+
+		_globalEntities.push_back(std::move(entPtr));
 	}
 }
-
 void Scene::DebugGenerateEntityBounds()
 {
-	static int lastEntityCount = -1;
-	static int lastBoxCount = 0;
+	int entityCount = _sceneHolder.GetEntityCount();
 
-	bool remove = false;
-	if (lastEntityCount >= 0)
+	static bool removePrevResult = false;
+	if (removePrevResult)
 	{
-		remove = true;
-		for (int i = 0; i < lastBoxCount; i++)
+		int globalEntityCount = _globalEntities.size();
+		for (int i = 0; i < globalEntityCount; i++)
 		{
-			const Entity* ent = _sceneHolder.GetEntity(lastEntityCount);
-			if (!_sceneHolder.RemoveEntity(lastEntityCount))
-			{
-				ErrMsg("Failed to remove entity!");
-				delete ent;
-				return;
-			}
-			delete ent;
-		}
-	}
-	lastEntityCount = _sceneHolder.GetEntityCount();
+			Entity *ent = _globalEntities.at(i).get();
 
-	if (remove)
-	{
-		lastEntityCount = -1;
+			if (ent->GetName() != "Entity Bounds Wireframe")
+				continue;
+
+			_globalEntities.erase(_globalEntities.begin() + i);
+
+			globalEntityCount--;
+			i--;
+		}
+
+		removePrevResult = false;
 		return;
 	}
 
+	removePrevResult = true;
+
 	std::vector<BoundingOrientedBox> entityBounds;
-	for (int i = 0; i < lastEntityCount; i++)
+
+	for (int i = 0; i < entityCount; i++)
 	{
 		Entity *ent = _sceneHolder.GetEntity(i);
 
@@ -1985,23 +2112,24 @@ void Scene::DebugGenerateEntityBounds()
 		ent->StoreBounds(box);
 		entityBounds.push_back(box);
 	}
-	lastBoxCount = static_cast<int>(entityBounds.size());
 
 	for (const BoundingOrientedBox &box : entityBounds)
 	{
-		static UINT
+		static const UINT
 			meshID = _content->GetMeshID("Mesh_WireframeCube"),
 			textureID = _content->GetTextureID("Tex_Blue"),
-			normalID = CONTENT_LOAD_ERROR,
-			specularID = CONTENT_LOAD_ERROR,
-			reflectiveID = CONTENT_LOAD_ERROR,
+			normalID = CONTENT_NULL,
+			specularID = CONTENT_NULL,
+			reflectiveID = CONTENT_NULL,
 			ambientID = _content->GetTextureID("Tex_Blue"),
-			heightID = CONTENT_LOAD_ERROR;
+			heightID = CONTENT_NULL;
 
-		Object *obj = reinterpret_cast<Object *>(_sceneHolder.AddEntity(_content->GetMesh(meshID)->GetBoundingOrientedBox(), EntityType::OBJECT));
+		std::unique_ptr<Entity> entPtr = std::make_unique<Object>(-1, BoundingOrientedBox({ 0, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0, 1 }));
+		Object *obj = reinterpret_cast<Object *>(entPtr.get());
+
 		if (!obj->Initialize(_device, "Entity Bounds Wireframe", meshID, textureID, normalID, specularID, reflectiveID, ambientID, heightID))
 		{
-			ErrMsg("Failed to initialize Entity Bounds Wireframe object!");
+			ErrMsg("Failed to initialize entity bounds wireframe object!");
 			return;
 		}
 
@@ -2011,8 +2139,10 @@ void Scene::DebugGenerateEntityBounds()
 
 		XMFLOAT4A boxOrientation = { box.Orientation.x, box.Orientation.y, box.Orientation.z, box.Orientation.w};
 
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetPosition(center);
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetRotation(boxOrientation);
-		reinterpret_cast<Entity *>(obj)->GetTransform()->SetScale(scale);
+		entPtr->GetTransform()->SetPosition(center);
+		entPtr->GetTransform()->SetRotation(boxOrientation);
+		entPtr->GetTransform()->SetScale(scale);
+
+		_globalEntities.push_back(std::move(entPtr));
 	}
 }

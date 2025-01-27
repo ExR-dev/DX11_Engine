@@ -10,7 +10,7 @@
 #include "ShaderResourceTextureD3D11.h"
 
 
-constexpr UINT CONTENT_LOAD_ERROR = 0xFFFFFFFF;
+constexpr UINT CONTENT_NULL = 0xFFFFFFFF;
 
 
 

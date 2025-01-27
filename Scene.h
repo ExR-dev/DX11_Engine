@@ -20,26 +20,28 @@ private:
 	ID3D11Device *_device = nullptr;
 	Content *_content = nullptr;
 	Graphics *_graphics = nullptr;
-
 	SceneHolder _sceneHolder;
 
-	std::unique_ptr<CameraD3D11> _camera = nullptr, _secondaryCamera = nullptr;
+	std::vector<std::unique_ptr<Entity>> _globalEntities = {};
 	std::unique_ptr<SpotLightCollectionD3D11> _spotlights;
 	std::unique_ptr<DirLightCollectionD3D11> _dirlights;
 	std::unique_ptr<PointLightCollectionD3D11> _pointlights;
-
 	Cubemap _cubemap;
+
+	std::unique_ptr<CameraD3D11> _camera = nullptr;
+	std::unique_ptr<CameraD3D11> _secondaryCamera = nullptr;
+	CameraD3D11 *_currCameraPtr = nullptr;
+
+	ReferenceSpace _editSpace = Local;
 
 	int _currCamera = -2;
 	int _currSelection = -1;
-	CameraD3D11 *_currCameraPtr = nullptr;
 
 	bool _doMultiThread = true;
-
 	bool _useMainCamera = true;
 	bool _playerPhysics = false;
 	bool _rotateLights = false;
-
+	bool _drawPointer = false;
 
 	[[nodiscard]] bool UpdatePlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
 	[[nodiscard]] bool UpdateEntities(ID3D11DeviceContext* context, Time& time, const Input& input);
@@ -47,10 +49,12 @@ private:
 	[[nodiscard]] bool UpdateDebugPlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
 	[[nodiscard]] bool UpdatePhysicsPlayer(ID3D11DeviceContext* context, Time& time, const Input& input);
 
-	void UpdateSelectionMarker() const;
+	void UpdateGlobalEntities();
+
+	[[nodiscard]] bool RenderGlobal();
 
 	[[nodiscard]] bool RenderSelectionUI();
-	[[nodiscard]] bool RenderTransformUIRecursive(Entity *ent, UINT depth);
+	[[nodiscard]] bool RenderHierarchyUI(Entity *ent, UINT depth);
 
 	void DebugGenerateVolumeTreeStructure();
 	void DebugGenerateEntityBounds();

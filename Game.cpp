@@ -20,7 +20,6 @@ Game::~Game()
 		_device->Release();
 }
 
-
 bool Game::LoadContent(Time& time,
 	const std::vector<std::string>& meshNames,
 	const std::vector<TextureData>& textureNames,
@@ -29,7 +28,7 @@ bool Game::LoadContent(Time& time,
 {
 	time.TakeSnapshot("LoadMeshes");
 	for (const std::string& meshName : meshNames)
-		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\Meshes\\{}.obj", meshName).c_str()) == CONTENT_LOAD_ERROR)
+		if (_content.AddMesh(_device, std::format("Mesh_{}", meshName), std::format("Content\\Meshes\\{}.obj", meshName).c_str()) == CONTENT_NULL)
 		{
 			ErrMsg(std::format("Failed to add Mesh_{}!", meshName));
 			return false;
@@ -40,7 +39,7 @@ bool Game::LoadContent(Time& time,
 	time.TakeSnapshot("LoadTextures");
 	for (const TextureData& textureName : textureNames)
 		if (_content.AddTexture(_device, _immediateContext, std::format("Tex_{}", textureName.name),
-			std::format("Content\\Textures\\{}.png", textureName.file).c_str()) == CONTENT_LOAD_ERROR)
+			std::format("Content\\Textures\\{}.png", textureName.file).c_str()) == CONTENT_NULL)
 		{
 			ErrMsg(std::format("Failed to add Tex_{}!", textureName.name));
 			return false;
@@ -51,7 +50,7 @@ bool Game::LoadContent(Time& time,
 	time.TakeSnapshot("LoadTextureMaps");
 	for (const TextureMapData& textureMap : textureMapNames)
 		if (_content.AddTextureMap(_device, _immediateContext, std::format("TexMap_{}", textureMap.name),
-			textureMap.type, std::format("Content\\Textures\\{}.png", textureMap.file).c_str()) == CONTENT_LOAD_ERROR)
+			textureMap.type, std::format("Content\\Textures\\{}.png", textureMap.file).c_str()) == CONTENT_NULL)
 		{
 			ErrMsg(std::format("Failed to add TexMap_{}!", textureMap.name));
 			return false;
@@ -61,7 +60,7 @@ bool Game::LoadContent(Time& time,
 
 	time.TakeSnapshot("LoadShaders");
 	for (const ShaderData& shader : shaderNames)
-		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\Shaders\\{}.cso", shader.file).c_str()) == CONTENT_LOAD_ERROR)
+		if (_content.AddShader(_device, shader.name, shader.type, std::format("Content\\Shaders\\{}.cso", shader.file).c_str()) == CONTENT_NULL)
 		{
 			ErrMsg(std::format("Failed to add {} shader!", shader.name));
 			return false;
@@ -69,19 +68,19 @@ bool Game::LoadContent(Time& time,
 	time.TakeSnapshot("LoadShaders");
 
 
-	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_LOAD_ERROR)
+	if (_content.AddSampler(_device, "SS_Fallback", D3D11_TEXTURE_ADDRESS_BORDER) == CONTENT_NULL)
 	{
 		ErrMsg("Failed to add fallback sampler!");
 		return false;
 	}
 
-	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_LOAD_ERROR)
+	if (_content.AddSampler(_device, "SS_Clamp", D3D11_TEXTURE_ADDRESS_CLAMP) == CONTENT_NULL)
 	{
 		ErrMsg("Failed to add clamp sampler!");
 		return false;
 	}
 
-	if (_content.AddSampler(_device, "SS_Shadow", D3D11_TEXTURE_ADDRESS_CLAMP, std::nullopt, false) == CONTENT_LOAD_ERROR)
+	if (_content.AddSampler(_device, "SS_Shadow", D3D11_TEXTURE_ADDRESS_CLAMP, std::nullopt, false) == CONTENT_NULL)
 	{
 		ErrMsg("Failed to add shadow sampler!");
 		return false;
@@ -95,7 +94,7 @@ bool Game::LoadContent(Time& time,
 		{ "TEXCOORD",	DXGI_FORMAT_R32G32_FLOAT	}
 	};
 
-	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, _content.GetShaderID("VS_Geometry")) == CONTENT_LOAD_ERROR)
+	if (_content.AddInputLayout(_device, "IL_Fallback", fallbackInputLayout, _content.GetShaderID("VS_Geometry")) == CONTENT_NULL)
 	{
 		ErrMsg("Failed to add IL_Fallback!");
 		return false;
@@ -125,6 +124,7 @@ bool Game::Setup(Time& time, const UINT width, const UINT height, const HWND win
 		"IsoSphereSmooth",
 		"Torus",
 		"WireframeCube",
+		"TransformGizmo",
 	};
 
 	const std::vector<TextureData> textureNames = {
@@ -148,6 +148,7 @@ bool Game::Setup(Time& time, const UINT width, const UINT height, const HWND win
 		{ "Bricks",							"Bricks"						},
 		{ "Metal",							"Metal"							},
 		{ "Cobble",							"Cobble"						},
+		{ "TransformGizmo",					"TransformGizmo"				},
 
 		//Transparent
 		{ "Transparent",					"Transparent"					},
@@ -281,7 +282,6 @@ bool Game::Render(Time& time, const Input& input)
 		return false;
 	}
 
-
 	//#ifdef _DEBUG
 	if (!_graphics.BeginUIRender())
 	{
@@ -289,79 +289,160 @@ bool Game::Render(Time& time, const Input& input)
 		return false;
 	}
 
+	static float imGuiFontScale = 1.25f; // I have a 1440p monitor, shit's too small at default
+	ImGui::SetWindowFontScale(imGuiFontScale);
+
 	/// v==========================================v ///
 	/// v        Render UI here...                 v ///
 	/// v==========================================v ///
 
-	if (!_graphics.RenderUI(time))
+	// For an in-depth manual of ImGui features and their usages see:
+	// https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
+
+	if (ImGui::CollapsingHeader("General"))
 	{
-		ErrMsg("Failed to render graphics UI!");
-		return false;
+		ImGui::SliderFloat("Font Scale", &imGuiFontScale, 0.25f, 8.0f);
+
+		if (ImGui::Button("Reset Font Scale"))
+			imGuiFontScale = 1.0f;
+
+		ImGui::SetWindowFontScale(imGuiFontScale);
 	}
 
 	ImGui::Separator();
 
-	if (_scene != nullptr)
-		if (!_scene->RenderUI())
+	if (ImGui::CollapsingHeader("Performance"))
+	{
+		if (ImGui::TreeNode("FPS"))
 		{
-			ErrMsg("Failed to render scene UI!");
+			constexpr size_t FPS_BUF_SIZE = 128;
+			static float fpsBuf[FPS_BUF_SIZE]{};
+			static size_t fpsBufIndex = 0;
+
+			float currFps = 1.0f / time.deltaTime;
+			fpsBuf[fpsBufIndex] = currFps;
+			(++fpsBufIndex) %= FPS_BUF_SIZE;
+
+			float avgFps = 0.0f;
+			float dropFps = FLT_MAX;
+			for (size_t i = 0; i < FPS_BUF_SIZE; i++)
+			{
+				avgFps += fpsBuf[i];
+
+				if (dropFps > fpsBuf[i])
+					dropFps = fpsBuf[i];
+			}
+			avgFps /= FPS_BUF_SIZE;
+
+			static float minFPS = FLT_MAX;
+			if (minFPS > currFps)
+				minFPS = currFps;
+
+			char fps[8]{};
+			snprintf(fps, sizeof(fps), "%.2f", currFps);
+			ImGui::Text(std::format("FPS: {}", fps).c_str());
+
+			snprintf(fps, sizeof(fps), "%.2f", avgFps);
+			ImGui::Text(std::format("Avg: {}", fps).c_str());
+
+			snprintf(fps, sizeof(fps), "%.2f", dropFps);
+			ImGui::Text(std::format("Drop: {}", fps).c_str());
+
+			snprintf(fps, sizeof(fps), "%.2f", minFPS);
+			ImGui::Text(std::format("Min: {}", fps).c_str());
+
+			if (ImGui::Button("Reset"))
+			{
+				minFPS = 1.0f / time.deltaTime;
+
+				for (size_t i = 0; i < FPS_BUF_SIZE; i++)
+					fpsBuf[i] = 0.0f;
+			}
+
+			ImGui::TreePop();
+		}
+		
+		if (ImGui::TreeNode("Culling"))
+		{
+			char timeStr[32]{};
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.deltaTime);
+			ImGui::Text(std::format("{} Frame", timeStr).c_str());
+
+			ImGui::Spacing();
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneUpdateTime"));
+			ImGui::Text(std::format("{} Scene Update", timeStr).c_str());
+
+			ImGui::Spacing();
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneRenderTime"));
+			ImGui::Text(std::format("{} Scene Render", timeStr).c_str());
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCull"));
+			ImGui::Text(std::format("{} Culling Main View", timeStr).c_str());
+
+			if (_graphics.GetUpdateCubemap())
+			{
+				snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullCubemap"));
+				ImGui::Text(std::format("{} Culling Cubemap Views", timeStr).c_str());
+			}
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullSpotlights"));
+			ImGui::Text(std::format("{} Culling Spotlights Total", timeStr).c_str());
+
+			int i = 0;
+			float spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", i));
+			while (spotlightTime >= 0.0f)
+			{
+				snprintf(timeStr, sizeof(timeStr), "%.6f", spotlightTime);
+				ImGui::Text(std::format("{} Culling Spotlight #{}", timeStr, i).c_str());
+
+				spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", ++i));
+			}
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullDirlights"));
+			ImGui::Text(std::format("{} Culling Dirlights Total", timeStr).c_str());
+
+
+			snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullPointlights"));
+			ImGui::Text(std::format("{} Culling Pointlights Total", timeStr).c_str());
+
+			i = 0;
+			float pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", i));
+			while (pointlightTime >= 0.0f)
+			{
+				snprintf(timeStr, sizeof(timeStr), "%.6f", pointlightTime);
+				ImGui::Text(std::format("{} Culling Pointlight #{}", timeStr, i).c_str());
+
+				pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", ++i));
+			}
+
+			ImGui::TreePop();
+		}
+	}
+
+	ImGui::Separator();
+
+	if (ImGui::CollapsingHeader("Graphics"))
+	{
+		if (!_graphics.RenderUI(time))
+		{
+			ErrMsg("Failed to render graphics UI!");
 			return false;
 		}
+	}
 
 	ImGui::Separator();
 
-	char timeStr[32]{};
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.deltaTime);
-	ImGui::Text(std::format("{} Frame", timeStr).c_str());
-
-	ImGui::Spacing();
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneUpdateTime"));
-	ImGui::Text(std::format("{} Scene Update", timeStr).c_str());
-
-	ImGui::Spacing();
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("SceneRenderTime"));
-	ImGui::Text(std::format("{} Scene Render", timeStr).c_str());
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCull"));
-	ImGui::Text(std::format("{} Culling Main View", timeStr).c_str());
-
-	if (_graphics.GetUpdateCubemap())
+	if (ImGui::CollapsingHeader("Scene"))
 	{
-		snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullCubemap"));
-		ImGui::Text(std::format("{} Culling Cubemap Views", timeStr).c_str());
-	}
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullSpotlights"));
-	ImGui::Text(std::format("{} Culling Spotlights Total", timeStr).c_str());
-
-	int i = 0;
-	float spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", i));
-	while (spotlightTime >= 0.0f)
-	{
-		snprintf(timeStr, sizeof(timeStr), "%.6f", spotlightTime);
-		ImGui::Text(std::format("{} Culling Spotlight #{}", timeStr, i).c_str());
-
-		spotlightTime = time.CompareSnapshots(std::format("FrustumCullSpotlight{}", ++i));
-	}
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullDirlights"));
-	ImGui::Text(std::format("{} Culling Dirlights Total", timeStr).c_str());
-
-
-	snprintf(timeStr, sizeof(timeStr), "%.6f", time.CompareSnapshots("FrustumCullPointlights"));
-	ImGui::Text(std::format("{} Culling Pointlights Total", timeStr).c_str());
-
-	i = 0;
-	float pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", i));
-	while (pointlightTime >= 0.0f)
-	{
-		snprintf(timeStr, sizeof(timeStr), "%.6f", pointlightTime);
-		ImGui::Text(std::format("{} Culling Pointlight #{}", timeStr, i).c_str());
-
-		pointlightTime = time.CompareSnapshots(std::format("FrustumCullPointlight{}", ++i));
+		if (_scene != nullptr)
+			if (!_scene->RenderUI())
+			{
+				ErrMsg("Failed to render scene UI!");
+				return false;
+			}
 	}
 
 	/// ^==========================================^ ///

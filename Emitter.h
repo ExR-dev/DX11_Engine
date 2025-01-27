@@ -23,7 +23,7 @@ struct Particle
 };
 
 
-class Emitter final : Entity
+class Emitter final : public Entity
 {
 private:
 	EmitterData _emitterData = { };
@@ -31,7 +31,7 @@ private:
 	ConstantBufferD3D11 _emitterBuffer;
 	StructuredBufferD3D11 _particleBuffer;
 
-	UINT _texID = CONTENT_LOAD_ERROR;
+	UINT _texID = CONTENT_NULL;
 
 
 public:

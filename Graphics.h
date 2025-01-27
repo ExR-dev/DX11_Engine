@@ -2,7 +2,6 @@
 
 #include <d3d11.h>
 #include <array>
-
 #include "Content.h"
 #include "Time.h"
 #include "Cubemap.h"
@@ -54,20 +53,20 @@ private:
 	PointLightCollectionD3D11 *_currPointLightCollection = nullptr;
 
 	UINT
-		_currMeshID			= CONTENT_LOAD_ERROR,
-		_currVsID			= CONTENT_LOAD_ERROR,
-		_currPsID			= CONTENT_LOAD_ERROR,
-		_currTexID			= CONTENT_LOAD_ERROR,
-		_currNormalID		= CONTENT_LOAD_ERROR,
-		_currSpecularID		= CONTENT_LOAD_ERROR,
-		_currReflectiveID	= CONTENT_LOAD_ERROR,
-		_currAmbientID		= CONTENT_LOAD_ERROR,
-		_currHeightID		= CONTENT_LOAD_ERROR,
-		_currSamplerID		= CONTENT_LOAD_ERROR,
-		_currInputLayoutID	= CONTENT_LOAD_ERROR;
+		_currMeshID			= CONTENT_NULL,
+		_currVsID			= CONTENT_NULL,
+		_currPsID			= CONTENT_NULL,
+		_currTexID			= CONTENT_NULL,
+		_currNormalID		= CONTENT_NULL,
+		_currSpecularID		= CONTENT_NULL,
+		_currReflectiveID	= CONTENT_NULL,
+		_currAmbientID		= CONTENT_NULL,
+		_currHeightID		= CONTENT_NULL,
+		_currSamplerID		= CONTENT_NULL,
+		_currInputLayoutID	= CONTENT_NULL;
 
 	DirectX::XMFLOAT4A _ambientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-	bool _renderTransparency = false;
+	bool _renderTransparency = true;
 
 	// Renders all queued entities to the specified target.
 	[[nodiscard]] bool RenderToTarget(

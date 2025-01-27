@@ -45,7 +45,7 @@ UINT Content::AddMesh(ID3D11Device* device, const std::string& name, const MeshD
 	{
 		ErrMsg("Failed to initialize added mesh!");
 		delete addedMesh;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_meshes.push_back(addedMesh);
 
@@ -65,7 +65,7 @@ UINT Content::AddMesh(ID3D11Device* device, const std::string& name, const char*
 	if (!LoadMeshFromFile(path, meshData))
 	{
 		ErrMsg("Failed to load mesh from file!");
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 
 	/*std::string meshDebugPath = path;
@@ -73,7 +73,7 @@ UINT Content::AddMesh(ID3D11Device* device, const std::string& name, const char*
 	if (!WriteMeshToFile(meshDebugPath.c_str(), meshData))
 	{
 		ErrMsg("Failed to write mesh to file!");
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}*/
 
 	Mesh* addedMesh = new Mesh(name, id);
@@ -81,7 +81,7 @@ UINT Content::AddMesh(ID3D11Device* device, const std::string& name, const char*
 	{
 		ErrMsg("Failed to initialize added mesh!");
 		delete addedMesh;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_meshes.push_back(addedMesh);
 
@@ -103,7 +103,7 @@ UINT Content::AddShader(ID3D11Device* device, const std::string& name, const Sha
 	{
 		ErrMsg("Failed to initialize added shader!");
 		delete addedShader;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_shaders.push_back(addedShader);
 
@@ -124,7 +124,7 @@ UINT Content::AddShader(ID3D11Device* device, const std::string& name, const Sha
 	{
 		ErrMsg("Failed to initialize added shader!");
 		delete addedShader;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_shaders.push_back(addedShader);
 
@@ -147,7 +147,7 @@ UINT Content::AddTexture(ID3D11Device* device, ID3D11DeviceContext* context, con
 	if (!LoadTextureFromFile(path, width, height, texData))
 	{
 		ErrMsg("Failed to load texture from file!");
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 
 	Texture* addedTexture = new Texture(name, (std::string)path, id);
@@ -155,7 +155,7 @@ UINT Content::AddTexture(ID3D11Device* device, ID3D11DeviceContext* context, con
 	{
 		ErrMsg("Failed to initialize added texture!");
 		delete addedTexture;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_textures.push_back(addedTexture);
 
@@ -182,7 +182,7 @@ UINT Content::AddTextureMap(ID3D11Device* device, ID3D11DeviceContext* context, 
 	if (!LoadTextureFromFile(path, width, height, texData))
 	{
 		ErrMsg("Failed to load texture map from file!");
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 
 	D3D11_TEXTURE2D_DESC textureDesc = { };
@@ -240,7 +240,7 @@ UINT Content::AddTextureMap(ID3D11Device* device, ID3D11DeviceContext* context, 
 	{
 		ErrMsg("Failed to initialize added texture map!");
 		delete addedTextureMap;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_textureMaps.push_back(addedTextureMap);
 
@@ -263,7 +263,7 @@ UINT Content::AddSampler(ID3D11Device* device, const std::string& name, const D3
 	{
 		ErrMsg("Failed to initialize added texture!");
 		delete addedSampler;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_samplers.push_back(addedSampler);
 
@@ -288,7 +288,7 @@ UINT Content::AddInputLayout(ID3D11Device* device, const std::string& name, cons
 		{
 			ErrMsg(std::format("Failed to add element \"{}\" to input layout!", semantic.name));
 			delete addedInputLayout;
-			return CONTENT_LOAD_ERROR;
+			return CONTENT_NULL;
 		}
 	}
 
@@ -296,7 +296,7 @@ UINT Content::AddInputLayout(ID3D11Device* device, const std::string& name, cons
 	{
 		ErrMsg("Failed to finalize added input layout!");
 		delete addedInputLayout;
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 	_inputLayouts.push_back(addedInputLayout);
 
@@ -305,23 +305,23 @@ UINT Content::AddInputLayout(ID3D11Device* device, const std::string& name, cons
 
 UINT Content::AddInputLayout(ID3D11Device* device, const std::string& name, const std::vector<Semantic>& semantics, const UINT vShaderID)
 {
-	if (vShaderID == CONTENT_LOAD_ERROR)
+	if (vShaderID == CONTENT_NULL)
 	{
-		ErrMsg("Failed to get vertex shader byte code, shader ID was CONTENT_LOAD_ERROR!");
-		return CONTENT_LOAD_ERROR;
+		ErrMsg("Failed to get vertex shader byte code, shader ID was CONTENT_NULL!");
+		return CONTENT_NULL;
 	}
 
 	const ShaderD3D11* vShader = GetShader(vShaderID);
 	if (vShader == nullptr)
 	{
 		ErrMsg("Failed to get vertex shader byte code, shader ID returned nullptr!");
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 
 	if (vShader->GetShaderType() != ShaderType::VERTEX_SHADER)
 	{
 		ErrMsg(std::format("Failed to get vertex shader byte code, shader ID returned invalid type ({})!", (UINT)vShader->GetShaderType()));
-		return CONTENT_LOAD_ERROR;
+		return CONTENT_NULL;
 	}
 
 	return AddInputLayout(device, name, semantics, vShader->GetShaderByteData(), vShader->GetShaderByteSize());
@@ -349,7 +349,7 @@ UINT Content::GetMeshID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 MeshD3D11* Content::GetMesh(const std::string& name) const
@@ -367,7 +367,7 @@ MeshD3D11* Content::GetMesh(const std::string& name) const
 
 MeshD3D11* Content::GetMesh(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_meshes.size() <= id)
 		return nullptr;
@@ -386,7 +386,7 @@ UINT Content::GetShaderID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 ShaderD3D11* Content::GetShader(const std::string& name) const
@@ -404,7 +404,7 @@ ShaderD3D11* Content::GetShader(const std::string& name) const
 
 ShaderD3D11* Content::GetShader(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_shaders.size() <= id)
 		return nullptr;
@@ -423,7 +423,7 @@ UINT Content::GetTextureID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 UINT Content::GetTextureIDByPath(const std::string& path) const
@@ -436,7 +436,7 @@ UINT Content::GetTextureIDByPath(const std::string& path) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 ShaderResourceTextureD3D11* Content::GetTexture(const std::string& name) const
@@ -454,7 +454,7 @@ ShaderResourceTextureD3D11* Content::GetTexture(const std::string& name) const
 
 ShaderResourceTextureD3D11* Content::GetTexture(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_textures.size() <= id)
 		return nullptr;
@@ -473,7 +473,7 @@ UINT Content::GetTextureMapID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 UINT Content::GetTextureMapIDByPath(const std::string& path, const TextureType type) const
@@ -504,7 +504,7 @@ UINT Content::GetTextureMapIDByPath(const std::string& path, const TextureType t
 		if (_textureMaps.at(i)->path == path && _textureMaps.at(i)->name.find(typeStr, 0) != std::string::npos)
 			return i;
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 ShaderResourceTextureD3D11* Content::GetTextureMap(const std::string& name) const
@@ -522,7 +522,7 @@ ShaderResourceTextureD3D11* Content::GetTextureMap(const std::string& name) cons
 
 ShaderResourceTextureD3D11* Content::GetTextureMap(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_textureMaps.size() <= id)
 		return nullptr;
@@ -541,7 +541,7 @@ UINT Content::GetSamplerID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 SamplerD3D11* Content::GetSampler(const std::string& name) const
@@ -559,7 +559,7 @@ SamplerD3D11* Content::GetSampler(const std::string& name) const
 
 SamplerD3D11* Content::GetSampler(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_samplers.size() <= id)
 		return nullptr;
@@ -578,7 +578,7 @@ UINT Content::GetInputLayoutID(const std::string& name) const
 			return i;
 	}
 
-	return CONTENT_LOAD_ERROR;
+	return CONTENT_NULL;
 }
 
 InputLayoutD3D11* Content::GetInputLayout(const std::string& name) const
@@ -596,7 +596,7 @@ InputLayoutD3D11* Content::GetInputLayout(const std::string& name) const
 
 InputLayoutD3D11* Content::GetInputLayout(const UINT id) const
 {
-	if (id == CONTENT_LOAD_ERROR)
+	if (id == CONTENT_NULL)
 		return nullptr;
 	if (_inputLayouts.size() <= id)
 		return nullptr;
