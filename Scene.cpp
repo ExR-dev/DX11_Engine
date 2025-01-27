@@ -1965,6 +1965,33 @@ bool Scene::RenderSelectionUI()
 		ImGui::BeginChild("Methods", ImVec2(0, 100), childFlags);
 		if (ImGui::Button("GetRight()"))
 		{
+			/*
+			Getters:
+			Vec3 GetRight()
+			Vec3 GetUp()
+			Vec3 GetForward()
+			Vec3 GetPosition()
+			Quat GetRotation()
+			Vec3 GetScale()
+			Vec3 GetEuler()
+
+			Setters:
+			SetPosition(Vec3 position)
+			SetRotation(Quat rotation)
+			SetScale(Vec3 scale)
+			Move(Vec3 direction)
+			Rotate(Vec3 euler)
+			Scale(Vec3 scale)
+			MoveRelative(Vec3 direction)
+			RotateAxis(Vec3 axis, float amount)
+			SetEuler(Vec3 rollPitchYaw)
+
+			Maybe:
+			SetMatrix(Mat mat) Optional
+			Mat &GetLocalMatrix()
+			Mat &GetWorldMatrix()
+			*/
+
 			trans->SetPosition(*vec3, _editSpace);
 		}
 		ImGui::EndChild();
